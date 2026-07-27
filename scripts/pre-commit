@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Ensure GOPATH/bin is in PATH (git hooks may have a minimal PATH)
+export PATH="${GOPATH:-$HOME/go}/bin:$PATH"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+errors=0
+
+echo "🔍 Running pre-commit checks..."
+echo ""
+
+# --- Frontend ---
+if git diff --cached --name-only | grep -q "^frontend/"; then
+  echo -e "${YELLOW}▸ Frontend: running oxlint...${NC}"
+  if (cd frontend && bun run lint); then
+    echo -e "${GREEN}  ✓ oxlint passed${NC}"
+  else
+    echo -e "${RED}  ✗ oxlint failed${NC}"
+    errors=1
+  fi
+
+  echo -e "${YELLOW}▸ Frontend: running tests...${NC}"
+  if (cd frontend && bun run test); then
+    echo -e "${GREEN}  ✓ tests passed${NC}"
+  else
+    echo -e "${RED}  ✗ tests failed${NC}"
+    errors=1
+  fi
+  echo ""
+fi
+
+# --- Backend ---
+if git diff --cached --name-only | grep -q "^backend/"; then
+  echo -e "${YELLOW}▸ Backend: running golangci-lint...${NC}"
+  if command -v golangci-lint &>/dev/null; then
+    if (cd backend && golangci-lint run ./...); then
+      echo -e "${GREEN}  ✓ golangci-lint passed${NC}"
+    else
+      echo -e "${RED}  ✗ golangci-lint failed${NC}"
+      errors=1
+    fi
+  else
+    echo -e "${YELLOW}  ⚠ golangci-lint not installed, falling back to go vet${NC}"
+    if (cd backend && go vet ./...); then
+      echo -e "${GREEN}  ✓ go vet passed${NC}"
+    else
+      echo -e "${RED}  ✗ go vet failed${NC}"
+      errors=1
+    fi
+  fi
+
+  echo -e "${YELLOW}▸ Backend: running tests...${NC}"
+  if (cd backend && go test ./...); then
+    echo -e "${GREEN}  ✓ tests passed${NC}"
+  else
+    echo -e "${RED}  ✗ tests failed${NC}"
+    errors=1
+  fi
+  echo ""
+fi
+
+# --- Result ---
+if [ "$errors" -ne 0 ]; then
+  echo -e "${RED}✗ Pre-commit checks failed. Fix the issues above before committing.${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}✓ All checks passed.${NC}"

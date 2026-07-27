@@ -1,0 +1,6 @@
+packages:
+  - path: "github.com/luizgustavojunqueira/blink/models"
+    type_mappings:
+      "time.Time": "string"
+      "uuid.UUID": "string"
+    out: "../frontend/src/types/backend.ts"

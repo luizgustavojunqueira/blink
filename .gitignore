@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+frontend/dist/
+backend/ui/dist/*
+!backend/ui/dist/index.html
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,4 +1,4 @@
-.PHONY: dev dev-api dev-ui build
+.PHONY: dev dev-api dev-ui build generate test test-back test-front
 
 dev:
 	make -j2 dev-api dev-ui
@@ -15,3 +15,11 @@ build:
 
 generate:
 	cd backend && sqlc generate && tygo generate
+
+test: test-back test-front
+
+test-back:
+	cd backend && go test ./...
+
+test-front:
+	cd frontend && bun test

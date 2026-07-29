@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS items (
     guid         TEXT UNIQUE NOT NULL,
     title        TEXT NOT NULL,
     description  TEXT,
-    type         TEXT NOT NULL CHECK(type IN ('task', 'group')),
+    type         TEXT NOT NULL CHECK(type IN ('TASK', 'GROUP')),
     parent_id    INTEGER REFERENCES items(id),
     status       TEXT NOT NULL CHECK(status IN ('TODO', 'IN_PROGRESS', 'DONE', 'CANCELED', 'ARCHIVED')),
     priority     TEXT NOT NULL CHECK(priority IN ('LOW', 'NORMAL', 'HIGH', 'URGENT')),

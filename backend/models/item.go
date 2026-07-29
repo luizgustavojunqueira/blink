@@ -1,0 +1,75 @@
+// Package models
+package models
+
+import "errors"
+
+type (
+	ItemType     string
+	ItemStatus   string
+	ItemPriority string
+)
+
+const (
+	Task  ItemType = "TASK"
+	Group ItemType = "GROUP"
+)
+
+const (
+	ToDo       ItemStatus = "TODO"
+	InProgress ItemStatus = "IN_PROGRESS"
+	Done       ItemStatus = "DONE"
+	Canceled   ItemStatus = "CANCELED"
+	Archived   ItemStatus = "ARCHIVED"
+)
+
+const (
+	Low    ItemPriority = "LOW"
+	Normal ItemPriority = "NORMAL"
+	High   ItemPriority = "HIGH"
+	Urgent ItemPriority = "URGENT"
+)
+
+type CreateItemRequest struct {
+	Title       string       `json:"title"`
+	Description *string      `json:"description"`
+	Type        ItemType     `json:"type"`
+	Status      ItemStatus   `json:"status"`
+	Priority    ItemPriority `json:"priority"`
+	Tags        []string     `json:"tags"`
+}
+
+type GetItemResponse struct {
+	GUID        string       `json:"guid"`
+	Title       string       `json:"title"`
+	Description *string      `json:"description"`
+	Type        ItemType     `json:"type"`
+	Status      ItemStatus   `json:"status"`
+	Priority    ItemPriority `json:"priority"`
+	Tags        []string     `json:"tags"`
+}
+
+func (req *CreateItemRequest) Validate() error {
+	if req.Title == "" {
+		return errors.New("title is required")
+	}
+
+	if req.Type != Task && req.Type != Group {
+		return errors.New("invalid item type")
+	}
+
+	validStatuses := map[ItemStatus]bool{
+		ToDo: true, InProgress: true, Done: true, Canceled: true, Archived: true,
+	}
+	if !validStatuses[req.Status] {
+		return errors.New("invalid status")
+	}
+
+	validPriorities := map[ItemPriority]bool{
+		Low: true, Normal: true, High: true, Urgent: true,
+	}
+	if !validPriorities[req.Priority] {
+		return errors.New("invalid priority")
+	}
+
+	return nil
+}

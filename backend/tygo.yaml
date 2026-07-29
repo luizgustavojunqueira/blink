@@ -3,4 +3,4 @@ packages:
     type_mappings:
       "time.Time": "string"
       "uuid.UUID": "string"
-    out: "../frontend/src/types/backend.ts"
+    output_path: "../frontend/src/types/backend.ts"

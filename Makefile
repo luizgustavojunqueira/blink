@@ -4,7 +4,7 @@ dev:
 	make -j2 dev-api dev-ui
 
 dev-api:
-	cd backend && air
+	docker compose --profile dev up --build
 
 dev-ui:
 	cd frontend && bun run dev

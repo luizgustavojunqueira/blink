@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OmniTask - TUI Prototype</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Paleta Gruvbox Dark */
+        --bg: #282828;
+        --fg: #ebdbb2;
+        --gray: #928374;
+        --accent: #83a598; /* Azul suave para metadados */
+        --prompt: #b8bb26; /* Verde para o prompt */
+        --selected-bg: #3c3836;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family: "JetBrains Mono", monospace;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* 1. Header (Omnibar) */
+      header {
+        display: flex;
+        align-items: center;
+        padding: 2rem;
+        font-size: 24px;
+      }
+
+      .prompt-symbol {
+        color: var(--prompt);
+        margin-right: 1rem;
+        font-weight: bold;
+      }
+
+      input {
+        background: transparent;
+        border: none;
+        color: var(--fg);
+        font-family: inherit;
+        font-size: 24px;
+        outline: none;
+        width: 100%;
+      }
+
+      input::placeholder {
+        color: var(--gray);
+        opacity: 0.5;
+      }
+
+      /* 2. Body (Lista de Tarefas) */
+      main {
+        flex: 1;
+        padding: 0 2rem;
+        overflow-y: auto;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      li {
+        display: flex;
+        align-items: center;
+        font-size: 24px;
+        padding: 0.5rem;
+        margin-bottom: 0.25rem;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      li.selected {
+        background-color: var(--selected-bg);
+      }
+
+      li.done .task-text {
+        opacity: 0.4;
+        text-decoration: line-through;
+      }
+
+      li.done .task-metadata {
+        opacity: 0.4;
+      }
+
+      .indicator {
+        width: 2rem;
+        color: var(--prompt);
+        font-weight: bold;
+        visibility: hidden;
+      }
+
+      li.selected .indicator {
+        visibility: visible;
+      }
+
+      .checkbox {
+        width: 4rem;
+        color: var(--gray);
+      }
+
+      .task-text {
+        flex: 1;
+        transition: all 0.15s ease;
+      }
+
+      .task-metadata {
+        font-size: 16px;
+        color: var(--accent);
+        margin-left: 1rem;
+        transition: all 0.15s ease;
+      }
+
+      /* 3. Footer (Status Line) */
+      footer {
+        padding: 0.5rem 2rem;
+        font-size: 16px;
+        color: var(--bg);
+        background-color: var(--gray);
+        display: flex;
+        justify-content: space-between;
+        font-weight: bold;
+      }
+
+      .mode-insert {
+        background-color: var(--accent) !important;
+      }
+      .mode-command {
+        background-color: var(--prompt) !important;
+        color: var(--bg) !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="prompt-symbol">❯</span>
+      <input type="text" id="omnibar" autocomplete="off" spellcheck="false" />
+    </header>
+
+    <main>
+      <ul id="task-list"></ul>
+    </main>
+
+    <footer id="status-line">
+      <span id="status-mode">NORMAL</span>
+      <span id="status-tips"
+        >:help para comandos | j/k para navegar | / para buscar</span
+      >
+    </footer>
+
+    <script>
+      // Estado inicial da aplicação
+      let tasks = [
+        {
+          id: 1,
+          text: "Responder email do cliente",
+          meta: "@work",
+          done: true,
+        },
+        { id: 2, text: "Revisar PR do frontend", meta: "@work", done: false },
+        { id: 3, text: "Comprar cafe especial", meta: "#casa", done: false },
+        { id: 4, text: "Renovar dominio", meta: "#pessoal", done: false },
+      ];
+
+      let selectedIndex = 1; // Começa selecionando a segunda tarefa
+      let mode = "NORMAL"; // NORMAL, INSERT, COMMAND
+
+      const listElement = document.getElementById("task-list");
+      const omnibar = document.getElementById("omnibar");
+      const statusMode = document.getElementById("status-mode");
+      const statusFooter = document.getElementById("status-line");
+
+      // Função para renderizar a lista
+      function render() {
+        listElement.innerHTML = "";
+
+        // Filtro simples baseado no que está digitado no Omnibar (se não for comando)
+        const query = omnibar.value.trim();
+        const isCommand = query.startsWith(":");
+
+        let filteredTasks = tasks;
+        if (query && !isCommand && mode === "INSERT") {
+          filteredTasks = tasks.filter(
+            (t) =>
+              t.text.toLowerCase().includes(query.toLowerCase()) ||
+              t.meta.toLowerCase().includes(query.toLowerCase()),
+          );
+        }
+
+        // Garante que o índice selecionado seja válido após filtrar
+        if (selectedIndex >= filteredTasks.length) {
+          selectedIndex = Math.max(0, filteredTasks.length - 1);
+        }
+
+        filteredTasks.forEach((task, index) => {
+          const li = document.createElement("li");
+          if (index === selectedIndex) li.classList.add("selected");
+          if (task.done) li.classList.add("done");
+
+          // Suporte total ao mouse: clique para focar e concluir
+          li.onclick = () => {
+            selectedIndex = index;
+            task.done = !task.done;
+            render();
+          };
+
+          const indicator = document.createElement("span");
+          indicator.className = "indicator";
+          indicator.innerText = ">";
+
+          const checkbox = document.createElement("span");
+          checkbox.className = "checkbox";
+          checkbox.innerText = task.done ? "[x]" : "[ ]";
+
+          const text = document.createElement("span");
+          text.className = "task-text";
+          text.innerText = task.text;
+
+          const meta = document.createElement("span");
+          meta.className = "task-metadata";
+          meta.innerText = task.meta;
+
+          li.appendChild(indicator);
+          li.appendChild(checkbox);
+          li.appendChild(text);
+          li.appendChild(meta);
+
+          listElement.appendChild(li);
+        });
+
+        updateStatusLine();
+      }
+
+      function updateStatusLine() {
+        statusMode.innerText = mode;
+        if (mode === "NORMAL") {
+          statusFooter.className = "";
+          omnibar.blur();
+        } else if (mode === "INSERT") {
+          statusFooter.className = "mode-insert";
+        } else if (mode === "COMMAND") {
+          statusFooter.className = "mode-command";
+        }
+      }
+
+      // Listener para o Input (Omnibar)
+      omnibar.addEventListener("input", (e) => {
+        if (omnibar.value.startsWith(":")) {
+          mode = "COMMAND";
+        } else {
+          mode = "INSERT";
+        }
+        render();
+      });
+
+      omnibar.addEventListener("focus", () => {
+        if (omnibar.value.startsWith(":")) mode = "COMMAND";
+        else mode = "INSERT";
+        render();
+      });
+
+      // Keybindings em nível de janela (Window Listener)
+      window.addEventListener("keydown", (e) => {
+        const isInputFocused = document.activeElement === omnibar;
+
+        // Modo INSERT/COMMAND (Input focado)
+        if (isInputFocused) {
+          if (e.key === "Escape") {
+            omnibar.value = "";
+            mode = "NORMAL";
+            render();
+          } else if (e.key === "Enter") {
+            const val = omnibar.value.trim();
+            if (val && mode === "INSERT") {
+              // Extrai as "tags" simples (palavras com # ou @)
+              const words = val.split(" ");
+              const metaWords = words.filter(
+                (w) => w.startsWith("#") || w.startsWith("@"),
+              );
+              const textWords = words.filter(
+                (w) => !w.startsWith("#") && !w.startsWith("@"),
+              );
+
+              tasks.push({
+                id: Date.now(),
+                text: textWords.join(" "),
+                meta: metaWords.join(" "),
+                done: false,
+              });
+              omnibar.value = "";
+              mode = "NORMAL";
+              selectedIndex = tasks.length - 1;
+              render();
+            } else if (val === ":d" && tasks.length > 0) {
+              // Deleta tarefa atual via comando
+              tasks.splice(selectedIndex, 1);
+              omnibar.value = "";
+              mode = "NORMAL";
+              render();
+            }
+          }
+          return; // Bloqueia outros atalhos enquanto digita
+        }
+
+        // MODO NORMAL (Navegação pela lista)
+        switch (e.key) {
+          case "j":
+          case "ArrowDown":
+            if (selectedIndex < tasks.length - 1) {
+              selectedIndex++;
+              render();
+            }
+            break;
+          case "k":
+          case "ArrowUp":
+            if (selectedIndex > 0) {
+              selectedIndex--;
+              render();
+            }
+            break;
+          case "x":
+          case " ": // Barra de espaço
+            e.preventDefault(); // Evita scroll da tela
+            if (tasks[selectedIndex]) {
+              tasks[selectedIndex].done = !tasks[selectedIndex].done;
+              render();
+            }
+            break;
+          case "/":
+            e.preventDefault(); // Evita busca nativa do navegador
+            omnibar.focus();
+            break;
+          case ":":
+            e.preventDefault();
+            omnibar.value = ":";
+            omnibar.focus();
+            break;
+        }
+      });
+
+      // Foca inicialmente para já testar o fluxo
+      render();
+    </script>
+  </body>
+</html>

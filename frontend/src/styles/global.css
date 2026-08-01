@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import "./themes/index.css";
+
+@theme {
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-bg-lighter: var(--bg-lighter);
+
+  --color-fg: var(--fg);
+  --color-fg-dim: var(--fg-dim);
+  --color-fg-muted: var(--fg-muted);
+
+  --color-accent: var(--accent);
+  --color-urgent: var(--urgent);
+  --color-high: var(--high);
+  --color-normal: var(--normal);
+  --color-low: var(--low);
+  --color-done: var(--done);
+  --color-tag: var(--tag);
+  --color-group: var(--group);
+  --color-status: var(--status);
+  --color-border: var(--border);
+  --color-cursor: var(--cursor);
+
+  --font-mono:
+    "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", ui-monospace,
+    monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+.animate-blink {
+  animation: blink 1.06s steps(1) infinite;
+}

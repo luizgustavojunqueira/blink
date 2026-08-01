@@ -8,14 +8,14 @@ interface IPrompt {
 }
 
 export default function Prompt({ onFilter }: IPrompt) {
-  const [currentPrompt, setCurrentPrompt] = useState<string>();
-
+  const [currentPrompt, setCurrentPrompt] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (currentPrompt === undefined || currentPrompt === null) return;
+      if (!currentPrompt) return;
+
       const command = parse(currentPrompt);
 
       if (command.type === "FILTER") {
@@ -27,14 +27,15 @@ export default function Prompt({ onFilter }: IPrompt) {
   };
 
   return (
-    <div className="w-full p-4 text-xl bg-bg text-fg font-mono flex items-center">
-      <span className="text-accent mr-2">❯</span>
+    <div className="w-full px-5 py-4 border-b border-border bg-bg-soft flex items-center gap-3">
+      <span className="text-accent select-none">❯</span>
       <input
         ref={inputRef}
         value={currentPrompt}
         onChange={(e) => setCurrentPrompt(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1 bg-transparent outline-none border-none text-fg caret-cursor"
+        className="flex-1 bg-transparent outline-none border-none text-fg text-lg caret-cursor placeholder:text-fg-muted"
+        placeholder="type to filter"
         autoFocus
         spellCheck={false}
         autoComplete="off"

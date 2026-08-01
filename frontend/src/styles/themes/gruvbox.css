@@ -1,0 +1,21 @@
+.theme-gruvbox {
+  --bg: #282828;
+  --bg-soft: #32302f;
+  --bg-lighter: #3c3836;
+
+  --fg: #ebdbb2;
+  --fg-dim: #a89984;
+  --fg-muted: #928374;
+
+  --accent: #83a598;
+  --urgent: #fb4934;
+  --high: #fe8019;
+  --normal: #fabd2f;
+  --low: #8ec07c;
+  --done: #b8bb26;
+  --tag: #d3869b;
+  --group: #fabd2f;
+  --status: #83a598;
+  --border: #504945;
+  --cursor: #ebdbb2;
+}

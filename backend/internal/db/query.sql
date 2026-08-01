@@ -1,5 +1,5 @@
 -- name: GetItem :one
-SELECT * FROM items WHERE guid = ?;
+SELECT * FROM items WHERE id = ?;
 
 -- name: GetItemsByParent :many
 SELECT * FROM items WHERE parent_id = ? ORDER BY created_at DESC;
@@ -28,3 +28,4 @@ RETURNING *;
 
 -- name: DeleteItem :exec
 DELETE FROM items WHERE guid = ?;
+

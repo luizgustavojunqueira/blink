@@ -69,11 +69,11 @@ func (q *Queries) DeleteItem(ctx context.Context, guid string) error {
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at FROM items WHERE guid = ?
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at FROM items WHERE id = ?
 `
 
-func (q *Queries) GetItem(ctx context.Context, guid string) (Item, error) {
-	row := q.db.QueryRowContext(ctx, getItem, guid)
+func (q *Queries) GetItem(ctx context.Context, id int64) (Item, error) {
+	row := q.db.QueryRowContext(ctx, getItem, id)
 	var i Item
 	err := row.Scan(
 		&i.ID,

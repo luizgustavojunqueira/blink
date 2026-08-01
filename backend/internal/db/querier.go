@@ -12,7 +12,7 @@ import (
 type Querier interface {
 	CreateItem(ctx context.Context, arg CreateItemParams) (Item, error)
 	DeleteItem(ctx context.Context, guid string) error
-	GetItem(ctx context.Context, guid string) (Item, error)
+	GetItem(ctx context.Context, id int64) (Item, error)
 	GetItemsByParent(ctx context.Context, parentID sql.NullInt64) ([]Item, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
 }

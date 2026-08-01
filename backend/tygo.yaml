@@ -1,5 +1,5 @@
 packages:
-  - path: "github.com/luizgustavojunqueira/blink/models"
+  - path: "github.com/luizgustavojunqueira/blink/internal/models"
     type_mappings:
       "time.Time": "string"
       "uuid.UUID": "string"

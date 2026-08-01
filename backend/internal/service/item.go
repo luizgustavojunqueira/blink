@@ -1,0 +1,89 @@
+package service
+
+import (
+	"context"
+	"strings"
+
+	"github.com/google/uuid"
+	"github.com/luizgustavojunqueira/blink/internal/db"
+	"github.com/luizgustavojunqueira/blink/internal/models"
+)
+
+func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) (*models.GetItemResponse, error) {
+	var tagsStr *string
+	if len(req.Tags) > 0 {
+		joined := strings.Join(req.Tags, ",")
+		tagsStr = &joined
+	}
+
+	item, err := s.repo.CreateItem(ctx, db.CreateItemParams{
+		Guid:        uuid.New().String(),
+		Title:       req.Title,
+		Description: pointerToNullString(req.Description),
+		Type:        string(req.Type),
+		Status:      string(req.Status),
+		Priority:    string(req.Priority),
+		Tags:        pointerToNullString(tagsStr),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var tags []string
+	if item.Tags.Valid && item.Tags.String != "" {
+		tags = strings.Split(item.Tags.String, ",")
+	} else {
+		tags = []string{}
+	}
+
+	return &models.GetItemResponse{
+		GUID:        item.Guid,
+		Title:       item.Title,
+		Description: nullStringToPointer(item.Description),
+		Type:        models.ItemType(item.Type),
+		Status:      models.ItemStatus(item.Status),
+		Priority:    models.ItemPriority(item.Priority),
+		Tags:        tags,
+	}, nil
+}
+
+func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]models.GetItemResponse, error) {
+	filter := db.GetIemsFilter{
+		Title:       req.Title,
+		Description: req.Description,
+		Priority:    toStringSlice(req.Priority),
+		Status:      toStringSlice(req.Status),
+		Type:        toStringSlice(req.Type),
+	}
+
+	items, err := s.repo.GetItemsDynamic(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var itemsResponse []models.GetItemResponse
+
+	for _, item := range items {
+
+		var tags []string
+		if item.Tags.Valid && item.Tags.String != "" {
+			tags = strings.Split(item.Tags.String, ",")
+		} else {
+			tags = []string{}
+		}
+
+		itemResp := models.GetItemResponse{
+			GUID:        item.Guid,
+			Title:       item.Title,
+			Description: nullStringToPointer(item.Description),
+			Type:        models.ItemType(item.Type),
+			Status:      models.ItemStatus(item.Status),
+			Priority:    models.ItemPriority(item.Priority),
+			Tags:        tags,
+		}
+
+		itemsResponse = append(itemsResponse, itemResp)
+	}
+
+	return itemsResponse, nil
+}

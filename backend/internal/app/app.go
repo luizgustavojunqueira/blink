@@ -4,7 +4,7 @@ package app
 import (
 	"net/http"
 
-	"github.com/luizgustavojunqueira/blink/api"
+	"github.com/luizgustavojunqueira/blink/internal/api"
 	"github.com/luizgustavojunqueira/blink/ui"
 )
 
@@ -25,6 +25,7 @@ func (a *App) Start(port string) error {
 	})
 
 	mux.HandleFunc("POST /api/items", a.api.CreateItem)
+	mux.HandleFunc("GET /api/items", a.api.GetItems)
 
 	mux.Handle("/", ui.SPAHandler())
 

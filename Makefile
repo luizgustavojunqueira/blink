@@ -22,4 +22,4 @@ test-back:
 	cd backend && go test ./...
 
 test-front:
-	cd frontend && bun test
+	cd frontend && bun run test

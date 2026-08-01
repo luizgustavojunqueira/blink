@@ -3,7 +3,7 @@ package models_test
 import (
 	"testing"
 
-	"github.com/luizgustavojunqueira/blink/models"
+	"github.com/luizgustavojunqueira/blink/internal/models"
 )
 
 func parseError(t *testing.T, err error, expect bool) {
@@ -65,6 +65,57 @@ func TestCreateItemRequest_Validate(t *testing.T) {
 				Title:  "Test item creation",
 				Status: models.ToDo,
 				Type:   models.Task,
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.req.Validate()
+			parseError(t, err, tt.expectError)
+		})
+	}
+}
+
+func TestGetItemRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name        string
+		req         models.GetItemRequest
+		expectError bool
+	}{
+		{
+			name:        "Success - Empty payload",
+			req:         models.GetItemRequest{},
+			expectError: false,
+		},
+		{
+			name: "Success - Correct filters",
+			req: models.GetItemRequest{
+				Type:     []models.ItemType{models.Task, models.Group},
+				Status:   []models.ItemStatus{models.ToDo, models.InProgress},
+				Priority: []models.ItemPriority{models.Normal, models.High},
+			},
+			expectError: false,
+		},
+		{
+			name: "Error - Invalid Type",
+			req: models.GetItemRequest{
+				Type: []models.ItemType{"INVALID_TYPE"},
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Invalid Status",
+			req: models.GetItemRequest{
+				Status: []models.ItemStatus{"INVALID_STATUS"},
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Invalid Priority",
+			req: models.GetItemRequest{
+				Priority: []models.ItemPriority{"INVALID_PRIORITY"},
 			},
 			expectError: true,
 		},

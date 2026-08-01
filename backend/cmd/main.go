@@ -6,10 +6,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/luizgustavojunqueira/blink/api"
-	"github.com/luizgustavojunqueira/blink/app"
-	"github.com/luizgustavojunqueira/blink/db"
-	"github.com/luizgustavojunqueira/blink/db/migrations"
+	"github.com/luizgustavojunqueira/blink/internal/api"
+	"github.com/luizgustavojunqueira/blink/internal/app"
+	"github.com/luizgustavojunqueira/blink/internal/db"
+	"github.com/luizgustavojunqueira/blink/internal/db/migrations"
+	"github.com/luizgustavojunqueira/blink/internal/service"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -64,9 +65,9 @@ func run() error {
 	}
 	log.Println("Migrations applied successfully!")
 
-	queries := db.New(conn)
-
-	myAPI := api.NewAPI(queries)
+	repo := db.NewRepository(conn)
+	svc := service.NewService(repo)
+	myAPI := api.NewAPI(svc)
 
 	application := app.New(myAPI)
 

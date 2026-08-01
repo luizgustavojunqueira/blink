@@ -14,6 +14,7 @@ type GetIemsFilter struct {
 	Type        []string
 	Title       *string
 	Description *string
+	Tags        []string
 }
 
 type SQLStore struct {
@@ -46,6 +47,15 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 	}
 	if filter.Description != nil {
 		query = query.Where(squirrel.Like{"description": "%" + *filter.Description + "%"})
+	}
+
+	for _, tag := range filter.Tags {
+		query = query.Where(squirrel.Or{
+			squirrel.Like{"tags": tag},
+			squirrel.Like{"tags": tag + ",%"},
+			squirrel.Like{"tags": "%," + tag},
+			squirrel.Like{"tags": "%," + tag + ",%"},
+		})
 	}
 
 	sql, args, err := query.ToSql()

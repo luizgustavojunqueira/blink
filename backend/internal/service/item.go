@@ -48,12 +48,29 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 }
 
 func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]models.GetItemResponse, error) {
+	var tags []string
+	for _, tag := range req.Tags {
+		tag := strings.Trim(tag, " ")
+		tags = append(tags, tag)
+	}
+
 	filter := db.GetIemsFilter{
 		Title:       req.Title,
 		Description: req.Description,
 		Priority:    toStringSlice(req.Priority),
 		Status:      toStringSlice(req.Status),
 		Type:        toStringSlice(req.Type),
+		Tags:        tags,
+	}
+
+	if filter.Title != nil {
+		title := strings.TrimSpace(*filter.Title)
+		filter.Title = &title
+	}
+
+	if filter.Description != nil {
+		desc := strings.TrimSpace(*filter.Description)
+		filter.Description = &desc
 	}
 
 	items, err := s.repo.GetItemsDynamic(ctx, filter)

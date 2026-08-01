@@ -84,32 +84,87 @@ func TestService_CreateItem(t *testing.T) {
 }
 
 func TestService_GetItems(t *testing.T) {
-	mockRepo := &MockRepository{}
-	svc := service.NewService(mockRepo)
-
-	req := models.GetItemRequest{
-		Type:   []models.ItemType{models.Task, models.Group},
-		Status: []models.ItemStatus{models.ToDo},
+	tests := []struct {
+		name                string
+		request             models.GetItemRequest
+		expectedTitleFilter *string
+		expectedDescFilter  *string
+		expectedTagsFilter  []string
+	}{
+		{
+			name: "Success - all fields populated with spaces",
+			request: models.GetItemRequest{
+				Title:       new("  my title  "),
+				Description: new(" desc "),
+				Type:        []models.ItemType{models.Task, models.Group},
+				Status:      []models.ItemStatus{models.ToDo},
+				Priority:    []models.ItemPriority{models.High},
+				Tags:        []string{"  tag1 ", " tag2"},
+			},
+			expectedTitleFilter: new("my title"),
+			expectedDescFilter:  new("desc"),
+			expectedTagsFilter:  []string{"tag1", "tag2"},
+		},
+		{
+			name:                "Success - empty request (nil pointers)",
+			request:             models.GetItemRequest{},
+			expectedTitleFilter: nil,
+			expectedDescFilter:  nil,
+			expectedTagsFilter:  nil,
+		},
 	}
 
-	resp, err := svc.GetItems(context.Background(), req)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := &MockRepository{}
+			svc := service.NewService(mockRepo)
 
-	if mockRepo.capturedFilter == nil {
-		t.Fatal("expected repo to be called")
-	}
+			resp, err := svc.GetItems(context.Background(), tt.request)
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
 
-	if len(mockRepo.capturedFilter.Type) != 2 || mockRepo.capturedFilter.Type[0] != string(models.Task) {
-		t.Errorf("expected mapped type array, got %v", mockRepo.capturedFilter.Type)
-	}
+			if mockRepo.capturedFilter == nil {
+				t.Fatal("expected repo to be called")
+			}
 
-	if len(resp) != 1 {
-		t.Fatalf("expected 1 item, got %d", len(resp))
-	}
-	if len(resp[0].Tags) != 2 || resp[0].Tags[0] != "tag1" {
-		t.Errorf("expected parsed tags, got %v", resp[0].Tags)
+			if tt.expectedTitleFilter != nil {
+				if mockRepo.capturedFilter.Title == nil || *mockRepo.capturedFilter.Title != *tt.expectedTitleFilter {
+					t.Errorf("expected title filter %v, got %v", *tt.expectedTitleFilter, mockRepo.capturedFilter.Title)
+				}
+			} else if mockRepo.capturedFilter.Title != nil {
+				t.Errorf("expected nil title filter, got %v", *mockRepo.capturedFilter.Title)
+			}
+
+			if tt.expectedDescFilter != nil {
+				if mockRepo.capturedFilter.Description == nil || *mockRepo.capturedFilter.Description != *tt.expectedDescFilter {
+					t.Errorf("expected desc filter %v, got %v", *tt.expectedDescFilter, mockRepo.capturedFilter.Description)
+				}
+			} else if mockRepo.capturedFilter.Description != nil {
+				t.Errorf("expected nil desc filter, got %v", *mockRepo.capturedFilter.Description)
+			}
+
+			if len(mockRepo.capturedFilter.Tags) != len(tt.expectedTagsFilter) {
+				t.Errorf("expected tags filter %v, got %v", tt.expectedTagsFilter, mockRepo.capturedFilter.Tags)
+			} else {
+				for i, tag := range tt.expectedTagsFilter {
+					if mockRepo.capturedFilter.Tags[i] != tag {
+						t.Errorf("expected tag %v, got %v", tag, mockRepo.capturedFilter.Tags[i])
+					}
+				}
+			}
+
+			if len(mockRepo.capturedFilter.Type) != len(tt.request.Type) {
+				t.Errorf("expected mapped type array of len %d, got %v", len(tt.request.Type), mockRepo.capturedFilter.Type)
+			}
+
+			if len(resp) != 1 {
+				t.Fatalf("expected 1 item, got %d", len(resp))
+			}
+			if len(resp[0].Tags) != 2 || resp[0].Tags[0] != "tag1" {
+				t.Errorf("expected parsed tags, got %v", resp[0].Tags)
+			}
+		})
 	}
 }
 

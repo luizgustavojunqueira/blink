@@ -5,7 +5,7 @@ import { parse } from "../lib/parser";
 import { execute } from "../lib/executor";
 
 vi.mock("../lib/parser", () => ({
-  parse: vi.fn(),
+  parse: vi.fn(() => ({ type: "FILTER", data: {} })),
 }));
 
 vi.mock("../lib/executor", () => ({
@@ -111,8 +111,8 @@ describe("Prompt", () => {
       key: "a",
     });
 
-    expect(parse).not.toHaveBeenCalled();
     expect(execute).not.toHaveBeenCalled();
     expect(onFilter).not.toHaveBeenCalled();
+    expect(parse).toHaveBeenCalledTimes(1);
   });
 });

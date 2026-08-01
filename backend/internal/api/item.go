@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/luizgustavojunqueira/blink/internal/models"
 )
@@ -40,9 +41,9 @@ func (a *API) GetItems(w http.ResponseWriter, r *http.Request) {
 	req.Title = parseQueryValue[string](r.URL.Query().Get("title"))
 	req.Description = parseQueryValue[string](r.URL.Query().Get("description"))
 
-	req.Status = parseQueryList[models.ItemStatus](queryParams["status"])
-	req.Priority = parseQueryList[models.ItemPriority](queryParams["priority"])
-	req.Type = parseQueryList[models.ItemType](queryParams["type"])
+	req.Status = toUpperCase(parseQueryList[models.ItemStatus](queryParams["status"]))
+	req.Priority = toUpperCase(parseQueryList[models.ItemPriority](queryParams["priority"]))
+	req.Type = toUpperCase(parseQueryList[models.ItemType](queryParams["type"]))
 	req.Tags = parseQueryList[string](queryParams["tags"])
 
 	if err := req.Validate(); err != nil {
@@ -61,6 +62,15 @@ func (a *API) GetItems(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func toUpperCase[T ~string](s []T) []T {
+	res := make([]T, len(s))
+	for i, v := range s {
+		res[i] = T(strings.ToUpper(string(v)))
+	}
+
+	return res
 }
 
 func parseQueryList[T ~string](values []string) []T {

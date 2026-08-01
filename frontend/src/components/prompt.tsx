@@ -1,14 +1,28 @@
 import { useRef, useState, type KeyboardEvent } from "react";
+import { parse } from "../lib/parser";
+import { execute } from "../lib/executor";
+import type { GetItemRequest } from "../types/backend";
 
-export default function Prompt() {
+interface IPrompt {
+  onFilter: (filter: GetItemRequest) => void;
+}
+
+export default function Prompt({ onFilter }: IPrompt) {
   const [currentPrompt, setCurrentPrompt] = useState<string>();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      console.log("Buscar:", currentPrompt);
+      if (currentPrompt === undefined || currentPrompt === null) return;
+      const command = parse(currentPrompt);
+
+      if (command.type === "FILTER") {
+        onFilter(command.data);
+      }
+
+      await execute(command);
     }
   };
 

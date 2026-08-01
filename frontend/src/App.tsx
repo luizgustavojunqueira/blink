@@ -7,7 +7,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex flex-col h-screen">
-        <Prompt />
         <ItemList />
       </div>
     </QueryClientProvider>

@@ -31,10 +31,10 @@ export interface CreateItemRequest {
 export interface GetItemRequest {
   title?: string;
   description?: string;
-  type: ItemType[];
-  status: ItemStatus[];
-  priority: ItemPriority[];
-  tags: string[];
+  type?: ItemType[];
+  status?: ItemStatus[];
+  priority?: ItemPriority[];
+  tags?: string[];
 }
 export interface GetItemResponse {
   guid: string;

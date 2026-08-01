@@ -78,7 +78,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 		return nil, err
 	}
 
-	var itemsResponse []models.GetItemResponse
+	itemsResponse := make([]models.GetItemResponse, 0)
 
 	for _, item := range items {
 

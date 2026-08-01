@@ -41,10 +41,10 @@ type CreateItemRequest struct {
 type GetItemRequest struct {
 	Title       *string        `json:"title"`
 	Description *string        `json:"description"`
-	Type        []ItemType     `json:"type"`
-	Status      []ItemStatus   `json:"status"`
-	Priority    []ItemPriority `json:"priority"`
-	Tags        []string       `json:"tags"`
+	Type        []ItemType     `json:"type,omitempty"`
+	Status      []ItemStatus   `json:"status,omitempty"`
+	Priority    []ItemPriority `json:"priority,omitempty"`
+	Tags        []string       `json:"tags,omitempty"`
 }
 
 type GetItemResponse struct {

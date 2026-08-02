@@ -21,6 +21,7 @@
   --color-status: var(--status);
   --color-border: var(--border);
   --color-cursor: var(--cursor);
+  --color-danger: var(--danger);
 
   --font-mono:
     "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", ui-monospace,

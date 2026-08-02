@@ -1,4 +1,5 @@
-import type { GetItemRequest } from "../../types/backend";
+import { type GetItemRequest } from "../../types/backend";
+import { VALID_PRIORITY, VALID_STATUS } from "../validator";
 import {
   DESCRIPTION_DELIMITER,
   PRIORITY_DELIMITER,
@@ -27,8 +28,13 @@ function extractAll(text: string, delimiter: string): string[] {
 
 function parseFilter(raw: string): GetItemRequest {
   const tags = extractAll(raw, TAG_DELIMITER);
-  const status = extractAll(raw, STATUS_DELIMITER);
-  const priority = extractAll(raw, PRIORITY_DELIMITER);
+  const status = extractAll(raw, STATUS_DELIMITER).filter((s) =>
+    VALID_STATUS.has(s),
+  );
+
+  const priority = extractAll(raw, PRIORITY_DELIMITER).filter((p) =>
+    VALID_PRIORITY.has(p),
+  );
 
   let clean = raw
     .replace(regexModifier(TAG_DELIMITER), "")

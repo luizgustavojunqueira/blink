@@ -4,11 +4,14 @@ import {
   STATUS_DELIMITER,
   DESCRIPTION_DELIMITER,
 } from "../../lib/parser/types";
+import { PRIORITY_CLASS, STATUS_CLASS } from "../../lib/validator";
+
 interface IHighlightedPrompt {
   prompt: string | null;
 }
+
 export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
-  if (prompt === null || prompt === "") return;
+  if (prompt === null || prompt === "") return null;
 
   const render = (text: string) => {
     const regex = new RegExp(
@@ -16,7 +19,6 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
       "g",
     );
     const parts = text.split(regex);
-
     let isDescription = false;
 
     return parts.map((part, i) => {
@@ -32,21 +34,31 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
       }
 
       if (part.startsWith(PRIORITY_DELIMITER)) {
-        const value = part.substring(1).toLowerCase();
-        let colorClass = "text-accent";
+        const value = part.slice(1).toLowerCase();
 
-        if (value === "urgent") colorClass = "text-urgent";
-        if (value === "high") colorClass = "text-high";
-        if (value === "normal") colorClass = "text-normal";
-        if (value === "low") colorClass = "text-low";
+        if (!value) {
+          return (
+            <span key={i} className="text-accent font-medium">
+              {part}
+            </span>
+          );
+        }
+
+        const colorClass = PRIORITY_CLASS[value];
 
         return (
-          <span key={i} className={`${colorClass} font-medium`}>
+          <span
+            key={i}
+            className={
+              colorClass
+                ? `${colorClass} font-medium`
+                : "text-danger line-through font-bold"
+            }
+          >
             {part}
           </span>
         );
       }
-
       if (part.startsWith(TAG_DELIMITER)) {
         return (
           <span key={i} className="text-tag font-medium">
@@ -56,22 +68,31 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
       }
 
       if (part.startsWith(STATUS_DELIMITER)) {
-        const value = part.substring(1).toLowerCase();
-        let colorClass = "text-status";
+        const value = part.slice(1).toLowerCase();
 
-        if (value === "done") colorClass = "text-done";
-        if (value === "in_progress") colorClass = "text-accent";
-        if (value === "todo") colorClass = "text-fg-dim";
-        if (value === "canceled") colorClass = "text-fg-muted";
-        if (value === "archived") colorClass = "text-fg-muted";
+        if (!value) {
+          return (
+            <span key={i} className="text-accent font-medium">
+              {part}
+            </span>
+          );
+        }
+
+        const colorClass = STATUS_CLASS[value];
 
         return (
-          <span key={i} className={`${colorClass} font-medium`}>
+          <span
+            key={i}
+            className={
+              colorClass
+                ? `${colorClass} font-medium`
+                : "text-danger line-through font-bold"
+            }
+          >
             {part}
           </span>
         );
       }
-
       if (isDescription) {
         return (
           <span key={i} className="text-fg-dim">

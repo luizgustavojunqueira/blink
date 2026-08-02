@@ -1,3 +1,4 @@
+// parse.test.ts
 import { describe, expect, it } from "vitest";
 import { parse } from ".";
 
@@ -14,7 +15,7 @@ describe("parse()", () => {
     });
 
     it("parse title and description", () => {
-      const result = parse("title $   and    description");
+      const result = parse("title $ and description");
       expect(result).toEqual({
         type: "FILTER",
         data: {
@@ -58,8 +59,50 @@ describe("parse()", () => {
 
     it("returns empty when no input", () => {
       const result = parse("");
-
       expect(result).toEqual({ type: "FILTER", data: {} });
+    });
+
+    it("drops invalid status values", () => {
+      const result = parse("title @banana @todo");
+      expect(result).toEqual({
+        type: "FILTER",
+        data: {
+          title: "title",
+          status: ["todo"],
+        },
+      });
+    });
+
+    it("drops invalid priority values", () => {
+      const result = parse("title !custom !high");
+      expect(result).toEqual({
+        type: "FILTER",
+        data: {
+          title: "title",
+          priority: ["high"],
+        },
+      });
+    });
+
+    it("omits status and priority when all values are invalid", () => {
+      const result = parse("title @banana !nope #dev");
+      expect(result).toEqual({
+        type: "FILTER",
+        data: {
+          title: "title",
+          tags: ["dev"],
+        },
+      });
+    });
+
+    it("ignores bare delimiters without values", () => {
+      const result = parse("title @ ! #");
+      expect(result).toEqual({
+        type: "FILTER",
+        data: {
+          title: "title @ ! #",
+        },
+      });
     });
   });
 });

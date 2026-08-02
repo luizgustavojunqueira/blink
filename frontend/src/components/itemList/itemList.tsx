@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useItems } from "../../hooks/useItems";
 import Loading from "../loading";
-import Prompt from "../prompt";
+import Prompt from "../prompt/prompt";
 import Item from "./item";
 import type { GetItemRequest } from "../../types/backend";
 

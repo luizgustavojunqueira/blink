@@ -1,14 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Prompt from "./prompt";
-import { parse } from "../lib/parser";
-import { execute } from "../lib/executor";
+import { parse } from "../../lib/parser";
+import { execute } from "../../lib/executor";
 
-vi.mock("../lib/parser", () => ({
+vi.mock("../../lib/parser", () => ({
   parse: vi.fn(() => ({ type: "FILTER", data: {} })),
 }));
 
-vi.mock("../lib/executor", () => ({
+vi.mock("../../lib/executor", () => ({
   execute: vi.fn().mockResolvedValue(undefined),
 }));
 

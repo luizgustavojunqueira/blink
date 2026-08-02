@@ -3,6 +3,8 @@ import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
 import type { GetItemRequest } from "../../types/backend";
 import HighlightedPrompt from "./highlightedPrompt";
+import Helper from "./helper";
+import { usePromptHelper } from "../../hooks/promptHelper/usePromptHelper";
 
 interface IPrompt {
   onFilter: (filter: GetItemRequest) => void;
@@ -20,10 +22,15 @@ export default function Prompt({ onFilter }: IPrompt) {
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const helper = usePromptHelper(inputRef, (newPrompt: string) => {
+    setPromptState((prev) => ({ ...prev, prompt: newPrompt }));
+  });
+
   const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (!promptState.prompt) return;
+      if (promptState.prompt === undefined || promptState.prompt === null)
+        return;
 
       const command = parse(promptState.prompt);
 
@@ -42,6 +49,7 @@ export default function Prompt({ onFilter }: IPrompt) {
     const command = parse(prompt);
 
     setPromptState({ prompt, action: command.type });
+    helper.update();
   };
 
   return (
@@ -53,15 +61,19 @@ export default function Prompt({ onFilter }: IPrompt) {
           ref={inputRef}
           value={promptState.prompt}
           onChange={onChange}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(e) => {
+            if (helper.onKeyDown(e)) return;
+            handleKeyDown(e);
+          }}
           className="w-full bg-transparent outline-none border-none text-transparent text-lg caret-cursor placeholder:text-fg-muted relative z-10"
-          placeholder="type to filter"
+          placeholder="type to filter (/ or ? for options)"
           autoFocus
           spellCheck={false}
           autoComplete="off"
           data-testid="prompt"
         />
         <span>{promptState.action}</span>
+        <Helper {...helper} />
       </div>
     </div>
   );

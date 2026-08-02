@@ -93,11 +93,47 @@ describe("HighlightedPrompt", () => {
     expect(span!.className).toContain("text-done");
   });
 
-  it("highlights status modifier @todo with status color", () => {
+  it("highlights status modifier @todo with fg-dim color", () => {
     const { container } = render(<HighlightedPrompt prompt="@todo" />);
     const spans = getSpans(container);
 
     const span = spans.find((s) => s.textContent === "@todo");
+    expect(span).toBeDefined();
+    expect(span!.className).toContain("text-fg-dim");
+  });
+
+  it("highlights status modifier @in_progress with accent color", () => {
+    const { container } = render(<HighlightedPrompt prompt="@in_progress" />);
+    const spans = getSpans(container);
+
+    const span = spans.find((s) => s.textContent === "@in_progress");
+    expect(span).toBeDefined();
+    expect(span!.className).toContain("text-accent");
+  });
+
+  it("highlights status modifier @canceled with fg-muted color", () => {
+    const { container } = render(<HighlightedPrompt prompt="@canceled" />);
+    const spans = getSpans(container);
+
+    const span = spans.find((s) => s.textContent === "@canceled");
+    expect(span).toBeDefined();
+    expect(span!.className).toContain("text-fg-muted");
+  });
+
+  it("highlights status modifier @archived with fg-muted color", () => {
+    const { container } = render(<HighlightedPrompt prompt="@archived" />);
+    const spans = getSpans(container);
+
+    const span = spans.find((s) => s.textContent === "@archived");
+    expect(span).toBeDefined();
+    expect(span!.className).toContain("text-fg-muted");
+  });
+
+  it("uses status fallback color for unknown status values", () => {
+    const { container } = render(<HighlightedPrompt prompt="@banana" />);
+    const spans = getSpans(container);
+
+    const span = spans.find((s) => s.textContent === "@banana");
     expect(span).toBeDefined();
     expect(span!.className).toContain("text-status");
   });

@@ -57,7 +57,13 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
 
       if (part.startsWith(STATUS_DELIMITER)) {
         const value = part.substring(1).toLowerCase();
-        const colorClass = value === "done" ? "text-done" : "text-status";
+        let colorClass = "text-status";
+
+        if (value === "done") colorClass = "text-done";
+        if (value === "in_progress") colorClass = "text-accent";
+        if (value === "todo") colorClass = "text-fg-dim";
+        if (value === "canceled") colorClass = "text-fg-muted";
+        if (value === "archived") colorClass = "text-fg-muted";
 
         return (
           <span key={i} className={`${colorClass} font-medium`}>

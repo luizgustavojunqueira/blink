@@ -46,9 +46,9 @@ describe("Prompt", () => {
       key: "Enter",
     });
 
-    expect(parse).not.toHaveBeenCalled();
-    expect(execute).not.toHaveBeenCalled();
-    expect(onFilter).not.toHaveBeenCalled();
+    expect(parse).toHaveBeenCalledTimes(1);
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(onFilter).toHaveBeenCalledTimes(1);
   });
 
   it("calls onFilter for FILTER command", async () => {
@@ -65,6 +65,10 @@ describe("Prompt", () => {
 
     fireEvent.change(input, {
       target: { value: "!high" },
+    });
+
+    fireEvent.keyDown(input, {
+      key: "Enter",
     });
 
     fireEvent.keyDown(input, {

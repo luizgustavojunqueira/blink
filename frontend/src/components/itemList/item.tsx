@@ -50,8 +50,11 @@ export default function Item({ item }: IItem) {
       <div className="flex flex-row flex-1 truncate">
         {item.tags?.length > 0 && (
           <div className="flex gap-1.5 mr-4">
-            {item.tags.map((tag) => (
-              <span key={tag} className="text-tag text-sm align-left">
+            {item.tags.map((tag, index) => (
+              <span
+                key={`${tag}-${index}`}
+                className="text-tag text-sm align-left"
+              >
                 #{tag}
               </span>
             ))}

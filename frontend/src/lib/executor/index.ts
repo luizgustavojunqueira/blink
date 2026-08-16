@@ -1,19 +1,15 @@
-import type { Command } from "../parser/types";
-import * as items from "./items.ts";
-import * as theme from "./theme.ts";
+import { getCommand } from "../commands/registry.ts";
+import type { ExecuteResult } from "../commands/types.ts";
+import type { ParsedCommand } from "../parser/index.ts";
+import { filter } from "./items.ts";
 
-export type ExecuteResult = {
-  shouldClearPrompt: boolean;
-};
+export async function execute(command: ParsedCommand): Promise<ExecuteResult | void> {
+  if (command.type === "COMMAND") {
+    const def = getCommand(command.id);
+    if (!def) return { message: `Unknown command: ${command.id}` };
 
-export async function execute(command: Command): Promise<ExecuteResult | void> {
-  switch (command.type) {
-    case "FILTER":
-      return items.filter(command.data);
-    case "THEME":
-      await theme.set(command.data);
-      return { shouldClearPrompt: true };
-    default:
-      break;
+    return def.execute({ rawArgs: command.rawArgs });
   }
+
+  await filter(command.data);
 }

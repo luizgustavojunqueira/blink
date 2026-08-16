@@ -1,46 +1,39 @@
 import { type GetItemRequest } from "../../types/backend";
+import { COMMAND_PREFIX, getCommand } from "../commands/registry";
 import { VALID_PRIORITY, VALID_STATUS } from "../validator";
 import {
   DESCRIPTION_DELIMITER,
   PRIORITY_DELIMITER,
   STATUS_DELIMITER,
   TAG_DELIMITER,
-  type Command,
 } from "./types";
 
-export function parse(input: string): Command {
+export type ParsedCommand =
+  | { type: "COMMAND"; id: string; rawArgs: string }
+  | { type: "FILTER"; data: GetItemRequest };
+
+export function parse(input: string): ParsedCommand {
   const raw = input.trim();
+
   if (!raw) {
     return { type: "FILTER", data: {} };
   }
 
-  const start = raw[0];
-  switch (start) {
-    case "/":
-      return parseSlashCommand(raw);
-    default:
-      return { type: "FILTER", data: parseFilter(raw) };
+  if (raw.startsWith(COMMAND_PREFIX)) {
+    const spaceIndex = raw.indexOf(" ");
+    const cmdPart = spaceIndex === -1 ? raw : raw.slice(0, spaceIndex);
+    const id = cmdPart.slice(COMMAND_PREFIX.length).toLowerCase();
+
+    if (getCommand(id)) {
+      const rawArgs = spaceIndex === -1 ? "" : raw.slice(spaceIndex + 1);
+      return { type: "COMMAND", id, rawArgs };
+    }
   }
+
+  return { type: "FILTER", data: parseFilter(raw) };
 }
 
-function parseSlashCommand(raw: string): Command {
-  const [cmd, ...args] = raw.slice(1).split(/\s+/);
-
-  const name = cmd.toLowerCase();
-
-  switch (name) {
-    case "theme": // TODO: refactor typing
-      return {
-        type: "THEME",
-        data: { theme: (args[0] ?? "").toLowerCase() },
-      };
-    default:
-      return { type: "FILTER", data: {} };
-  }
-}
-
-const regexModifier = (delimiter: string) =>
-  new RegExp(`\\${delimiter}(\\S+)`, "g");
+const regexModifier = (delimiter: string) => new RegExp(`\\${delimiter}(\\S+)`, "g");
 
 function extractAll(text: string, delimiter: string): string[] {
   const regex = regexModifier(delimiter);
@@ -50,13 +43,9 @@ function extractAll(text: string, delimiter: string): string[] {
 
 function parseFilter(raw: string): GetItemRequest {
   const tags = extractAll(raw, TAG_DELIMITER);
-  const status = extractAll(raw, STATUS_DELIMITER).filter((s) =>
-    VALID_STATUS.has(s),
-  );
+  const status = extractAll(raw, STATUS_DELIMITER).filter((s) => VALID_STATUS.has(s));
 
-  const priority = extractAll(raw, PRIORITY_DELIMITER).filter((p) =>
-    VALID_PRIORITY.has(p),
-  );
+  const priority = extractAll(raw, PRIORITY_DELIMITER).filter((p) => VALID_PRIORITY.has(p));
 
   let clean = raw
     .replace(regexModifier(TAG_DELIMITER), "")

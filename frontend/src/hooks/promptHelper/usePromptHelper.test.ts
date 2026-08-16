@@ -41,7 +41,7 @@ describe("usePromptHelper", () => {
     act(() => result.current.update());
 
     expect(result.current.isOpen).toBe(true);
-    expect(result.current.options[0].type).toBe("MODIFIER");
+    expect(result.current.options[0].type).toBe("COMMAND");
   });
 
   it("filters STATUS options when typing @TO", () => {

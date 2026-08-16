@@ -1,0 +1,20 @@
+.theme-catppuccin {
+  --bg: #1e1e2e;
+  --bg-soft: #181825;
+  --bg-lighter: #313244;
+  --fg: #cdd6f4;
+  --fg-dim: #a6adc8;
+  --fg-muted: #6c7086;
+  --accent: #89b4fa;
+  --urgent: #f38ba8;
+  --high: #fab387;
+  --normal: #f9e2af;
+  --low: #a6e3a1;
+  --done: #a6e3a1;
+  --tag: #cba6f7;
+  --group: #f9e2af;
+  --status: #89b4fa;
+  --border: #45475a;
+  --cursor: #cdd6f4;
+  --danger: #f38ba8;
+}

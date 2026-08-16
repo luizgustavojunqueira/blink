@@ -57,7 +57,7 @@ describe("Prompt", () => {
     vi.mocked(parse).mockReturnValue({
       type: "FILTER",
       data: filter,
-    } as any);
+    });
 
     render(<Prompt onFilter={onFilter} />);
 

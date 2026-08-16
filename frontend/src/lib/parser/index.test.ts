@@ -1,4 +1,3 @@
-// parse.test.ts
 import { describe, expect, it } from "vitest";
 import { parse } from ".";
 

@@ -22,8 +22,21 @@ export function usePromptHelper(
     const wordStart = textUntilCursor.lastIndexOf(" ") + 1;
     const word = textUntilCursor.slice(wordStart, cursorPos);
 
-    if (word === "?" || word === "/") {
+    if (word === "?") {
       setOptions(optionsByType.MODIFIER);
+      setSelectedIndex(0);
+      return;
+    }
+
+    if (word.startsWith("/")) {
+      const filter = word.slice(1).toUpperCase();
+      setOptions(
+        optionsByType.COMMAND.filter(
+          (o) =>
+            o.value.toUpperCase().includes(filter) ||
+            o.name.toUpperCase().includes(filter),
+        ),
+      );
       setSelectedIndex(0);
       return;
     }

@@ -1,0 +1,20 @@
+.theme-nord {
+  --bg: #2e3440;
+  --bg-soft: #3b4252;
+  --bg-lighter: #434c5e;
+  --fg: #eceff4;
+  --fg-dim: #d8dee9;
+  --fg-muted: #4c566a;
+  --accent: #88c0d0;
+  --urgent: #bf616a;
+  --high: #d08770;
+  --normal: #ebcb8b;
+  --low: #a3be8c;
+  --done: #a3be8c;
+  --tag: #b48ead;
+  --group: #ebcb8b;
+  --status: #81a1c1;
+  --border: #4c566a;
+  --cursor: #eceff4;
+  --danger: #bf616a;
+}

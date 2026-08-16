@@ -38,7 +38,11 @@ export default function Prompt({ onFilter }: IPrompt) {
         onFilter(command.data);
       }
 
-      await execute(command);
+      const result = await execute(command);
+
+      if (result && result.shouldClearPrompt) {
+        setPromptState((prev) => ({ ...prev, prompt: "" }));
+      }
     }
   };
 

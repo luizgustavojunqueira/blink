@@ -14,7 +14,29 @@ export function parse(input: string): Command {
     return { type: "FILTER", data: {} };
   }
 
-  return { type: "FILTER", data: parseFilter(raw) };
+  const start = raw[0];
+  switch (start) {
+    case "/":
+      return parseSlashCommand(raw);
+    default:
+      return { type: "FILTER", data: parseFilter(raw) };
+  }
+}
+
+function parseSlashCommand(raw: string): Command {
+  const [cmd, ...args] = raw.slice(1).split(/\s+/);
+
+  const name = cmd.toLowerCase();
+
+  switch (name) {
+    case "theme": // TODO: refactor typing
+      return {
+        type: "THEME",
+        data: { theme: (args[0] ?? "").toLowerCase() },
+      };
+    default:
+      return { type: "FILTER", data: {} };
+  }
 }
 
 const regexModifier = (delimiter: string) =>

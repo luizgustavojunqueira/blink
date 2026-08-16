@@ -13,11 +13,12 @@ import {
   type ItemStatus,
 } from "../../types/backend";
 
-type OptionType = "STATUS" | "PRIORITY" | "MODIFIER" | "NONE";
+type OptionType = "STATUS" | "PRIORITY" | "MODIFIER" | "COMMAND" | "NONE";
 type OptionValueMap = {
   STATUS: ItemStatus;
   PRIORITY: ItemPriority;
   MODIFIER: string;
+  COMMAND: string;
   NONE: never;
 };
 
@@ -32,6 +33,14 @@ export const optionsByType: {
   [K in OptionType]: Option<K>[];
 } = {
   NONE: [],
+  COMMAND: [
+    {
+      name: "/theme",
+      description: "Switch color theme",
+      type: "COMMAND",
+      value: "theme ",
+    },
+  ],
   MODIFIER: [
     {
       name: "@",

@@ -7,10 +7,11 @@ describe("modifiers registry", () => {
     expect(getModifier("!")?.id).toBe("!");
     expect(getModifier("#")?.id).toBe("#");
     expect(getModifier("?")?.id).toBe("?");
+    expect(getModifier("$")?.id).toBe("$");
   });
 
-  it("does not register $ as a modifier (it's discoverable via ? only)", () => {
-    expect(getModifier("$")).toBeUndefined();
+  it("registers $ as a rest-kind modifier", () => {
+    expect(getModifier("$")?.extractKind).toBe("rest");
   });
 
   it("returns undefined for an unknown delimiter", () => {
@@ -20,7 +21,7 @@ describe("modifiers registry", () => {
 
   it("lists every registered modifier", () => {
     const ids = getAllModifiers().map((m) => m.id);
-    expect(ids).toEqual(expect.arrayContaining(["@", "!", "#", "?"]));
-    expect(ids).toHaveLength(4);
+    expect(ids).toEqual(expect.arrayContaining(["@", "!", "#", "$", "?"]));
+    expect(ids).toHaveLength(5);
   });
 });

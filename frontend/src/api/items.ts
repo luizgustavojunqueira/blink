@@ -1,4 +1,4 @@
-import type { GetItemRequest, GetItemResponse } from "../types/backend";
+import type { CreateItemRequest, GetItemRequest, GetItemResponse } from "../types/backend";
 import { api } from "./client";
 
 export function getItems(filter: GetItemRequest = {}) {
@@ -17,4 +17,11 @@ export function getItems(filter: GetItemRequest = {}) {
   const query = search.toString();
 
   return api<GetItemResponse[]>(`/items${query ? `?${query}` : ""}`);
+}
+
+export function createItem(req: CreateItemRequest) {
+  return api<GetItemResponse>("/items", {
+    method: "POST",
+    body: JSON.stringify(req),
+  });
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { helpModifier } from "./help";
 
 describe("helpModifier.getOptions()", () => {
-  it("lists every other modifier plus $, which has no registry entry of its own", () => {
+  it("lists every other modifier", () => {
     const values = helpModifier.getOptions!("").map((o) => o.value);
     expect(values).toEqual(expect.arrayContaining(["@", "!", "#", "$"]));
   });

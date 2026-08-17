@@ -18,9 +18,10 @@ describe("priorityModifier.getOptions()", () => {
 });
 
 describe("priorityModifier.extract()", () => {
-  it("extracts valid priorities and drops invalid ones", () => {
+  it("separates valid priorities from rejected ones", () => {
     expect(priorityModifier.extract!("title !custom !high")).toEqual({
       values: ["high"],
+      invalid: ["custom"],
       remaining: "title",
     });
   });

@@ -1,3 +1,4 @@
+import type { CreateItemRequest, GetItemRequest, GetItemResponse } from "../../types/backend";
 import type { PromptOption } from "../promptOptions";
 
 export type ExecuteResult = {
@@ -5,9 +6,18 @@ export type ExecuteResult = {
   message?: string;
 };
 
+export type AppContext = {
+  setFilter: (filter: GetItemRequest) => void;
+  setTheme: (theme: string) => void;
+  items: {
+    create: (req: CreateItemRequest) => Promise<GetItemResponse>;
+  };
+};
+
 export type CommandContext = {
   rawArgs: string;
-}
+  app: AppContext;
+};
 
 export type CommandDefinition = {
   id: string;
@@ -16,7 +26,8 @@ export type CommandDefinition = {
 
   getOptions?: (rawArgs: string) => PromptOption[];
   execute?: (context: CommandContext) => Promise<ExecuteResult | void> | ExecuteResult | void;
-  extract?: (raw: string) => {values: string[]; remaining: string}
+  extract?: (raw: string) => { values: string[]; invalid: string[]; remaining: string };
+  extractKind?: "token" | "rest";
 
   /**
    * How many positional argument slots this command has (default 1).
@@ -33,6 +44,4 @@ export type CommandDefinition = {
    * delegates to the modifier registry) should set this to false.
    */
   strictArgPosition?: boolean;
-}
-
-
+};

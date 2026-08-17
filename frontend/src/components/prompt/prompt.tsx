@@ -1,25 +1,26 @@
 import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
-import { parseFilter } from "../../lib/commands/implementations/filter";
-import type { GetItemRequest } from "../../types/backend";
 import HighlightedPrompt from "./highlightedPrompt";
 import Helper from "./helper";
 import { usePromptHelper } from "../../hooks/promptHelper/usePromptHelper";
+import type { AppContext, ExecuteResult } from "../../lib/commands/types";
 
 interface IPrompt {
-  onFilter: (filter: GetItemRequest) => void;
+  app: AppContext;
 }
 
 type PromptState = {
   prompt: string;
   action: string;
+  message?: string;
 };
 
-export default function Prompt({ onFilter }: IPrompt) {
+export default function Prompt({ app }: IPrompt) {
   const [promptState, setPromptState] = useState<PromptState>({
     prompt: "",
     action: "",
+    message: "",
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,20 +31,22 @@ export default function Prompt({ onFilter }: IPrompt) {
   const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (promptState.prompt === undefined || promptState.prompt === null)
-        return;
+      if (promptState.prompt === undefined || promptState.prompt === null) return;
 
       const command = parse(promptState.prompt);
 
-      if (command.id === "filter") {
-        onFilter(parseFilter(command.rawArgs));
+      let result: ExecuteResult | void;
+      try {
+        result = await execute(command, app);
+      } catch (err) {
+        result = { message: err instanceof Error ? err.message : "Something went wrong" };
       }
 
-      const result = await execute(command);
-
-      if (result && result.shouldClearPrompt) {
-        setPromptState((prev) => ({ ...prev, prompt: "" }));
-      }
+      setPromptState((prev) => ({
+        ...prev,
+        prompt: result?.shouldClearPrompt ? "" : prev.prompt,
+        message: result?.message ?? "",
+      }));
     }
   };
 
@@ -77,7 +80,7 @@ export default function Prompt({ onFilter }: IPrompt) {
           autoComplete="off"
           data-testid="prompt"
         />
-        <span>{promptState.action}</span>
+        <span>{promptState.message}</span>
         <Helper {...helper} />
       </div>
     </div>

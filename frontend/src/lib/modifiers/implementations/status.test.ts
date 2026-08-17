@@ -18,9 +18,10 @@ describe("statusModifier.getOptions()", () => {
 });
 
 describe("statusModifier.extract()", () => {
-  it("extracts valid statuses and drops invalid ones", () => {
+  it("separates valid statuses from rejected ones", () => {
     expect(statusModifier.extract!("title @banana @todo")).toEqual({
       values: ["todo"],
+      invalid: ["banana"],
       remaining: "title",
     });
   });

@@ -1,3 +1,4 @@
+import { createCommand } from "./implementations/create";
 import { filterCommand } from "./implementations/filter";
 import { themeCommand } from "./implementations/theme";
 import type { CommandDefinition } from "./types"
@@ -7,6 +8,7 @@ export const COMMAND_PREFIX = "/"
 export const commands = {
   theme: themeCommand,
   filter: filterCommand,
+  create: createCommand,
 } as const satisfies Record<string, CommandDefinition>;
 
 export type CommandId = keyof typeof commands;

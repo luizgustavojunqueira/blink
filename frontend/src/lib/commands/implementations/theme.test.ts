@@ -1,5 +1,14 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { AppContext } from "../types";
 import { themeCommand } from "./theme";
+
+function fakeApp(): AppContext {
+  return {
+    setFilter: vi.fn(),
+    setTheme: vi.fn(),
+    items: { create: vi.fn() },
+  };
+}
 
 describe("themeCommand.getOptions()", () => {
   it("filters themes by the current (last) arg token", () => {
@@ -19,24 +28,33 @@ describe("themeCommand.getOptions()", () => {
 });
 
 describe("themeCommand.execute()", () => {
-  afterEach(() => {
-    localStorage.clear();
-    document.documentElement.className = "";
-  });
+  it("applies a valid theme through the app context", async () => {
+    const app = fakeApp();
+    const result = await themeCommand.execute!({ rawArgs: "catppuccin", app });
 
-  it("applies a valid theme", async () => {
-    const result = await themeCommand.execute!({ rawArgs: "catppuccin" });
-
-    expect(document.documentElement.className).toBe("theme-catppuccin");
-    expect(localStorage.getItem("theme")).toBe("catppuccin");
+    expect(app.setTheme).toHaveBeenCalledWith("catppuccin");
     expect(result).toEqual({ shouldClearPrompt: true });
   });
 
-  it("rejects an invalid theme without applying it", async () => {
-    const result = await themeCommand.execute!({ rawArgs: "banana" });
+  it("normalizes casing and surrounding whitespace", async () => {
+    const app = fakeApp();
+    await themeCommand.execute!({ rawArgs: "  NORD  ", app });
 
-    expect(document.documentElement.className).toBe("");
-    expect(localStorage.getItem("theme")).toBeNull();
+    expect(app.setTheme).toHaveBeenCalledWith("nord");
+  });
+
+  it("rejects an invalid theme without applying it", async () => {
+    const app = fakeApp();
+    const result = await themeCommand.execute!({ rawArgs: "banana", app });
+
+    expect(app.setTheme).not.toHaveBeenCalled();
     expect(result?.message).toMatch(/invalid theme/i);
+  });
+
+  it("does not clear the prompt when the theme is invalid", async () => {
+    const app = fakeApp();
+    const result = await themeCommand.execute!({ rawArgs: "banana", app });
+
+    expect(result?.shouldClearPrompt).toBeFalsy();
   });
 });

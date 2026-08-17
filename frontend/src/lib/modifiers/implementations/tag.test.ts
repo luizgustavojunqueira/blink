@@ -9,6 +9,7 @@ describe("tagModifier", () => {
   it("extracts every tag occurrence, with no validity restriction", () => {
     expect(tagModifier.extract!("title #dev #golang")).toEqual({
       values: ["dev", "golang"],
+      invalid: [],
       remaining: "title",
     });
   });

@@ -13,8 +13,8 @@ export async function api<T>(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => {});
-    throw new Error(error.message || `HTTP ${res.status}`);
+    const body = await res.text().catch(() => "");
+    throw new Error(body.trim() || `HTTP ${res.status}`);
   }
 
   if (res.status === 204) return undefined as T;

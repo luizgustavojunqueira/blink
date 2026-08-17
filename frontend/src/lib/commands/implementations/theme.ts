@@ -20,18 +20,14 @@ export const themeCommand: CommandDefinition = {
       }),
     );
   },
-  execute: async ({ rawArgs }) => {
+  execute: async ({ rawArgs, app }) => {
     const theme = rawArgs.trim().toLowerCase();
     if (!THEMES.includes(theme)) {
       return { message: `Invalid theme "${theme}". Try: ${THEMES.join(", ")}` };
     }
 
-    set({ theme });
+    app.setTheme(theme);
+
     return { shouldClearPrompt: true };
   },
 };
-
-function set({ theme }: { theme: string }) {
-  document.documentElement.className = `theme-${theme}`;
-  localStorage.setItem("theme", theme);
-}

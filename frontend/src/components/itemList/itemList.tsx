@@ -4,23 +4,22 @@ import Loading from "../loading";
 import Prompt from "../prompt/prompt";
 import Item from "./item";
 import type { GetItemRequest } from "../../types/backend";
+import { useAppContext } from "../../hooks/useAppContext";
 
 export function ItemList() {
   const [filter, setFilter] = useState<GetItemRequest>({});
   const { data: items = [], isFetching, isError, error } = useItems(filter);
 
+  const app = useAppContext({ setFilter });
+
   return (
     <div className="w-full h-full flex flex-col">
-      <Prompt onFilter={setFilter} />
+      <Prompt app={app} />
 
       <div className="flex-1 overflow-y-auto">
         {isFetching && <Loading />}
 
-        {isError && (
-          <div className="px-4 py-2 text-urgent text-sm">
-            erro: {error.message}
-          </div>
-        )}
+        {isError && <div className="px-4 py-2 text-urgent text-sm">erro: {error.message}</div>}
 
         <ul className="flex flex-col">
           {items.map((item) => (

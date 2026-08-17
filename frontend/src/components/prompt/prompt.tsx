@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
+import { parseFilter } from "../../lib/commands/implementations/filter";
 import type { GetItemRequest } from "../../types/backend";
 import HighlightedPrompt from "./highlightedPrompt";
 import Helper from "./helper";
@@ -34,8 +35,8 @@ export default function Prompt({ onFilter }: IPrompt) {
 
       const command = parse(promptState.prompt);
 
-      if (command.type === "FILTER") {
-        onFilter(command.data);
+      if (command.id === "filter") {
+        onFilter(parseFilter(command.rawArgs));
       }
 
       const result = await execute(command);
@@ -52,7 +53,7 @@ export default function Prompt({ onFilter }: IPrompt) {
     const prompt = e.target.value;
     const command = parse(prompt);
 
-    setPromptState({ prompt, action: command.type });
+    setPromptState({ prompt, action: command.id });
     helper.update();
   };
 

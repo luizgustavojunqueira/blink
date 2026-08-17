@@ -3,13 +3,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Prompt from "./prompt";
 import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
+import { parseFilter } from "../../lib/commands/implementations/filter";
 
 vi.mock("../../lib/parser", () => ({
-  parse: vi.fn(() => ({ type: "FILTER", data: {} })),
+  parse: vi.fn(() => ({ id: "filter", rawArgs: "" })),
 }));
 
 vi.mock("../../lib/executor", () => ({
   execute: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../lib/commands/implementations/filter", () => ({
+  parseFilter: vi.fn(() => ({})),
+  filterCommand: { id: "filter", displayName: "/filter", description: "Filter items" },
 }));
 
 describe("Prompt", () => {
@@ -51,13 +57,11 @@ describe("Prompt", () => {
     expect(onFilter).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onFilter for FILTER command", async () => {
-    const filter = { priority: ["HIGH"] };
+  it("calls onFilter for the filter command", async () => {
+    const filter = { priority: ["high"] };
 
-    vi.mocked(parse).mockReturnValue({
-      type: "FILTER",
-      data: filter,
-    });
+    vi.mocked(parse).mockReturnValue({ id: "filter", rawArgs: "!high" });
+    vi.mocked(parseFilter).mockReturnValue(filter);
 
     render(<Prompt onFilter={onFilter} />);
 
@@ -70,34 +74,32 @@ describe("Prompt", () => {
     fireEvent.keyDown(input, {
       key: "Enter",
     });
-
     fireEvent.keyDown(input, {
       key: "Enter",
     });
 
     expect(parse).toHaveBeenCalledWith("!high");
+    expect(parseFilter).toHaveBeenCalledWith("!high");
     expect(onFilter).toHaveBeenCalledWith(filter);
     expect(execute).toHaveBeenCalled();
   });
 
-  it("does not call onFilter for non-filter command", () => {
-    vi.mocked(parse).mockReturnValue({
-      type: "HELP",
-    } as any);
+  it("does not call onFilter for a non-filter command", () => {
+    vi.mocked(parse).mockReturnValue({ id: "theme", rawArgs: "dark" });
 
     render(<Prompt onFilter={onFilter} />);
 
     const input = screen.getByTestId("prompt");
 
     fireEvent.change(input, {
-      target: { value: "help" },
+      target: { value: "/theme dark" },
     });
 
     fireEvent.keyDown(input, {
       key: "Enter",
     });
 
-    expect(parse).toHaveBeenCalledWith("help");
+    expect(parse).toHaveBeenCalledWith("/theme dark");
     expect(onFilter).not.toHaveBeenCalled();
     expect(execute).toHaveBeenCalled();
   });

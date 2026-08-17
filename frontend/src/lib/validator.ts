@@ -25,5 +25,5 @@ export const PRIORITY_CLASS: Record<string, string> = {
   [Urgent.toLowerCase()]: "text-urgent",
 };
 
-export const VALID_STATUS = new Set(Object.keys(STATUS_CLASS));
-export const VALID_PRIORITY = new Set(Object.keys(PRIORITY_CLASS));
+export const VALID_STATUS = Object.keys(STATUS_CLASS)
+export const VALID_PRIORITY = Object.keys(PRIORITY_CLASS)

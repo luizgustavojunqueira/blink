@@ -17,3 +17,4 @@ backend/ui/dist/*
 .DS_Store
 Thumbs.db
 /data
+/backend/tmp/*

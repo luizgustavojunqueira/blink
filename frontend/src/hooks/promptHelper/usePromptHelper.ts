@@ -1,7 +1,14 @@
 import { useState, type KeyboardEvent } from "react";
-import { getOptionType, MODIFIER_OPTIONS, optionsByType } from "./utils";
 import { COMMAND_PREFIX, getAllCommands, getCommand } from "../../lib/commands/registry";
+import { commandArgStart } from "../../lib/commands/argToken";
 import { toPromptOption, type PromptOption } from "../../lib/promptOptions";
+import { getModifier } from "../../lib/modifiers/registry";
+
+/** True if `wordStart` is preceded by exactly one space (not 0, not 2+). */
+function isSingleSpaceAway(text: string, wordStart: number): boolean {
+  if (wordStart === 0 || text[wordStart - 1] !== " ") return false;
+  return wordStart === 1 || text[wordStart - 2] !== " ";
+}
 
 export function usePromptHelper(
   inputRef: React.RefObject<HTMLInputElement | null>,
@@ -25,12 +32,6 @@ export function usePromptHelper(
     const isCommandContext = trimmedStart.startsWith(COMMAND_PREFIX);
     const wordStart = textUntilCursor.lastIndexOf(" ") + 1;
     const word = textUntilCursor.slice(wordStart, cursorPos);
-
-    if (word === "?") {
-      setOptions(isCommandContext ? [] : MODIFIER_OPTIONS);
-      setSelectedIndex(0);
-      return;
-    }
 
     if (isCommandContext) {
       const spaceIndex = trimmedStart.indexOf(" ");
@@ -57,21 +58,16 @@ export function usePromptHelper(
       const command = getCommand(cmdId);
       const rawargs = trimmedStart.slice(spaceIndex + 1);
 
-      setOptions(command?.getOptions?.(rawargs) ?? []);
+      const strict = command?.strictArgPosition ?? true;
+      const spacingOk = !strict || isSingleSpaceAway(textUntilCursor, wordStart);
+
+      setOptions(spacingOk ? (command?.getOptions?.(rawargs) ?? []) : []);
       setSelectedIndex(0);
       return;
     }
 
-    const modifier = word[0];
-
-    const filter = word.slice(1).toUpperCase();
-
-    const kind = getOptionType(modifier);
-    const newOptions = kind
-      ? optionsByType[kind].filter((opt) => opt.value.toUpperCase().includes(filter))
-      : [];
-
-    setOptions(newOptions);
+    const modifier = getModifier(word[0]);
+    setOptions(modifier?.getOptions?.(word.slice(1)) ?? []);
     setSelectedIndex(0);
   };
 
@@ -90,7 +86,21 @@ export function usePromptHelper(
     const value = input.value;
 
     const textUntilCursor = value.slice(0, cursorPos);
-    const wordStart = textUntilCursor.lastIndexOf(" ") + 1;
+    let wordStart = textUntilCursor.lastIndexOf(" ") + 1;
+
+    if (selected.kind === "COMMAND_ARG") {
+      const trimmedStart = textUntilCursor.trimStart();
+      const spaceIndex = trimmedStart.startsWith(COMMAND_PREFIX) ? trimmedStart.indexOf(" ") : -1;
+
+      if (spaceIndex !== -1) {
+        const command = getCommand(trimmedStart.slice(1, spaceIndex));
+        const leadingWhitespace = textUntilCursor.length - trimmedStart.length;
+        const rawArgsStart = leadingWhitespace + spaceIndex + 1;
+        const rawArgsSoFar = value.slice(rawArgsStart, cursorPos);
+
+        wordStart = rawArgsStart + commandArgStart(rawArgsSoFar, command?.argCount ?? 1);
+      }
+    }
 
     const textFromCursor = value.slice(cursorPos);
     const spaceAfterOffset = textFromCursor.indexOf(" ");
@@ -129,8 +139,15 @@ export function usePromptHelper(
     if (!isOpen) return false;
 
     switch (e.key) {
-      case "ArrowDown":
       case "Tab":
+        e.preventDefault();
+        if (e.shiftKey) {
+          setSelectedIndex((prev) => (prev - 1 + options.length) % options.length);
+        } else {
+          setSelectedIndex((prev) => (prev + 1) % options.length);
+        }
+        return true;
+      case "ArrowDown":
         e.preventDefault();
         setSelectedIndex((prev) => (prev + 1) % options.length);
         return true;

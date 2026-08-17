@@ -1,3 +1,4 @@
+import { currentArgToken } from "../argToken";
 import { toPromptOption } from "../../promptOptions";
 import type { CommandDefinition } from "../types";
 
@@ -7,8 +8,9 @@ export const themeCommand: CommandDefinition = {
   id: "theme",
   displayName: "/theme",
   description: "Switch color theme",
+  argCount: 1,
   getOptions: (rawArgs) => {
-    const filter = rawArgs.trim().toLowerCase();
+    const filter = currentArgToken(rawArgs).current.toLowerCase();
 
     return THEMES.filter((t) => t.includes(filter)).map((t) =>
       toPromptOption("COMMAND_ARG", {

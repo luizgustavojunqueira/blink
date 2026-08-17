@@ -1,9 +1,9 @@
 import {
-  PRIORITY_DELIMITER,
-  TAG_DELIMITER,
-  STATUS_DELIMITER,
-  DESCRIPTION_DELIMITER,
-} from "../../lib/parser/types";
+  PRIORITY_MODIFIER,
+  TAG_MODIFIER,
+  STATUS_MODIFIER,
+  DESCRIPTION_MODIFIER,
+} from "../../lib/modifiers/delimiters.ts";
 import { PRIORITY_CLASS, STATUS_CLASS } from "../../lib/validator";
 
 interface IHighlightedPrompt {
@@ -15,7 +15,7 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
 
   const render = (text: string) => {
     const regex = new RegExp(
-      `([\\${PRIORITY_DELIMITER}\\${TAG_DELIMITER}\\${STATUS_DELIMITER}]\\S+|\\${DESCRIPTION_DELIMITER})`,
+      `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
       "g",
     );
     const parts = text.split(regex);
@@ -24,7 +24,7 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
     return parts.map((part, i) => {
       if (!part) return null;
 
-      if (part === DESCRIPTION_DELIMITER) {
+      if (part === DESCRIPTION_MODIFIER) {
         isDescription = true;
         return (
           <span key={i} className="text-accent font-medium">
@@ -33,7 +33,7 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
         );
       }
 
-      if (part.startsWith(PRIORITY_DELIMITER)) {
+      if (part.startsWith(PRIORITY_MODIFIER)) {
         const value = part.slice(1).toLowerCase();
 
         if (!value) {
@@ -59,7 +59,7 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
           </span>
         );
       }
-      if (part.startsWith(TAG_DELIMITER)) {
+      if (part.startsWith(TAG_MODIFIER)) {
         return (
           <span key={i} className="text-tag font-medium">
             {part}
@@ -67,7 +67,7 @@ export default function HighlightedPrompt({ prompt }: IHighlightedPrompt) {
         );
       }
 
-      if (part.startsWith(STATUS_DELIMITER)) {
+      if (part.startsWith(STATUS_MODIFIER)) {
         const value = part.slice(1).toLowerCase();
 
         if (!value) {

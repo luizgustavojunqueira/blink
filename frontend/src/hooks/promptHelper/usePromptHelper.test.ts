@@ -43,6 +43,57 @@ describe("usePromptHelper", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
+  it("closes the helper after backspacing / down to empty", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("/", 1);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+    expect(result.current.isOpen).toBe(true);
+
+    inputRef.current!.value = "";
+    inputRef.current!.setSelectionRange(0, 0);
+    act(() => result.current.update());
+
+    expect(result.current.isOpen).toBe(false);
+    expect(result.current.options).toHaveLength(0);
+  });
+
+  it("closes the helper after backspacing ? down to empty", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("?", 1);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+    expect(result.current.isOpen).toBe(true);
+
+    inputRef.current!.value = "";
+    inputRef.current!.setSelectionRange(0, 0);
+    act(() => result.current.update());
+
+    expect(result.current.isOpen).toBe(false);
+    expect(result.current.options).toHaveLength(0);
+  });
+
+  it("closes the helper once a modifier is followed by a space, regardless of how many", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("@", 1);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+    expect(result.current.isOpen).toBe(true);
+
+    for (const spaces of ["@ ", "@  ", "@     "]) {
+      inputRef.current!.value = spaces;
+      inputRef.current!.setSelectionRange(spaces.length, spaces.length);
+      act(() => result.current.update());
+      expect(result.current.isOpen).toBe(false);
+    }
+  });
+
   it("opens COMMAND options when typing /", () => {
     const setPrompt = vi.fn();
     const inputRef = createInputRef("/", 1);
@@ -140,6 +191,55 @@ describe("usePromptHelper", () => {
     );
   });
 
+  it("opens COMMAND_ARG options right after a single space with nothing typed yet", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("/theme ", 7);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+
+    expect(result.current.isOpen).toBe(true);
+    expect(result.current.options).toHaveLength(3);
+  });
+
+  it("does not open COMMAND_ARG options when more than one space separates from the previous token", () => {
+    const setPrompt = vi.fn();
+    const value = "/theme gruv" + " ".repeat(10);
+    const inputRef = createInputRef(value, value.length);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+
+    expect(result.current.isOpen).toBe(false);
+    expect(result.current.options).toHaveLength(0);
+  });
+
+  it("opens modifier options inside /filter", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("/filter @", 9);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+
+    expect(result.current.isOpen).toBe(true);
+    expect(result.current.options.every((o) => o.kind === "STATUS")).toBe(true);
+  });
+
+  it("opens the ? menu inside /filter", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("/filter ?", 9);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+
+    expect(result.current.isOpen).toBe(true);
+    expect(result.current.options.some((o) => o.value === "$")).toBe(true);
+  });
+
   it("selects a STATUS option and inserts value with correct cursor", () => {
     const inputRef = createInputRef("@TO", 3);
     const setPrompt = vi.fn((next: string) => {
@@ -180,8 +280,25 @@ describe("usePromptHelper", () => {
     expect(setPrompt).toHaveBeenCalledWith("/theme catppuccin");
   });
 
+  it("selecting a COMMAND_ARG option replaces the whole argument, even with a stray space in the middle", () => {
+    const inputRef = createInputRef("/theme gr u", 11);
+    const setPrompt = vi.fn((next: string) => {
+      inputRef.current!.value = next;
+    });
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+
+    const gruvboxIndex = result.current.options.findIndex((o) => o.value === "gruvbox");
+    expect(gruvboxIndex).toBeGreaterThanOrEqual(0);
+
+    act(() => result.current.onSelect(gruvboxIndex));
+
+    expect(setPrompt).toHaveBeenCalledWith("/theme gruvbox");
+  });
+
   it("selecting mid-word replaces the entire word instead of splicing into it", () => {
-    // cursor right after "catp", in the middle of "/theme catppuccin"
     const inputRef = createInputRef("/theme catppuccin", 11);
     const setPrompt = vi.fn((next: string) => {
       inputRef.current!.value = next;
@@ -233,6 +350,48 @@ describe("usePromptHelper", () => {
     });
 
     expect(result.current.selectedIndex).toBe(1 % length);
+  });
+
+  it("Tab cycles selectedIndex forward", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("@", 1);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+
+    const length = result.current.options.length;
+
+    act(() => {
+      result.current.onKeyDown({
+        key: "Tab",
+        shiftKey: false,
+        preventDefault: vi.fn(),
+      } as unknown as React.KeyboardEvent);
+    });
+
+    expect(result.current.selectedIndex).toBe(1 % length);
+  });
+
+  it("Shift+Tab cycles selectedIndex backward", () => {
+    const setPrompt = vi.fn();
+    const inputRef = createInputRef("@", 1);
+
+    const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
+
+    act(() => result.current.update());
+
+    const length = result.current.options.length;
+
+    act(() => {
+      result.current.onKeyDown({
+        key: "Tab",
+        shiftKey: true,
+        preventDefault: vi.fn(),
+      } as unknown as React.KeyboardEvent);
+    });
+
+    expect(result.current.selectedIndex).toBe(length - 1);
   });
 
   it("ArrowRight does not select an option, so cursor navigation is left untouched", () => {

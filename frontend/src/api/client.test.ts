@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "./client";
 
 function respond(body: string, init: ResponseInit) {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, init)));
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body || null, init)));
 }
 
 describe("api()", () => {

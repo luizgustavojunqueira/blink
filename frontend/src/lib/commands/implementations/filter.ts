@@ -27,7 +27,7 @@ export function parseFilter(raw: string): GetItemRequest {
 
 export const filterCommand: CommandDefinition = {
   id: "filter",
-  displayName: "/filter",
+  displayName: "filter",
   description: "Filter items",
   strictArgPosition: false,
   getOptions: modifierOptions,

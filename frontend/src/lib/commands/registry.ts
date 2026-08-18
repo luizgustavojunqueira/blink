@@ -3,7 +3,7 @@ import { filterCommand } from "./implementations/filter";
 import { themeCommand } from "./implementations/theme";
 import type { CommandDefinition } from "./types"
 
-export const COMMAND_PREFIX = "/"
+export const COMMAND_PREFIX = ":"
 
 export const commands = {
   theme: themeCommand,

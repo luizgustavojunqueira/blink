@@ -10,7 +10,7 @@ const app: AppContext = {
 };
 
 function stubCommand(def: Partial<CommandDefinition>): CommandDefinition {
-  return { id: "stub", displayName: "/stub", description: "stub", ...def };
+  return { id: "stub", displayName: "stub", description: "stub", ...def };
 }
 
 describe("execute()", () => {

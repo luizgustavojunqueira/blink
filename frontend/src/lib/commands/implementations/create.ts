@@ -9,6 +9,31 @@ import { modifierOptions } from "../../modifiers/options";
 import { parseModifiers } from "../../modifiers/parse";
 import type { CommandDefinition } from "../types";
 
+export const createCommand: CommandDefinition = {
+  id: "create",
+  displayName: "create",
+  description: "Create a new item",
+  strictArgPosition: false,
+  getOptions: modifierOptions,
+  execute: async ({ rawArgs, app }) => {
+    const result = parseCreate(rawArgs);
+
+    if (!result.ok) {
+      return { message: result.error };
+    }
+
+    try {
+      await app.items.create(result.req);
+    } catch (e) {
+      return {
+        message: e instanceof Error ? e.message : "Failed to create item",
+      };
+    }
+
+    return { shouldClearPrompt: true };
+  },
+};
+
 type ParseCreateResult = { ok: true; req: CreateItemRequest } | { ok: false; error: string };
 
 function only(
@@ -53,26 +78,3 @@ export function parseCreate(raw: string): ParseCreateResult {
     },
   };
 }
-
-export const createCommand: CommandDefinition = {
-  id: "create",
-  displayName: "/create",
-  description: "Create a new item",
-  strictArgPosition: false,
-  getOptions: modifierOptions,
-  execute: async ({ rawArgs, app }) => {
-    const result = parseCreate(rawArgs);
-
-    if (!result.ok) {
-      return { message: result.error };
-    }
-
-    try {
-      await app.items.create(result.req);
-    } catch (e) {
-      return { message: e instanceof Error ? e.message : "Failed to create item" };
-    }
-
-    return { shouldClearPrompt: true };
-  },
-};

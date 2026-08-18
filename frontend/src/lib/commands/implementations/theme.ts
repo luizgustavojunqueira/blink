@@ -6,7 +6,7 @@ const THEMES = ["gruvbox", "catppuccin", "nord"];
 
 export const themeCommand: CommandDefinition = {
   id: "theme",
-  displayName: "/theme",
+  displayName: "theme",
   description: "Switch color theme",
   argCount: 1,
   getOptions: (rawArgs) => {

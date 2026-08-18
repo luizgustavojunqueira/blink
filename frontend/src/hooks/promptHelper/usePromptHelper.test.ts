@@ -1,8 +1,13 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { usePromptHelper } from "./usePromptHelper";
+import { COMMAND_PREFIX } from "../../lib/commands/registry";
 
-function createInputRef(value: string, cursor: number) {
+function cmd(rest: string) {
+  return `${COMMAND_PREFIX}${rest}`;
+}
+
+function createInputRef(value: string, cursor: number = value.length) {
   const input = document.createElement("input");
   input.value = value;
   input.setSelectionRange(cursor, cursor);
@@ -34,7 +39,7 @@ describe("usePromptHelper", () => {
 
   it("does not open MODIFIER options for ? inside a command", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/theme ?", 8);
+    const inputRef = createInputRef(cmd("theme ?"));
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -43,9 +48,9 @@ describe("usePromptHelper", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
-  it("closes the helper after backspacing / down to empty", () => {
+  it("closes the helper after backspacing the command prefix down to empty", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/", 1);
+    const inputRef = createInputRef(COMMAND_PREFIX);
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -94,9 +99,9 @@ describe("usePromptHelper", () => {
     }
   });
 
-  it("opens COMMAND options when typing /", () => {
+  it("opens COMMAND options when typing the command prefix", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/", 1);
+    const inputRef = createInputRef(COMMAND_PREFIX);
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -108,31 +113,31 @@ describe("usePromptHelper", () => {
 
   it("filters COMMAND options case-insensitively", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/TH", 3);
+    const inputRef = createInputRef(cmd("TH"));
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
     act(() => result.current.update());
 
-    expect(result.current.options.some((o) => o.name === "/theme")).toBe(true);
+    expect(result.current.options.some((o) => o.name === "theme")).toBe(true);
   });
 
-  it("does not open COMMAND options for extra leading slashes", () => {
+  it("does not open COMMAND options for a repeated command prefix", () => {
     const setPrompt = vi.fn();
 
-    const doubleSlash = createInputRef("//", 2);
-    const { result: doubleResult } = renderHook(() =>
-      usePromptHelper(doubleSlash, setPrompt),
+    const doubled = createInputRef(COMMAND_PREFIX.repeat(2));
+    const { result: doubledResult } = renderHook(() =>
+      usePromptHelper(doubled, setPrompt),
     );
-    act(() => doubleResult.current.update());
-    expect(doubleResult.current.isOpen).toBe(false);
+    act(() => doubledResult.current.update());
+    expect(doubledResult.current.isOpen).toBe(false);
 
-    const tripleSlash = createInputRef("///", 3);
-    const { result: tripleResult } = renderHook(() =>
-      usePromptHelper(tripleSlash, setPrompt),
+    const tripled = createInputRef(COMMAND_PREFIX.repeat(3));
+    const { result: tripledResult } = renderHook(() =>
+      usePromptHelper(tripled, setPrompt),
     );
-    act(() => tripleResult.current.update());
-    expect(tripleResult.current.isOpen).toBe(false);
+    act(() => tripledResult.current.update());
+    expect(tripledResult.current.isOpen).toBe(false);
   });
 
   it("filters STATUS options when typing @TO", () => {
@@ -174,9 +179,9 @@ describe("usePromptHelper", () => {
     expect(result.current.options).toHaveLength(0);
   });
 
-  it("opens COMMAND_ARG options when typing /theme <partial>", () => {
+  it("opens COMMAND_ARG options when typing <prefix>theme <partial>", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/theme c", 8);
+    const inputRef = createInputRef(cmd("theme c"));
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -193,7 +198,7 @@ describe("usePromptHelper", () => {
 
   it("opens COMMAND_ARG options right after a single space with nothing typed yet", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/theme ", 7);
+    const inputRef = createInputRef(cmd("theme "));
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -205,8 +210,8 @@ describe("usePromptHelper", () => {
 
   it("does not open COMMAND_ARG options when more than one space separates from the previous token", () => {
     const setPrompt = vi.fn();
-    const value = "/theme gruv" + " ".repeat(10);
-    const inputRef = createInputRef(value, value.length);
+    const value = cmd("theme gruv") + " ".repeat(10);
+    const inputRef = createInputRef(value);
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -216,9 +221,9 @@ describe("usePromptHelper", () => {
     expect(result.current.options).toHaveLength(0);
   });
 
-  it("opens modifier options inside /filter", () => {
+  it("opens modifier options inside the filter command", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/filter @", 9);
+    const inputRef = createInputRef(cmd("filter @"));
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -228,9 +233,9 @@ describe("usePromptHelper", () => {
     expect(result.current.options.every((o) => o.kind === "STATUS")).toBe(true);
   });
 
-  it("opens the ? menu inside /filter", () => {
+  it("opens the ? menu inside the filter command", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef("/filter ?", 9);
+    const inputRef = createInputRef(cmd("filter ?"));
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -262,7 +267,7 @@ describe("usePromptHelper", () => {
   });
 
   it("selects a COMMAND_ARG option by replacing the whole word, not prefixing it", () => {
-    const inputRef = createInputRef("/theme c", 8);
+    const inputRef = createInputRef(cmd("theme c"));
     const setPrompt = vi.fn((next: string) => {
       inputRef.current!.value = next;
     });
@@ -277,11 +282,11 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.onSelect(catppuccinIndex));
 
-    expect(setPrompt).toHaveBeenCalledWith("/theme catppuccin");
+    expect(setPrompt).toHaveBeenCalledWith(cmd("theme catppuccin"));
   });
 
   it("selecting a COMMAND_ARG option replaces the whole argument, even with a stray space in the middle", () => {
-    const inputRef = createInputRef("/theme gr u", 11);
+    const inputRef = createInputRef(cmd("theme gr u"));
     const setPrompt = vi.fn((next: string) => {
       inputRef.current!.value = next;
     });
@@ -295,11 +300,11 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.onSelect(gruvboxIndex));
 
-    expect(setPrompt).toHaveBeenCalledWith("/theme gruvbox");
+    expect(setPrompt).toHaveBeenCalledWith(cmd("theme gruvbox"));
   });
 
   it("selecting mid-word replaces the entire word instead of splicing into it", () => {
-    const inputRef = createInputRef("/theme catppuccin", 11);
+    const inputRef = createInputRef(cmd("theme catppuccin"), cmd("theme catp").length);
     const setPrompt = vi.fn((next: string) => {
       inputRef.current!.value = next;
     });
@@ -314,7 +319,7 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.onSelect(catppuccinIndex));
 
-    expect(setPrompt).toHaveBeenCalledWith("/theme catppuccin");
+    expect(setPrompt).toHaveBeenCalledWith(cmd("theme catppuccin"));
   });
 
   it("selects a MODIFIER and reopens its options", () => {

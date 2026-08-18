@@ -4,6 +4,7 @@ import Prompt from "./prompt";
 import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
 import type { AppContext } from "../../lib/commands/types";
+import { COMMAND_PREFIX } from "../../lib/commands/registry";
 
 vi.mock("../../lib/parser", () => ({
   parse: vi.fn(() => ({ id: "filter", rawArgs: "" })),
@@ -71,7 +72,7 @@ describe("Prompt", () => {
     render(<Prompt app={app} />);
 
     const input = screen.getByTestId("prompt");
-    type(input, "/theme nord");
+    type(input, `${COMMAND_PREFIX}theme nord`);
     fireEvent.keyDown(input, { key: "Enter" });
 
     expect(execute).toHaveBeenCalledWith({ id: "theme", rawArgs: "nord" }, app);
@@ -125,7 +126,7 @@ describe("Prompt", () => {
     render(<Prompt app={app} />);
 
     const input = screen.getByTestId("prompt");
-    type(input, "/theme nord");
+    type(input, `${COMMAND_PREFIX}theme nord`);
     fireEvent.keyDown(input, { key: "Enter" });
 
     expect(await screen.findByTestId("prompt")).toHaveValue("");
@@ -137,11 +138,11 @@ describe("Prompt", () => {
     render(<Prompt app={app} />);
 
     const input = screen.getByTestId("prompt");
-    type(input, "/theme banana");
+    type(input, `${COMMAND_PREFIX}theme banana`);
     fireEvent.keyDown(input, { key: "Enter" });
 
     await screen.findByText("Invalid theme");
-    expect(input).toHaveValue("/theme banana");
+    expect(input).toHaveValue(`${COMMAND_PREFIX}theme banana`);
   });
 
   it("shows a thrown error as a message instead of letting it escape", async () => {

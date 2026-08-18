@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parse } from ".";
+import { COMMAND_PREFIX } from "../commands/registry";
 
 describe("parse()", () => {
   it("resolves to the filter command by default", () => {
@@ -12,18 +13,19 @@ describe("parse()", () => {
     expect(result).toEqual({ id: "filter", rawArgs: "" });
   });
 
-  it("resolves a registered slash command", () => {
-    const result = parse("/theme dark");
+  it("resolves a registered command", () => {
+    const result = parse(`${COMMAND_PREFIX}theme dark`);
     expect(result).toEqual({ id: "theme", rawArgs: "dark" });
   });
 
-  it("resolves a registered slash command with no args", () => {
-    const result = parse("/theme");
+  it("resolves a registered command with no args", () => {
+    const result = parse(`${COMMAND_PREFIX}theme`);
     expect(result).toEqual({ id: "theme", rawArgs: "" });
   });
 
-  it("falls back to the filter command for an unknown slash command", () => {
-    const result = parse("/doesnotexist foo");
-    expect(result).toEqual({ id: "filter", rawArgs: "/doesnotexist foo" });
+  it("falls back to the filter command for an unknown command", () => {
+    const raw = `${COMMAND_PREFIX}doesnotexist foo`;
+    const result = parse(raw);
+    expect(result).toEqual({ id: "filter", rawArgs: raw });
   });
 });

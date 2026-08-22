@@ -1,6 +1,7 @@
 import { getCommand } from "../commands/registry.ts";
-import type { AppContext, ExecuteResult } from "../commands/types.ts";
+import type { ExecuteResult } from "../commands/types.ts";
 import type { ParsedCommand } from "../parser/index.ts";
+import type { AppContext } from "../types.ts";
 
 export async function execute(
   command: ParsedCommand,

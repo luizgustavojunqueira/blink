@@ -1,17 +1,13 @@
-import type { CreateItemRequest, GetItemRequest, GetItemResponse } from "../../types/backend";
 import type { PromptOption } from "../promptOptions";
+import type { AppContext } from "../types";
+
+
+
+
 
 export type ExecuteResult = {
   shouldClearPrompt?: boolean;
   message?: string;
-};
-
-export type AppContext = {
-  setFilter: (filter: GetItemRequest) => void;
-  setTheme: (theme: string) => void;
-  items: {
-    create: (req: CreateItemRequest) => Promise<GetItemResponse>;
-  };
 };
 
 export type CommandContext = {
@@ -26,7 +22,11 @@ export type CommandDefinition = {
 
   getOptions?: (rawArgs: string) => PromptOption[];
   execute?: (context: CommandContext) => Promise<ExecuteResult | void> | ExecuteResult | void;
-  extract?: (raw: string) => { values: string[]; invalid: string[]; remaining: string };
+  extract?: (raw: string) => {
+    values: string[];
+    invalid: string[];
+    remaining: string;
+  };
   extractKind?: "token" | "rest";
 
   /**

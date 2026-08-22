@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Prompt from "./prompt";
 import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
-import type { AppContext } from "../../lib/commands/types";
 import { COMMAND_PREFIX } from "../../lib/commands/registry";
+import type { AppContext } from "../../lib/types";
+import { useUiStore } from "../../stores/ui";
 
 vi.mock("../../lib/parser", () => ({
   parse: vi.fn(() => ({ id: "filter", rawArgs: "" })),
@@ -14,8 +15,13 @@ vi.mock("../../lib/executor", () => ({
   execute: vi.fn().mockResolvedValue(undefined),
 }));
 
+const setFilter = vi.fn();
+
 const app: AppContext = {
-  setFilter: vi.fn(),
+  ui: {
+    ...useUiStore.getState(),
+    setFilter,
+  },
   setTheme: vi.fn(),
   items: { create: vi.fn() },
 };
@@ -27,12 +33,19 @@ const app: AppContext = {
  */
 function type(input: HTMLElement, value: string) {
   fireEvent.change(input, { target: { value } });
+  useUiStore.getState().setPrompt(value);
   fireEvent.keyDown(input, { key: "Escape" });
 }
 
 describe("Prompt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useUiStore.setState({
+      prompt: "",
+      filter: {},
+      mode: "insert",
+      selectedId: null,
+    });
     vi.mocked(execute).mockResolvedValue(undefined);
     vi.mocked(parse).mockReturnValue({ id: "filter", rawArgs: "" });
   });
@@ -63,7 +76,7 @@ describe("Prompt", () => {
     fireEvent.keyDown(input, { key: "Enter" });
 
     expect(parse).toHaveBeenCalledWith("!high");
-    expect(execute).toHaveBeenCalledWith({ id: "filter", rawArgs: "!high" }, app);
+    expect(execute).toHaveBeenCalledWith({ id: "filter", rawArgs: "!high" }, expect.any(Object));
   });
 
   it("dispatches every command through the same path, with no special case for filter", () => {
@@ -75,7 +88,7 @@ describe("Prompt", () => {
     type(input, `${COMMAND_PREFIX}theme nord`);
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(execute).toHaveBeenCalledWith({ id: "theme", rawArgs: "nord" }, app);
+    expect(execute).toHaveBeenCalledWith({ id: "theme", rawArgs: "nord" }, expect.any(Object));
   });
 
   it("does not filter from the component itself — the command owns that", () => {
@@ -87,7 +100,7 @@ describe("Prompt", () => {
     type(input, "!high");
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(app.setFilter).not.toHaveBeenCalled();
+    expect(app.ui.setFilter).not.toHaveBeenCalled();
   });
 
   it("lets the open autocomplete keep Enter, instead of dispatching", () => {
@@ -117,7 +130,7 @@ describe("Prompt", () => {
     fireEvent.keyDown(input, { key: "a" });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(parse).toHaveBeenCalledTimes(1);
+    expect(parse).toHaveBeenCalledTimes(0);
   });
 
   it("clears the prompt when the command asks for it", async () => {

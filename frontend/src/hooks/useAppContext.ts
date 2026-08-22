@@ -1,15 +1,12 @@
 import { useMemo } from "react";
-import type { GetItemRequest } from "../types/backend";
 import { createItem } from "../api/items";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { setTheme } from "../lib/theme";
+import { useUiStore } from "../stores/ui";
 
-interface IAppContext {
-  setFilter: (filter: GetItemRequest) => void;
-}
-
-export function useAppContext({ setFilter }: IAppContext) {
+export function useAppContext() {
   const queryClient = useQueryClient();
+  const ui = useUiStore();
 
   const createMutation = useMutation({
     mutationFn: createItem,
@@ -20,10 +17,10 @@ export function useAppContext({ setFilter }: IAppContext) {
 
   return useMemo(
     () => ({
-      setFilter,
+      ui,
       setTheme,
       items: { create: createMutation.mutateAsync },
     }),
-    [setFilter, createMutation.mutateAsync],
+    [ui, createMutation.mutateAsync],
   );
 }

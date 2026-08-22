@@ -1,11 +1,9 @@
-import type {
-  GetItemResponse,
-  ItemPriority,
-  ItemStatus,
-} from "../../types/backend";
+import { useUiStore } from "../../stores/ui";
+import type { GetItemResponse, ItemPriority, ItemStatus } from "../../types/backend";
 
 interface IItem {
   item: GetItemResponse;
+  isSelected: boolean;
 }
 
 const priorityColor: Record<ItemPriority, string> = {
@@ -23,26 +21,26 @@ const statusColor: Record<ItemStatus, string> = {
   ARCHIVED: "text-fg-muted",
 };
 
-export default function Item({ item }: IItem) {
+export default function Item({ item, isSelected }: IItem) {
   const isDone = item.status === "DONE" || item.status === "CANCELED";
 
+  const select = useUiStore((s) => s.select);
   return (
-    <li className="group w-full px-4 py-1.5 flex items-center gap-3 hover:bg-bg-lighter transition-colors duration-75">
-      <span
-        className={`text-sm w-20 shrink-0 ${statusColor[item.status] ?? "text-fg-dim"}`}
-      >
+    <li
+      className={`group w-full px-4 py-1.5 flex items-center gap-3 transition-colors duration-75 ${
+        isSelected ? "bg-bg-lighter" : "hover:bg-bg-soft"
+      }`}
+      onClick={() => select(item.guid)}
+    >
+      <span className={`text-sm w-20 shrink-0 ${statusColor[item.status] ?? "text-fg-dim"}`}>
         {item.status === "IN_PROGRESS" ? "PROG" : item.status}
       </span>
 
-      <span
-        className={`text-sm w-16 shrink-0 ${priorityColor[item.priority] ?? "text-fg-dim"}`}
-      >
+      <span className={`text-sm w-16 shrink-0 ${priorityColor[item.priority] ?? "text-fg-dim"}`}>
         {item.priority !== "NORMAL" ? item.priority : ""}
       </span>
 
-      <span
-        className={`flex-3 truncate ${isDone ? "text-fg-muted line-through" : "text-fg"}`}
-      >
+      <span className={`flex-3 truncate ${isDone ? "text-fg-muted line-through" : "text-fg"}`}>
         {item.type === "GROUP" && <span className="text-group mr-1">▸</span>}
         {item.title}
       </span>
@@ -51,10 +49,7 @@ export default function Item({ item }: IItem) {
         {item.tags?.length > 0 && (
           <div className="flex gap-1.5 mr-4">
             {item.tags.map((tag, index) => (
-              <span
-                key={`${tag}-${index}`}
-                className="text-tag text-sm align-left"
-              >
+              <span key={`${tag}-${index}`} className="text-tag text-sm align-left">
                 #{tag}
               </span>
             ))}
@@ -62,9 +57,7 @@ export default function Item({ item }: IItem) {
         )}
 
         {item.description && (
-          <span className="text-fg-muted text-xs truncate hidden sm:block">
-            {item.description}
-          </span>
+          <span className="text-fg-muted text-xs truncate hidden sm:block">{item.description}</span>
         )}
       </div>
     </li>

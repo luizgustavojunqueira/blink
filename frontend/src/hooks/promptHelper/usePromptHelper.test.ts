@@ -31,9 +31,7 @@ describe("usePromptHelper", () => {
     act(() => result.current.update());
 
     expect(result.current.isOpen).toBe(true);
-    expect(result.current.options.every((o) => o.kind === "MODIFIER")).toBe(
-      true,
-    );
+    expect(result.current.options.every((o) => o.kind === "MODIFIER")).toBe(true);
     expect(result.current.selectedIndex).toBe(0);
   });
 
@@ -126,16 +124,12 @@ describe("usePromptHelper", () => {
     const setPrompt = vi.fn();
 
     const doubled = createInputRef(COMMAND_PREFIX.repeat(2));
-    const { result: doubledResult } = renderHook(() =>
-      usePromptHelper(doubled, setPrompt),
-    );
+    const { result: doubledResult } = renderHook(() => usePromptHelper(doubled, setPrompt));
     act(() => doubledResult.current.update());
     expect(doubledResult.current.isOpen).toBe(false);
 
     const tripled = createInputRef(COMMAND_PREFIX.repeat(3));
-    const { result: tripledResult } = renderHook(() =>
-      usePromptHelper(tripled, setPrompt),
-    );
+    const { result: tripledResult } = renderHook(() => usePromptHelper(tripled, setPrompt));
     act(() => tripledResult.current.update());
     expect(tripledResult.current.isOpen).toBe(false);
   });
@@ -161,9 +155,7 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.update());
 
-    expect(result.current.options.every((o) => o.kind === "PRIORITY")).toBe(
-      true,
-    );
+    expect(result.current.options.every((o) => o.kind === "PRIORITY")).toBe(true);
     expect(result.current.options.some((o) => o.value === "HIGH")).toBe(true);
   });
 
@@ -188,12 +180,8 @@ describe("usePromptHelper", () => {
     act(() => result.current.update());
 
     expect(result.current.isOpen).toBe(true);
-    expect(result.current.options.every((o) => o.kind === "COMMAND_ARG")).toBe(
-      true,
-    );
-    expect(result.current.options.some((o) => o.value === "catppuccin")).toBe(
-      true,
-    );
+    expect(result.current.options.every((o) => o.kind === "COMMAND_ARG")).toBe(true);
+    expect(result.current.options.some((o) => o.value === "catppuccin")).toBe(true);
   });
 
   it("opens COMMAND_ARG options right after a single space with nothing typed yet", () => {
@@ -255,9 +243,7 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.update());
 
-    const todoIndex = result.current.options.findIndex(
-      (o) => o.value === "TODO",
-    );
+    const todoIndex = result.current.options.findIndex((o) => o.value === "TODO");
 
     act(() => result.current.onSelect(todoIndex));
 
@@ -276,9 +262,7 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.update());
 
-    const catppuccinIndex = result.current.options.findIndex(
-      (o) => o.value === "catppuccin",
-    );
+    const catppuccinIndex = result.current.options.findIndex((o) => o.value === "catppuccin");
 
     act(() => result.current.onSelect(catppuccinIndex));
 
@@ -313,9 +297,7 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.update());
 
-    const catppuccinIndex = result.current.options.findIndex(
-      (o) => o.value === "catppuccin",
-    );
+    const catppuccinIndex = result.current.options.findIndex((o) => o.value === "catppuccin");
 
     act(() => result.current.onSelect(catppuccinIndex));
 

@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useCallback, useState, type KeyboardEvent } from "react";
 import { COMMAND_PREFIX, getAllCommands, getCommand } from "../../lib/commands/registry";
 import { commandArgStart } from "../../lib/commands/argToken";
 import { toPromptOption, type PromptOption } from "../../lib/promptOptions";
@@ -19,7 +19,7 @@ export function usePromptHelper(
 
   const isOpen = options.length > 0;
 
-  const update = () => {
+  const update = useCallback(() => {
     const input = inputRef.current;
     if (!input) {
       setOptions([]);
@@ -69,7 +69,7 @@ export function usePromptHelper(
     const modifier = getModifier(word[0]);
     setOptions(modifier?.getOptions?.(word.slice(1)) ?? []);
     setSelectedIndex(0);
-  };
+  }, [inputRef]);
 
   const onSelect = (index?: number) => {
     const input = inputRef.current;

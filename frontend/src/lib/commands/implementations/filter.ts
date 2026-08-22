@@ -32,7 +32,6 @@ export const filterCommand: CommandDefinition = {
   strictArgPosition: false,
   getOptions: modifierOptions,
   execute: ({ rawArgs, app }) => {
-    app.setFilter(parseFilter(rawArgs));
+    app.ui.setFilter(parseFilter(rawArgs));
   },
 };
-

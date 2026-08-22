@@ -19,7 +19,7 @@ function renderAppContext(setFilter = vi.fn()) {
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
 
-  const view = renderHook(() => useAppContext({ setFilter }), { wrapper });
+  const view = renderHook(() => useAppContext(), { wrapper });
 
   return { ...view, setFilter, invalidate };
 }
@@ -27,14 +27,6 @@ function renderAppContext(setFilter = vi.fn()) {
 describe("useAppContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("passes setFilter straight through", () => {
-    const { result, setFilter } = renderAppContext();
-
-    result.current.setFilter({ title: "blink" });
-
-    expect(setFilter).toHaveBeenCalledWith({ title: "blink" });
   });
 
   it("exposes the theme setter", () => {
@@ -51,7 +43,13 @@ describe("useAppContext", () => {
     vi.mocked(createItem).mockResolvedValue(created as never);
 
     const { result } = renderAppContext();
-    const item = { title: "buy milk", type: "TASK", status: "TODO", priority: "NORMAL", tags: [] };
+    const item = {
+      title: "buy milk",
+      type: "TASK",
+      status: "TODO",
+      priority: "NORMAL",
+      tags: [],
+    };
 
     await expect(result.current.items.create(item as never)).resolves.toEqual(created);
     expect(vi.mocked(createItem).mock.calls[0][0]).toEqual(item);

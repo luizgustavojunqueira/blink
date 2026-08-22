@@ -7,13 +7,16 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -27,6 +30,7 @@
     "jsdom": "^30.0.0",
     "oxlint": "^1.71.0",
     "postcss": "^8.5.23",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",

@@ -28,6 +28,14 @@ export interface CreateItemRequest {
   priority: ItemPriority;
   tags: string[];
 }
+export interface UpdateItemRequest {
+  guid: string;
+  title?: string;
+  description?: string;
+  status?: ItemStatus;
+  priority?: ItemPriority;
+  tags?: string[];
+}
 export interface GetItemRequest {
   title?: string;
   description?: string;

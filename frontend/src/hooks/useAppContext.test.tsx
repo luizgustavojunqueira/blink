@@ -6,7 +6,9 @@ import { createItem } from "../api/items";
 import { useAppContext } from "./useAppContext";
 
 vi.mock("../api/items", () => ({
+  getItems: vi.fn(() => Promise.resolve([])),
   createItem: vi.fn(),
+  updateItem: vi.fn(),
 }));
 
 function renderAppContext(setFilter = vi.fn()) {

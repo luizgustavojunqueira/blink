@@ -1,4 +1,9 @@
-import type { CreateItemRequest, GetItemRequest, GetItemResponse } from "../types/backend";
+import type {
+  CreateItemRequest,
+  GetItemRequest,
+  GetItemResponse,
+  UpdateItemRequest,
+} from "../types/backend";
 import { api } from "./client";
 
 export function getItems(filter: GetItemRequest = {}) {
@@ -22,6 +27,13 @@ export function getItems(filter: GetItemRequest = {}) {
 export function createItem(req: CreateItemRequest) {
   return api<GetItemResponse>("/items", {
     method: "POST",
+    body: JSON.stringify(req),
+  });
+}
+
+export function updateItem(req: UpdateItemRequest) {
+  return api<GetItemResponse>("/items", {
+    method: "PATCH",
     body: JSON.stringify(req),
   });
 }

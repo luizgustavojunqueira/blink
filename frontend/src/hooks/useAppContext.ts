@@ -1,26 +1,62 @@
-import { useMemo } from "react";
-import { createItem } from "../api/items";
+import { useCallback, useMemo } from "react";
+import { createItem, updateItem } from "../api/items";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { setTheme } from "../lib/theme";
 import { useUiStore } from "../stores/ui";
+import type { AppContext } from "../lib/types";
+import type { GetItemResponse, ItemStatus } from "../types/backend";
 
-export function useAppContext() {
+export function useAppContext(): AppContext {
   const queryClient = useQueryClient();
   const ui = useUiStore();
 
-  const createMutation = useMutation({
+  const { mutateAsync: create } = useMutation({
     mutationFn: createItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
     },
   });
 
+  const { mutateAsync: update } = useMutation({
+    mutationFn: updateItem,
+    onSuccess: (updated) => {
+      queryClient.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
+        old?.map((i) => (i.guid === updated.guid ? updated : i)),
+      );
+    },
+  });
+
+  const findItem = useCallback(
+    (guid: string) => {
+      for (const [, list] of queryClient.getQueriesData<GetItemResponse[]>({
+        queryKey: ["items"],
+      })) {
+        const hit = list?.find((i) => i.guid === guid);
+        if (hit) return hit;
+      }
+    },
+    [queryClient],
+  );
+
+  const setStatus = useCallback(
+    (guid: string, status: ItemStatus) => {
+      const current = findItem(guid);
+      if (current?.status === status) return;
+      return update({ guid, status });
+    },
+    [update, findItem],
+  );
+
   return useMemo(
     () => ({
       ui,
       setTheme,
-      items: { create: createMutation.mutateAsync },
+      items: {
+        setStatus,
+        create,
+        update,
+      },
     }),
-    [ui, createMutation.mutateAsync],
+    [ui, create, update, setStatus],
   );
 }

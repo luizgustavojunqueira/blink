@@ -23,7 +23,7 @@ const app: AppContext = {
     setFilter,
   },
   setTheme: vi.fn(),
-  items: { create: vi.fn() },
+  items: { setStatus: vi.fn(), create: vi.fn(), update: vi.fn() },
 };
 
 /**

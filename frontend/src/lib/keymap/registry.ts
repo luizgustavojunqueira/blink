@@ -1,9 +1,15 @@
 import { escapeBind } from "./implementations/escape";
 import { prefixKeyBindings } from "./implementations/insertMode";
 import { listNavigationBindings } from "./implementations/listNavigation";
+import { statusKeyBindings } from "./implementations/update";
 import type { KeyBinding, KeyContext } from "./types";
 
-const keyBindings: KeyBinding[] = [...prefixKeyBindings, ...listNavigationBindings, escapeBind];
+const keyBindings: KeyBinding[] = [
+  ...prefixKeyBindings,
+  ...listNavigationBindings,
+  escapeBind,
+  ...statusKeyBindings,
+];
 
 export type KeyMapId = keyof typeof keyBindings;
 

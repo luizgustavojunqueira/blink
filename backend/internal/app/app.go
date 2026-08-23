@@ -25,6 +25,7 @@ func (a *App) Start(port string) error {
 	})
 
 	mux.HandleFunc("POST /api/items", a.api.CreateItem)
+	mux.HandleFunc("PATCH /api/items", a.api.UpdateItem)
 	mux.HandleFunc("GET /api/items", a.api.GetItems)
 
 	mux.Handle("/", ui.SPAHandler())

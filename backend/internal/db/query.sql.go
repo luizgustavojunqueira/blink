@@ -135,15 +135,15 @@ func (q *Queries) GetItemsByParent(ctx context.Context, parentID sql.NullInt64) 
 const updateItem = `-- name: UpdateItem :one
 UPDATE items
 SET
-    title = COALESCE(?2, title),
-    description = COALESCE(?3, description),
-    status = COALESCE(?4, status),
-    priority = COALESCE(?5, priority),
-    tags = COALESCE(?6, tags),
-    parent_id = COALESCE(?7, parent_id),
+    title = COALESCE(?1, title),
+    description = COALESCE(?2, description),
+    status = COALESCE(?3, status),
+    priority = COALESCE(?4, priority),
+    tags = COALESCE(?5, tags),
+    parent_id = COALESCE(?6, parent_id),
     updated_at = CURRENT_TIMESTAMP,
-    completed_at = COALESCE(?8, completed_at)
-WHERE guid = ?
+    completed_at = COALESCE(?7, completed_at)
+WHERE guid = ?8
 RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at
 `
 

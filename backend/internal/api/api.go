@@ -10,6 +10,7 @@ import (
 type ItemService interface {
 	CreateItem(ctx context.Context, req models.CreateItemRequest) (*models.GetItemResponse, error)
 	GetItems(ctx context.Context, req models.GetItemRequest) ([]models.GetItemResponse, error)
+	UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error)
 }
 
 type API struct {

@@ -17,6 +17,40 @@ type MockItemService struct {
 	simulateErr error
 }
 
+func (m *MockItemService) UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+
+	item := models.GetItemResponse{
+		GUID:        req.GUID,
+		Title:       "Stored title",
+		Description: new("Stored description"),
+		Type:        models.Task,
+		Status:      models.ToDo,
+		Priority:    models.Normal,
+		Tags:        []string{"stored"},
+	}
+
+	if req.Title != nil {
+		item.Title = *req.Title
+	}
+	if req.Description != nil {
+		item.Description = req.Description
+	}
+	if req.Status != nil {
+		item.Status = *req.Status
+	}
+	if req.Priority != nil {
+		item.Priority = *req.Priority
+	}
+	if req.Tags != nil {
+		item.Tags = *req.Tags
+	}
+
+	return &item, nil
+}
+
 func (m *MockItemService) CreateItem(ctx context.Context, req models.CreateItemRequest) (*models.GetItemResponse, error) {
 	if m.simulateErr != nil {
 		return nil, m.simulateErr
@@ -139,5 +173,136 @@ func TestGetItems(t *testing.T) {
 				t.Errorf("Expected status %d, but got %v", tt.expectedCode, rr.Code)
 			}
 		})
+	}
+}
+
+func TestUpdateItem(t *testing.T) {
+	tests := []struct {
+		name         string
+		requestBody  any
+		serviceError error
+		expectedCode int
+	}{
+		{
+			name:         "Success - status only",
+			requestBody:  models.UpdateItemRequest{GUID: "item-1", Status: new(models.Done)},
+			serviceError: nil,
+			expectedCode: http.StatusOK, // 200
+		},
+		{
+			name:         "Success - every field at once",
+			requestBody:  models.UpdateItemRequest{GUID: "item-1", Title: new("Build blink"), Description: new("with tests"), Status: new(models.InProgress), Priority: new(models.High), Tags: new([]string{"work"})},
+			serviceError: nil,
+			expectedCode: http.StatusOK, // 200
+		},
+		{
+			name:         "Validation error (missing guid)",
+			requestBody:  models.UpdateItemRequest{Status: new(models.Done)},
+			serviceError: nil,
+			expectedCode: http.StatusBadRequest, // 400
+		},
+		{
+			name:         "Validation error (invalid status)",
+			requestBody:  models.UpdateItemRequest{GUID: "item-1", Status: new(models.ItemStatus("SLEEPING"))},
+			serviceError: nil,
+			expectedCode: http.StatusBadRequest, // 400
+		},
+		{
+			name:         "Validation error (invalid priority)",
+			requestBody:  models.UpdateItemRequest{GUID: "item-1", Priority: new(models.ItemPriority("WHENEVER"))},
+			serviceError: nil,
+			expectedCode: http.StatusBadRequest, // 400
+		},
+		{
+			name:         "JSON Syntax Error",
+			requestBody:  `{"guid": broken body`,
+			serviceError: nil,
+			expectedCode: http.StatusBadRequest, // 400
+		},
+		{
+			name:         "Service error",
+			requestBody:  models.UpdateItemRequest{GUID: "item-1", Status: new(models.Done)},
+			serviceError: errors.New("Some service error"),
+			expectedCode: http.StatusInternalServerError, // 500
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := &MockItemService{
+				simulateErr: tt.serviceError,
+			}
+			handler := api.NewAPI(mockSvc)
+
+			var bodyBytes []byte
+			if strBody, ok := tt.requestBody.(string); ok {
+				bodyBytes = []byte(strBody)
+			} else {
+				bodyBytes, _ = json.Marshal(tt.requestBody)
+			}
+
+			req := httptest.NewRequest(http.MethodPatch, "/api/items", bytes.NewBuffer(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			rr := httptest.NewRecorder()
+
+			handler.UpdateItem(rr, req)
+
+			if rr.Code != tt.expectedCode {
+				t.Errorf("Expected status %d, but got %v", tt.expectedCode, rr.Code)
+			}
+		})
+	}
+}
+
+func TestUpdateItem_RespondsWithTheUpdatedItem(t *testing.T) {
+	handler := api.NewAPI(&MockItemService{})
+
+	body, _ := json.Marshal(models.UpdateItemRequest{GUID: "item-1", Status: new(models.Done)})
+	req := httptest.NewRequest(http.MethodPatch, "/api/items", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+	handler.UpdateItem(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Expected status %d, but got %d", http.StatusOK, rr.Code)
+	}
+
+	if contentType := rr.Header().Get("Content-Type"); contentType != "application/json" {
+		t.Errorf("Expected Content-Type application/json, got %q", contentType)
+	}
+
+	var resp models.GetItemResponse
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("Expected a decodable item, got %v", err)
+	}
+
+	if resp.GUID != "item-1" {
+		t.Errorf("Expected guid item-1, got %q", resp.GUID)
+	}
+
+	if resp.Status != models.Done {
+		t.Errorf("Expected status %s, got %s", models.Done, resp.Status)
+	}
+
+	if resp.Title != "Stored title" {
+		t.Errorf("Expected the untouched title, got %q", resp.Title)
+	}
+
+	if resp.Description == nil || *resp.Description != "Stored description" {
+		t.Errorf("Expected the untouched description, got %v", resp.Description)
+	}
+
+	if resp.Type != models.Task {
+		t.Errorf("Expected the untouched type, got %q", resp.Type)
+	}
+
+	if resp.Priority != models.Normal {
+		t.Errorf("Expected the untouched priority, got %q", resp.Priority)
+	}
+
+	if len(resp.Tags) != 1 || resp.Tags[0] != "stored" {
+		t.Errorf("Expected the untouched tags, got %v", resp.Tags)
 	}
 }

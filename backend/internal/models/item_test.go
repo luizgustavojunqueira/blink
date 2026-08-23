@@ -128,3 +128,77 @@ func TestGetItemRequest_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateItemRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name        string
+		req         models.UpdateItemRequest
+		expectError bool
+	}{
+		{
+			name: "Success - guid only, nothing to change",
+			req: models.UpdateItemRequest{
+				GUID: "item-1",
+			},
+			expectError: false,
+		},
+		{
+			name: "Success - partial update with a single field",
+			req: models.UpdateItemRequest{
+				GUID:   "item-1",
+				Status: new(models.Done),
+			},
+			expectError: false,
+		},
+		{
+			name: "Success - every field populated",
+			req: models.UpdateItemRequest{
+				GUID:        "item-1",
+				Title:       new("Test item update"),
+				Description: new("with tests"),
+				Status:      new(models.InProgress),
+				Priority:    new(models.High),
+				Tags:        new([]string{"work"}),
+			},
+			expectError: false,
+		},
+		{
+			name: "Error - Missing GUID",
+			req: models.UpdateItemRequest{
+				Status: new(models.Done),
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Invalid Status",
+			req: models.UpdateItemRequest{
+				GUID:   "item-1",
+				Status: new(models.ItemStatus("SLEEPING")),
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Invalid Priority",
+			req: models.UpdateItemRequest{
+				GUID:     "item-1",
+				Priority: new(models.ItemPriority("WHENEVER")),
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Empty Status is not the same as absent",
+			req: models.UpdateItemRequest{
+				GUID:   "item-1",
+				Status: new(models.ItemStatus("")),
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.req.Validate()
+			parseError(t, err, tt.expectError)
+		})
+	}
+}

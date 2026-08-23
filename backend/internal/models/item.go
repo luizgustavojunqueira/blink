@@ -38,6 +38,15 @@ type CreateItemRequest struct {
 	Tags        []string     `json:"tags"`
 }
 
+type UpdateItemRequest struct {
+	GUID        string        `json:"guid"`
+	Title       *string       `json:"title"`
+	Description *string       `json:"description"`
+	Status      *ItemStatus   `json:"status"`
+	Priority    *ItemPriority `json:"priority"`
+	Tags        *[]string     `json:"tags,omitempty"`
+}
+
 type GetItemRequest struct {
 	Title       *string        `json:"title"`
 	Description *string        `json:"description"`
@@ -64,21 +73,34 @@ func (req *GetItemRequest) Validate() error {
 		}
 	}
 
-	validStatuses := map[ItemStatus]bool{
-		ToDo: true, InProgress: true, Done: true, Canceled: true, Archived: true,
-	}
 	for _, reqStatus := range req.Status {
-		if !validStatuses[reqStatus] {
-			return errors.New("invalid statuses")
+		if err := validStatus(reqStatus); err != nil {
+			return err
 		}
 	}
 
-	validPriorities := map[ItemPriority]bool{
-		Low: true, Normal: true, High: true, Urgent: true,
-	}
 	for _, reqPriority := range req.Priority {
-		if !validPriorities[reqPriority] {
-			return errors.New("invalid priorities")
+		if err := validPriority(reqPriority); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (req *UpdateItemRequest) Validate() error {
+	if req.GUID == "" {
+		return errors.New("guid is required")
+	}
+	if req.Status != nil {
+		if err := validStatus(*req.Status); err != nil {
+			return err
+		}
+	}
+
+	if req.Priority != nil {
+		if err := validPriority(*req.Priority); err != nil {
+			return err
 		}
 	}
 
@@ -94,19 +116,33 @@ func (req *CreateItemRequest) Validate() error {
 		return errors.New("invalid item type")
 	}
 
+	if err := validStatus(req.Status); err != nil {
+		return err
+	}
+
+	if err := validPriority(req.Priority); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validStatus(s ItemStatus) error {
 	validStatuses := map[ItemStatus]bool{
 		ToDo: true, InProgress: true, Done: true, Canceled: true, Archived: true,
 	}
-	if !validStatuses[req.Status] {
+	if !validStatuses[s] {
 		return errors.New("invalid status")
 	}
+	return nil
+}
 
+func validPriority(p ItemPriority) error {
 	validPriorities := map[ItemPriority]bool{
 		Low: true, Normal: true, High: true, Urgent: true,
 	}
-	if !validPriorities[req.Priority] {
+	if !validPriorities[p] {
 		return errors.New("invalid priority")
 	}
-
 	return nil
 }

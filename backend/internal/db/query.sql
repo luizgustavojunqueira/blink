@@ -23,7 +23,7 @@ SET
     parent_id = COALESCE(sqlc.narg('parent_id'), parent_id),
     updated_at = CURRENT_TIMESTAMP,
     completed_at = COALESCE(sqlc.narg('completed_at'), completed_at)
-WHERE guid = ?
+WHERE guid = sqlc.arg('guid')
 RETURNING *;
 
 -- name: DeleteItem :exec

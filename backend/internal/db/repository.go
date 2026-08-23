@@ -58,7 +58,7 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 		})
 	}
 
-	query = query.OrderBy("updated_at DESC", "created_at DESC")
+	query = query.OrderBy("status DESC", "created_at DESC")
 
 	sql, args, err := query.ToSql()
 	if err != nil {

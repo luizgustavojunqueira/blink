@@ -9,6 +9,38 @@ import (
 	"github.com/luizgustavojunqueira/blink/internal/models"
 )
 
+func (s *Service) UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error) {
+	var tagsStr *string
+	if req.Tags != nil {
+		joined := strings.Join(*req.Tags, ",")
+		tagsStr = &joined
+	}
+
+	item, err := s.repo.UpdateItem(ctx, db.UpdateItemParams{
+		Guid:        req.GUID,
+		Title:       pointerToNullString(req.Title),
+		Description: pointerToNullString(req.Description),
+		Status:      pointerToNullString(req.Status),
+		Priority:    pointerToNullString(req.Priority),
+		Tags:        pointerToNullString(tagsStr),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	tags := tagsToStringSlice(item.Tags)
+
+	return &models.GetItemResponse{
+		GUID:        item.Guid,
+		Title:       item.Title,
+		Description: nullStringToPointer(item.Description),
+		Type:        models.ItemType(item.Type),
+		Status:      models.ItemStatus(item.Status),
+		Priority:    models.ItemPriority(item.Priority),
+		Tags:        tags,
+	}, nil
+}
+
 func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) (*models.GetItemResponse, error) {
 	var tagsStr *string
 	if len(req.Tags) > 0 {
@@ -29,12 +61,7 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		return nil, err
 	}
 
-	var tags []string
-	if item.Tags.Valid && item.Tags.String != "" {
-		tags = strings.Split(item.Tags.String, ",")
-	} else {
-		tags = []string{}
-	}
+	tags := tagsToStringSlice(item.Tags)
 
 	return &models.GetItemResponse{
 		GUID:        item.Guid,
@@ -82,12 +109,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 
 	for _, item := range items {
 
-		var tags []string
-		if item.Tags.Valid && item.Tags.String != "" {
-			tags = strings.Split(item.Tags.String, ",")
-		} else {
-			tags = []string{}
-		}
+		tags := tagsToStringSlice(item.Tags)
 
 		itemResp := models.GetItemResponse{
 			GUID:        item.Guid,

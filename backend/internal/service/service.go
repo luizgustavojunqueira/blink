@@ -4,12 +4,14 @@ package service
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	"github.com/luizgustavojunqueira/blink/internal/db"
 )
 
 type Repository interface {
 	CreateItem(ctx context.Context, arg db.CreateItemParams) (db.Item, error)
+	UpdateItem(ctx context.Context, arg db.UpdateItemParams) (db.Item, error)
 	GetItemsDynamic(ctx context.Context, filter db.GetIemsFilter) ([]db.Item, error)
 }
 
@@ -28,9 +30,9 @@ func nullStringToPointer(ns sql.NullString) *string {
 	return &ns.String
 }
 
-func pointerToNullString(s *string) sql.NullString {
+func pointerToNullString[T ~string](s *T) sql.NullString {
 	if s != nil {
-		return sql.NullString{String: *s, Valid: true}
+		return sql.NullString{String: string(*s), Valid: true}
 	}
 	return sql.NullString{}
 }
@@ -44,4 +46,14 @@ func toStringSlice[T ~string](items []T) []string {
 		result[i] = string(v)
 	}
 	return result
+}
+
+func tagsToStringSlice(csvTags sql.NullString) []string {
+	var tags []string
+	if csvTags.Valid && csvTags.String != "" {
+		tags = strings.Split(csvTags.String, ",")
+	} else {
+		tags = []string{}
+	}
+	return tags
 }

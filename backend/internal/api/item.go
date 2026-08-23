@@ -8,6 +8,32 @@ import (
 	"github.com/luizgustavojunqueira/blink/internal/models"
 )
 
+func (a *API) UpdateItem(w http.ResponseWriter, r *http.Request) {
+	var updateItemReq models.UpdateItemRequest
+	err := json.NewDecoder(r.Body).Decode(&updateItemReq)
+	if err != nil {
+		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		return
+	}
+
+	if err = updateItemReq.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	updateResponse, err := a.itemService.UpdateItem(r.Context(), updateItemReq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(updateResponse); err != nil {
+		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (a *API) CreateItem(w http.ResponseWriter, r *http.Request) {
 	var createItemReq models.CreateItemRequest
 	err := json.NewDecoder(r.Body).Decode(&createItemReq)

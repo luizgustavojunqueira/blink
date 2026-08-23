@@ -15,6 +15,21 @@ type MockRepository struct {
 	simulateErr          error
 	capturedFilter       *db.GetIemsFilter
 	capturedCreateParams *db.CreateItemParams
+	capturedUpdateParams *db.UpdateItemParams
+}
+
+func (m *MockRepository) UpdateItem(ctx context.Context, arg db.UpdateItemParams) (db.Item, error) {
+	m.capturedUpdateParams = &arg
+	if m.simulateErr != nil {
+		return db.Item{}, m.simulateErr
+	}
+	return db.Item{
+		Guid:     arg.Guid,
+		Title:    arg.Title.String,
+		Status:   arg.Status.String,
+		Priority: arg.Priority.String,
+		Tags:     arg.Tags,
+	}, nil
 }
 
 func (m *MockRepository) CreateItem(ctx context.Context, arg db.CreateItemParams) (db.Item, error) {
@@ -182,5 +197,111 @@ func TestService_Errors(t *testing.T) {
 	_, err = svc.GetItems(context.Background(), models.GetItemRequest{})
 	if err == nil {
 		t.Errorf("Expected GetItems to return an error when DB fails")
+	}
+
+	_, err = svc.UpdateItem(context.Background(), models.UpdateItemRequest{GUID: "item-1"})
+	if err == nil {
+		t.Errorf("Expected UpdateItem to return an error when DB fails")
+	}
+}
+
+func assertNullString(t *testing.T, field string, got, want sql.NullString) {
+	t.Helper()
+
+	if got.Valid != want.Valid || got.String != want.String {
+		t.Errorf("%s: expected %+v, got %+v", field, want, got)
+	}
+}
+
+func TestService_UpdateItem(t *testing.T) {
+	tests := []struct {
+		name         string
+		request      models.UpdateItemRequest
+		wantTitle    sql.NullString
+		wantDesc     sql.NullString
+		wantStatus   sql.NullString
+		wantPriority sql.NullString
+		wantTags     sql.NullString
+		wantRespTags []string
+	}{
+		{
+			name:         "Success - status only leaves the other columns untouched",
+			request:      models.UpdateItemRequest{GUID: "item-1", Status: new(models.Done)},
+			wantStatus:   sql.NullString{String: "DONE", Valid: true},
+			wantRespTags: []string{},
+		},
+		{
+			name: "Success - every field at once, tags joined into CSV",
+			request: models.UpdateItemRequest{
+				GUID:        "item-1",
+				Title:       new("Build blink"),
+				Description: new("with tests"),
+				Status:      new(models.InProgress),
+				Priority:    new(models.High),
+				Tags:        new([]string{"work", "urgent"}),
+			},
+			wantTitle:    sql.NullString{String: "Build blink", Valid: true},
+			wantDesc:     sql.NullString{String: "with tests", Valid: true},
+			wantStatus:   sql.NullString{String: "IN_PROGRESS", Valid: true},
+			wantPriority: sql.NullString{String: "HIGH", Valid: true},
+			wantTags:     sql.NullString{String: "work,urgent", Valid: true},
+			wantRespTags: []string{"work", "urgent"},
+		},
+		{
+			name:         "Success - empty tags slice clears the column",
+			request:      models.UpdateItemRequest{GUID: "item-1", Tags: new([]string{})},
+			wantTags:     sql.NullString{String: "", Valid: true},
+			wantRespTags: []string{},
+		},
+		{
+			name:         "Success - nil tags leaves the column untouched",
+			request:      models.UpdateItemRequest{GUID: "item-1", Status: new(models.ToDo)},
+			wantStatus:   sql.NullString{String: "TODO", Valid: true},
+			wantRespTags: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := &MockRepository{}
+			svc := service.NewService(mockRepo)
+
+			resp, err := svc.UpdateItem(context.Background(), tt.request)
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+
+			if mockRepo.capturedUpdateParams == nil {
+				t.Fatal("expected repo to be called")
+			}
+
+			if mockRepo.capturedUpdateParams.Guid != tt.request.GUID {
+				t.Errorf("expected guid %s, got %s", tt.request.GUID, mockRepo.capturedUpdateParams.Guid)
+			}
+
+			assertNullString(t, "title", mockRepo.capturedUpdateParams.Title, tt.wantTitle)
+			assertNullString(t, "description", mockRepo.capturedUpdateParams.Description, tt.wantDesc)
+			assertNullString(t, "status", mockRepo.capturedUpdateParams.Status, tt.wantStatus)
+			assertNullString(t, "priority", mockRepo.capturedUpdateParams.Priority, tt.wantPriority)
+			assertNullString(t, "tags", mockRepo.capturedUpdateParams.Tags, tt.wantTags)
+
+			if resp.GUID != tt.request.GUID {
+				t.Errorf("expected response guid %s, got %s", tt.request.GUID, resp.GUID)
+			}
+
+			if string(resp.Status) != tt.wantStatus.String {
+				t.Errorf("expected response status %q, got %q", tt.wantStatus.String, resp.Status)
+			}
+
+			if len(resp.Tags) != len(tt.wantRespTags) {
+				t.Fatalf("expected tags %v, got %v", tt.wantRespTags, resp.Tags)
+			}
+
+			for i, tag := range tt.wantRespTags {
+				if resp.Tags[i] != tag {
+					t.Errorf("expected tag %v, got %v", tag, resp.Tags[i])
+				}
+			}
+		})
 	}
 }

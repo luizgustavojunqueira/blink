@@ -4,7 +4,7 @@ import { listNavigationBindings } from "./implementations/listNavigation";
 import { statusKeyBindings } from "./implementations/update";
 import type { KeyBinding, KeyContext } from "./types";
 
-const keyBindings: KeyBinding[] = [
+export const keyBindings: KeyBinding[] = [
   ...prefixKeyBindings,
   ...listNavigationBindings,
   escapeBind,

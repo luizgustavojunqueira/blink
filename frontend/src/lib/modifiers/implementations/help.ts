@@ -5,9 +5,6 @@ import { priorityModifier } from "./priority";
 import { statusModifier } from "./status";
 import { tagModifier } from "./tag";
 
-// Imports the other modifiers directly instead of going through
-// modifiers/registry.ts's getAllModifiers() — that registry imports this
-// file too, and going through it here would create a circular dependency.
 const OTHER_MODIFIERS = [statusModifier, priorityModifier, tagModifier, descriptionModifier];
 
 export const helpModifier: CommandDefinition = {

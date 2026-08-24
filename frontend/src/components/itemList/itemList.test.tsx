@@ -20,7 +20,6 @@ function renderComponent() {
     },
   });
 
-  // Mock enxuto do app contendo o ui store e as funções essenciais
   const mockApp = {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
@@ -38,7 +37,6 @@ function renderComponent() {
 
 describe("ItemList", () => {
   beforeEach(() => {
-    // Reseta o estado da store entre os testes se necessário
     useUiStore.setState({
       prompt: "",
       filter: {},

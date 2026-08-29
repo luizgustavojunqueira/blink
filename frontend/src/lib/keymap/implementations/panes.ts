@@ -21,7 +21,6 @@ export const paneNavigation: KeyBinding[] = [
       app.ui.popPane();
     },
   },
-
   {
     id: "list:ctrll",
     keys: ["ctrl+l", "ctrl+arrowright"],

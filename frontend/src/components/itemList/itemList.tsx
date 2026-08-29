@@ -22,7 +22,9 @@ export function ItemList({ paneId }: IItemList) {
   }, [idsString, t]);
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div
+      className={`w-full h-full flex flex-col border ${t.isActive ? "border-b-accent" : "border-bg"}`}
+    >
       <Prompt paneId={paneId} />
 
       <div className="flex-1 overflow-y-auto">

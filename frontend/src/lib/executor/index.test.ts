@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { execute } from "./index";
 import * as registry from "../commands/registry";
-import type { AppContext, CommandDefinition } from "../commands/types";
+import type { CommandDefinition } from "../commands/types";
+import type { AppContext } from "../types";
+import { useUiStore } from "../../stores/ui";
 
 const app: AppContext = {
-  setFilter: vi.fn(),
+  ui: useUiStore.getState(),
   setTheme: vi.fn(),
-  items: { create: vi.fn() },
+  items: { setStatus: vi.fn(), create: vi.fn(), update: vi.fn() },
 };
 
 function stubCommand(def: Partial<CommandDefinition>): CommandDefinition {

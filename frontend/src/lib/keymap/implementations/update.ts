@@ -21,8 +21,9 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
   keys: [statusToKey[status]],
   modes: ["normal"],
   scope: "list",
-  run: ({ app }) => {
-    if (app.ui.selectedId) app.items.setStatus(app.ui.selectedId, status);
+  run: ({ app, pane }) => {
+    if (pane.type !== "list") return;
+    if (pane.selectedId) app.items.setStatus(pane.selectedId, status);
   },
 });
 

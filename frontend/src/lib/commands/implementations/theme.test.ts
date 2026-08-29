@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AppContext } from "../types";
+import type { AppContext } from "../../types";
 import { themeCommand } from "./theme";
+import { useUiStore } from "../../../stores/ui";
 
 function fakeApp(): AppContext {
   return {
-    setFilter: vi.fn(),
+    ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { create: vi.fn() },
+    items: { setStatus: vi.fn(), create: vi.fn(), update: vi.fn() },
   };
 }
 

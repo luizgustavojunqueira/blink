@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AppContext } from "../types";
+import type { AppContext } from "../../types";
 import { createCommand, parseCreate } from "./create";
+import { useUiStore } from "../../../stores/ui";
 
 function fakeApp(create = vi.fn().mockResolvedValue({})): AppContext {
   return {
-    setFilter: vi.fn(),
+    ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { create },
+    items: { setStatus: vi.fn(), create, update: vi.fn() },
   };
 }
 

@@ -5,18 +5,22 @@ import HighlightedPrompt from "./highlightedPrompt";
 import Helper from "./helper";
 import { usePromptHelper } from "../../hooks/promptHelper/usePromptHelper";
 import type { ExecuteResult } from "../../lib/commands/types";
-import type { AppContext } from "../../lib/types";
 import { useUiStore } from "../../stores/ui";
+import { useAppContext } from "../../hooks/useAppContext";
+import { usePane } from "../../hooks/usePane";
 
 interface IPrompt {
-  app: AppContext;
+  paneId: string;
 }
 
-export default function Prompt({ app }: IPrompt) {
+export default function Prompt({ paneId }: IPrompt) {
+  const app = useAppContext();
   const [message, setMessage] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const prompt = useUiStore((s) => s.prompt);
+  const t = usePane(paneId);
+
+  const prompt = t.pane.prompt;
   const mode = useUiStore((s) => s.mode);
 
   const helper = usePromptHelper(inputRef, (newPrompt: string) => {
@@ -26,6 +30,7 @@ export default function Prompt({ app }: IPrompt) {
   const { update: helperUpdate } = helper;
 
   useEffect(() => {
+    if (!t.isActive) return;
     const input = inputRef.current;
     if (!input) return;
     if (mode === "insert") {
@@ -35,7 +40,11 @@ export default function Prompt({ app }: IPrompt) {
     } else {
       input.blur();
     }
-  }, [helperUpdate, mode]);
+  }, [helperUpdate, mode, t.isActive]);
+
+  const handleClick = () => {
+    app.ui.setMode("insert");
+  };
 
   const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -70,12 +79,13 @@ export default function Prompt({ app }: IPrompt) {
   return (
     <div className="w-full px-5 py-4 border-b border-border bg-bg-soft flex items-center gap-3">
       <span className="text-accent select-none">❯</span>
-      <div className="relative flex-1 flex items-center">
+      <div className="relative flex-1 flex items-center min-w-0">
         <HighlightedPrompt prompt={prompt} />
         <input
           ref={inputRef}
           value={prompt}
           onChange={onChange}
+          onClick={handleClick}
           onKeyDown={(e) => {
             if (helper.onKeyDown(e)) return;
             handleKeyDown(e);
@@ -86,7 +96,7 @@ export default function Prompt({ app }: IPrompt) {
           autoComplete="off"
           data-testid="prompt"
         />
-        <span>{message}</span>
+        <span className="truncate">{message}</span>
         <Helper {...helper} />
       </div>
     </div>

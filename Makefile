@@ -1,10 +1,7 @@
-.PHONY: dev dev-api dev-ui build generate test test-back test-front
-
-dev:
-	make -j2 dev-api dev-ui
+.PHONY: dev-api dev-ui build generate test test-back test-front
 
 dev-api:
-	docker compose --profile dev up --build
+	sudo docker compose --profile dev up --build
 
 dev-ui:
 	cd frontend && bun run dev

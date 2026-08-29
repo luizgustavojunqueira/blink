@@ -4,6 +4,12 @@ import { eventToKey, useKeyMap } from "./useKeyMap";
 import { useUiStore } from "../stores/ui";
 import type { AppContext } from "../lib/types";
 import { Done } from "../types/backend";
+import { createRootPane } from "../lib/pane/factories";
+import type { ListPane } from "../lib/pane/types";
+
+function firstPane(): ListPane {
+  return useUiStore.getState().panes[0] as ListPane;
+}
 
 function makeApp() {
   return {
@@ -19,6 +25,14 @@ function makeApp() {
 
 function press(key: string, init: KeyboardEventInit = {}) {
   return window.dispatchEvent(new KeyboardEvent("keydown", { key, cancelable: true, ...init }));
+}
+
+function seedRoot(renderedIds: string[] = [], selectedId: string | null = null) {
+  const pane = createRootPane();
+  pane.renderedIds = renderedIds;
+  pane.selectedId = selectedId;
+  useUiStore.setState({ mode: "normal", panes: [pane], activePaneId: pane.id });
+  return pane;
 }
 
 describe("eventToKey", () => {
@@ -70,17 +84,11 @@ describe("eventToKey", () => {
 
 describe("useKeyMap", () => {
   beforeEach(() => {
-    useUiStore.setState({
-      mode: "normal",
-      prompt: "",
-      filter: {},
-      selectedId: null,
-      renderedIds: [],
-    });
+    seedRoot();
   });
 
   it("runs the binding of the pressed key against the app context", () => {
-    useUiStore.setState({ renderedIds: ["item-1"], selectedId: "item-1" });
+    seedRoot(["item-1"], "item-1");
     const app = makeApp();
 
     renderHook(() => useKeyMap(app));
@@ -90,30 +98,30 @@ describe("useKeyMap", () => {
   });
 
   it("moves the selection through the real store", () => {
-    useUiStore.setState({ renderedIds: ["a", "b"] });
+    seedRoot(["a", "b"]);
 
     renderHook(() => useKeyMap(makeApp()));
     press("j");
 
-    expect(useUiStore.getState().selectedId).toBe("a");
+    expect(firstPane().selectedId).toBe("a");
 
     press("j");
 
-    expect(useUiStore.getState().selectedId).toBe("b");
+    expect(firstPane().selectedId).toBe("b");
   });
 
   it("reads the mode from the store, not from the app it was mounted with", () => {
-    useUiStore.setState({ renderedIds: ["a", "b"] });
+    seedRoot(["a", "b"]);
 
     renderHook(() => useKeyMap(makeApp()));
     useUiStore.setState({ mode: "insert" });
     press("j");
 
-    expect(useUiStore.getState().selectedId).toBeNull();
+    expect(firstPane().selectedId).toBeNull();
   });
 
   it("dispatches to the latest app after a rerender", () => {
-    useUiStore.setState({ renderedIds: ["item-1"], selectedId: "item-1" });
+    seedRoot(["item-1"], "item-1");
     const first = makeApp();
     const second = makeApp();
 
@@ -128,7 +136,7 @@ describe("useKeyMap", () => {
   });
 
   it("prevents the default of a handled key", () => {
-    useUiStore.setState({ renderedIds: ["a"] });
+    seedRoot(["a"]);
 
     renderHook(() => useKeyMap(makeApp()));
 
@@ -142,12 +150,12 @@ describe("useKeyMap", () => {
   });
 
   it("stops listening once unmounted", () => {
-    useUiStore.setState({ renderedIds: ["a", "b"] });
+    seedRoot(["a", "b"]);
 
     const { unmount } = renderHook(() => useKeyMap(makeApp()));
     unmount();
     press("j");
 
-    expect(useUiStore.getState().selectedId).toBeNull();
+    expect(firstPane().selectedId).toBeNull();
   });
 });

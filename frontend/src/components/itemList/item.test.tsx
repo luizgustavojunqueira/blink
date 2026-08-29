@@ -18,7 +18,7 @@ const makeItem = (
 
 describe("Item", () => {
   it("renders title", () => {
-    render(<Item item={makeItem()} />);
+    render(<Item item={makeItem()} isSelected={false} paneId="root" />);
 
     expect(screen.getByText("Test item")).toBeInTheDocument();
   });
@@ -29,6 +29,8 @@ describe("Item", () => {
         item={makeItem({
           status: "IN_PROGRESS",
         })}
+        isSelected={false}
+        paneId="root"
       />,
     );
 
@@ -41,6 +43,8 @@ describe("Item", () => {
         item={makeItem({
           priority: "NORMAL",
         })}
+        isSelected={false}
+        paneId="root"
       />,
     );
 
@@ -53,6 +57,8 @@ describe("Item", () => {
         item={makeItem({
           priority: "HIGH",
         })}
+        isSelected={false}
+        paneId="root"
       />,
     );
 
@@ -65,6 +71,8 @@ describe("Item", () => {
         item={makeItem({
           type: "GROUP",
         })}
+        isSelected={false}
+        paneId="root"
       />,
     );
 
@@ -77,6 +85,8 @@ describe("Item", () => {
         item={makeItem({
           tags: ["work", "urgent"],
         })}
+        isSelected={false}
+        paneId="root"
       />,
     );
 
@@ -90,6 +100,8 @@ describe("Item", () => {
         item={makeItem({
           description: "Some description",
         })}
+        isSelected={false}
+        paneId="root"
       />,
     );
 
@@ -102,6 +114,8 @@ describe("Item", () => {
         item={makeItem({
           status: "DONE",
         })}
+        isSelected={false}
+        paneId="root"
       />,
     );
 

@@ -10,9 +10,15 @@ export function useKeyMap(app: AppContext) {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      const state = useUiStore.getState();
+      const pane = state.panes.find((p) => p.id === state.activePaneId);
+      if (!pane) return;
+
       const ctx: KeyContext = {
-        app: { ...appRef.current, ui: useUiStore.getState() },
+        app: { ...appRef.current, ui: state },
+        pane,
       };
+
       const binding = resolve(eventToKey(e), ctx);
       if (!binding) return;
       if (binding.run(ctx) == false) return;

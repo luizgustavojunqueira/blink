@@ -10,7 +10,7 @@ export type AppContext = {
   ui: UiState & UiActions;
   setTheme: (theme: string) => void;
   items: {
-    setStatus: (guid: string, status: ItemStatus) => Promise<GetItemResponse> | undefined;
+    setStatus: (guid: string, status: ItemStatus) => void;
     create: (req: CreateItemRequest) => Promise<GetItemResponse>;
     update: (req: UpdateItemRequest) => Promise<GetItemResponse>;
   };

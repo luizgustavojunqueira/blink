@@ -1,9 +1,10 @@
-import { useUiStore } from "../../stores/ui";
+import { usePane } from "../../hooks/usePane";
 import type { GetItemResponse, ItemPriority, ItemStatus } from "../../types/backend";
 
 interface IItem {
   item: GetItemResponse;
   isSelected: boolean;
+  paneId: string;
 }
 
 const priorityColor: Record<ItemPriority, string> = {
@@ -21,10 +22,11 @@ const statusColor: Record<ItemStatus, string> = {
   ARCHIVED: "text-fg-muted",
 };
 
-export default function Item({ item, isSelected }: IItem) {
+export default function Item({ item, isSelected, paneId }: IItem) {
   const isDone = item.status === "DONE" || item.status === "CANCELED";
+  const t = usePane(paneId);
 
-  const select = useUiStore((s) => s.select);
+  const select = t.select;
   return (
     <li
       className={`group w-full px-4 py-1.5 flex items-center gap-3 transition-colors duration-75 ${

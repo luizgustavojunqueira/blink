@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { getKeyBinding, keyBindings, resolve } from "./registry";
 import type { KeyContext, Mode } from "./types";
 
-const ctx = (mode: Mode) => ({ app: { ui: { mode } } }) as KeyContext;
+const ctx = (mode: Mode) =>
+  ({ app: { ui: { mode } }, pane: { id: "root", type: "list" } }) as KeyContext;
 
 describe("keymap registry: resolve", () => {
   it("resolves the navigation keys in normal mode", () => {

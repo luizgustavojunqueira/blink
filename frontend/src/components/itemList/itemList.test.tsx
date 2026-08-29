@@ -4,12 +4,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ItemList } from "./itemList";
 import { useItems } from "../../hooks/useItems";
 import { useUiStore } from "../../stores/ui";
+import { createRootPane } from "../../lib/pane/factories";
 
 vi.mock("../../hooks/useItems", () => ({
   useItems: vi.fn(),
 }));
 
+vi.mock("../prompt/prompt", () => ({
+  default: () => <div data-testid="prompt-mock" />,
+}));
+
 const mockedUseItems = vi.mocked(useItems);
+
+const ROOT_ID = "root";
 
 function renderComponent() {
   const client = new QueryClient({
@@ -20,29 +27,17 @@ function renderComponent() {
     },
   });
 
-  const mockApp = {
-    ui: useUiStore.getState(),
-    setTheme: vi.fn(),
-    items: {
-      create: vi.fn(),
-    },
-  };
-
   return render(
     <QueryClientProvider client={client}>
-      <ItemList app={mockApp as any} />
+      <ItemList paneId={ROOT_ID} />
     </QueryClientProvider>,
   );
 }
 
 describe("ItemList", () => {
   beforeEach(() => {
-    useUiStore.setState({
-      prompt: "",
-      filter: {},
-      mode: "insert",
-      selectedId: null,
-    });
+    const pane = createRootPane();
+    useUiStore.setState({ mode: "insert", panes: [pane], activePaneId: pane.id });
   });
 
   it("renders loading state", () => {

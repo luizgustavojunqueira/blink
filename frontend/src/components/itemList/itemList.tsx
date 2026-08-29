@@ -2,29 +2,28 @@ import { useItems } from "../../hooks/useItems";
 import Loading from "../loading";
 import Prompt from "../prompt/prompt";
 import Item from "./item";
-import type { AppContext } from "../../lib/types";
-import { useUiStore } from "../../stores/ui";
 import { useEffect } from "react";
+import { useListPane } from "../../hooks/usePane";
 
 interface IItemList {
-  app: AppContext;
+  paneId: string;
 }
 
-export function ItemList({ app }: IItemList) {
-  const { data: items = [], isFetching, isError, error } = useItems(app.ui.filter);
+export function ItemList({ paneId }: IItemList) {
+  const t = useListPane(paneId);
 
-  const selectedId = useUiStore((s) => s.selectedId);
-  const setRenderedIds = useUiStore((s) => s.setRenderedIds);
+  const { data: items = [], isFetching, isError, error } = useItems(t.pane.filter);
 
   const idsString = items.map((item) => item.guid).join(",");
 
   useEffect(() => {
-    setRenderedIds(idsString ? idsString.split(",") : []);
-  }, [idsString, setRenderedIds]);
+    if (!t) return;
+    t.setRenderedIds(idsString ? idsString.split(",") : []);
+  }, [idsString, t]);
 
   return (
     <div className="w-full h-full flex flex-col">
-      <Prompt app={app} />
+      <Prompt paneId={paneId} />
 
       <div className="flex-1 overflow-y-auto">
         {isFetching && <Loading />}
@@ -33,7 +32,12 @@ export function ItemList({ app }: IItemList) {
 
         <ul className="flex flex-col">
           {items.map((item) => (
-            <Item key={item.guid} item={item} isSelected={item.guid === selectedId} />
+            <Item
+              key={item.guid}
+              item={item}
+              isSelected={item.guid === t.pane.selectedId}
+              paneId={paneId}
+            />
           ))}
         </ul>
 

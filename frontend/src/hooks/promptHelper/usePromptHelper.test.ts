@@ -8,7 +8,7 @@ function cmd(rest: string) {
 }
 
 function createInputRef(value: string, cursor: number = value.length) {
-  const input = document.createElement("input");
+  const input = document.createElement("textarea");
   input.value = value;
   input.setSelectionRange(cursor, cursor);
   return { current: input };

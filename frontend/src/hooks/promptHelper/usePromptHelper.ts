@@ -11,7 +11,7 @@ function isSingleSpaceAway(text: string, wordStart: number): boolean {
 }
 
 export function usePromptHelper(
-  inputRef: React.RefObject<HTMLInputElement | null>,
+  inputRef: React.RefObject<HTMLTextAreaElement | null>,
   setPrompt: (prompt: string) => void,
 ) {
   const [selectedIndex, setSelectedIndex] = useState(0);

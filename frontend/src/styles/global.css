@@ -53,11 +53,13 @@ body {
 @keyframes blink {
   0%,
   50% {
-    opacity: 1;
+    background-color: var(--cursor);
+    color: var(--bg-soft);
   }
   51%,
   100% {
-    opacity: 0;
+    background-color: transparent;
+    color: inherit;
   }
 }
 .animate-blink {
@@ -86,4 +88,13 @@ body {
 
 *::-webkit-scrollbar-thumb:hover {
   background-color: var(--fg-muted);
+}
+
+.scrollbar-hidden {
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }

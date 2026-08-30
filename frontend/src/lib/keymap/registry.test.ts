@@ -1,9 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { getKeyBinding, keyBindings, resolve } from "./registry";
 import type { KeyContext, Mode } from "./types";
+import type { ListPane } from "../pane/types";
 
-const ctx = (mode: Mode) =>
-  ({ app: { ui: { mode } }, pane: { id: "root", type: "list" } }) as KeyContext;
+type CtxOptions = { panes?: number; activeIdx?: number; selectedId?: string | null };
+
+const listPane = (id: string, selectedId: string | null): ListPane => ({
+  id,
+  type: "list",
+  prompt: "",
+  parentId: null,
+  selectedId,
+  renderedIds: selectedId ? [selectedId] : [],
+  filter: {},
+});
+
+const ctx = (mode: Mode, { panes = 1, activeIdx = 0, selectedId = "item-1" }: CtxOptions = {}) => {
+  const list = Array.from({ length: panes }, (_, i) => listPane(`pane-${i}`, selectedId));
+  const pane = list[activeIdx];
+  return { app: { ui: { mode, panes: list, activePaneId: pane.id } }, pane } as KeyContext;
+};
 
 describe("keymap registry: resolve", () => {
   it("resolves the navigation keys in normal mode", () => {
@@ -30,11 +46,15 @@ describe("keymap registry: resolve", () => {
 
   it("resolves the prompt prefixes in normal mode", () => {
     expect(resolve("i", ctx("normal"))?.id).toBe("insertMode");
-    expect(resolve("#", ctx("normal"))?.id).toBe("insert:#");
-    expect(resolve("!", ctx("normal"))?.id).toBe("insert:!");
-    expect(resolve("@", ctx("normal"))?.id).toBe("insert:@");
-    expect(resolve(":", ctx("normal"))?.id).toBe("insert::");
-    expect(resolve("/", ctx("normal"))?.id).toBe("insert:/");
+    expect(resolve("#", ctx("normal"))?.id).toBe("insertPrefix");
+    expect(resolve("!", ctx("normal"))?.id).toBe("insertPrefix");
+    expect(resolve("@", ctx("normal"))?.id).toBe("insertPrefix");
+    expect(resolve(":", ctx("normal"))?.id).toBe("insertPrefix");
+  });
+
+  it("keeps the item bindings out of reach while nothing is selected", () => {
+    expect(resolve("3", ctx("normal", { selectedId: null }))).toBeUndefined();
+    expect(resolve("l", ctx("normal", { selectedId: null }))).toBeUndefined();
   });
 
   it("resolves escape in both modes", () => {
@@ -55,11 +75,18 @@ describe("keymap registry: resolve", () => {
   });
 
   it("reaches every binding through each of its keys, so none is shadowed", () => {
+    const contexts = [
+      ctx("normal"),
+      ctx("insert"),
+      ctx("normal", { selectedId: null }),
+      ctx("normal", { panes: 2, activeIdx: 0 }),
+      ctx("normal", { panes: 2, activeIdx: 1 }),
+    ];
+
     for (const binding of keyBindings) {
       for (const key of binding.keys) {
-        for (const mode of binding.modes) {
-          expect(resolve(key, ctx(mode))?.id).toBe(binding.id);
-        }
+        const reached = contexts.some((c) => resolve(key, c)?.id === binding.id);
+        expect(reached, `${binding.id} via ${key}`).toBe(true);
       }
     }
   });

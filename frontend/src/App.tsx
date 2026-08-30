@@ -6,6 +6,7 @@ import { useAppContext } from "./hooks/useAppContext";
 import { useKeyMap } from "./hooks/useKeyMap";
 import { useUiStore } from "./stores/ui";
 import { paneRegistry } from "./lib/pane/registry";
+import Hint from "./components/hint/hint";
 
 function Main() {
   const app = useAppContext();
@@ -36,6 +37,7 @@ function Main() {
           </div>
         );
       })}
+      <Hint />
     </div>
   );
 }

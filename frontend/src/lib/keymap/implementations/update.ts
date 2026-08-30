@@ -6,6 +6,7 @@ import {
   ToDo,
   type ItemStatus,
 } from "../../../types/backend";
+import { statusMapper } from "../../../utils/status";
 import type { KeyBinding } from "../types";
 
 const statusToKey = {
@@ -21,6 +22,13 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
   keys: [statusToKey[status]],
   modes: ["normal"],
   scope: "list",
+  description: statusMapper[status],
+  hint: {
+    group: "item",
+  },
+  when: ({ pane }) => {
+    return pane.type === "list" && pane.selectedId !== null && pane.selectedId !== undefined;
+  },
   run: ({ app, pane }) => {
     if (pane.type !== "list") return;
     if (pane.selectedId) app.items.setStatus(pane.selectedId, status);

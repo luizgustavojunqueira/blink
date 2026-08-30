@@ -31,7 +31,7 @@ beforeEach(() => {
 describe("list:l", () => {
   it("pushes a new list pane parented to the selected item and activates it", () => {
     const c = ctx();
-    byId["list:l"].run(c);
+    byId["list:l"].run(c, "l");
 
     const store = useUiStore.getState();
     expect(store.panes).toHaveLength(2);
@@ -43,7 +43,7 @@ describe("list:l", () => {
     const c = ctx() as { app: KeyContext["app"]; pane: ReturnType<typeof createRootPane> };
     c.pane.selectedId = null;
 
-    byId["list:l"].run(c);
+    byId["list:l"].run(c, "l");
 
     expect(useUiStore.getState().panes).toHaveLength(1);
   });
@@ -52,7 +52,7 @@ describe("list:l", () => {
     const c = ctx();
     c.pane = { id: "d1", parentId: null, prompt: "", type: "detail", itemId: "item-1" };
 
-    byId["list:l"].run(c);
+    byId["list:l"].run(c, "l");
 
     expect(useUiStore.getState().panes).toHaveLength(1);
   });
@@ -66,7 +66,7 @@ describe("list:h", () => {
       activePaneId: "child",
     });
 
-    byId["list:h"].run(ctx());
+    byId["list:h"].run(ctx(), "h");
 
     const store = useUiStore.getState();
     expect(store.panes.map((p) => p.id)).toEqual(["root"]);
@@ -80,7 +80,7 @@ describe("list:ctrll / list:ctrlh", () => {
     const child = { ...createRootPane(), id: "child" };
     useUiStore.setState({ panes: [root, child], activePaneId: "root" });
 
-    byId["list:ctrll"].run(ctx());
+    byId["list:ctrll"].run(ctx(), "ctrl+l");
 
     expect(useUiStore.getState().activePaneId).toBe("child");
   });
@@ -90,7 +90,7 @@ describe("list:ctrll / list:ctrlh", () => {
     const child = { ...createRootPane(), id: "child" };
     useUiStore.setState({ panes: [root, child], activePaneId: "child" });
 
-    byId["list:ctrlh"].run(ctx());
+    byId["list:ctrlh"].run(ctx(), "ctrl+h");
 
     expect(useUiStore.getState().activePaneId).toBe("root");
   });

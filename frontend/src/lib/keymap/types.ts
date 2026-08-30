@@ -13,6 +13,8 @@ export type KeyBinding = {
   keys: string[];
   modes: Mode[];
   scope: PaneType | "global";
+  description: string;
+  hint?: { group: "nav" | "item" | "pane" | "prompt"; primary?: boolean };
   when?: (ctx: KeyContext) => boolean;
-  run: (ctx: KeyContext) => void | boolean;
+  run: (ctx: KeyContext, key?: string) => void | boolean;
 };

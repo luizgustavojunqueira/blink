@@ -1,26 +1,12 @@
 import { usePane } from "../../hooks/usePane";
-import type { GetItemResponse, ItemPriority, ItemStatus } from "../../types/backend";
+import type { GetItemResponse } from "../../types/backend";
+import { priorityColor, priorityMapper, statusColor, statusMapper } from "../../utils/status";
 
 interface IItem {
   item: GetItemResponse;
   isSelected: boolean;
   paneId: string;
 }
-
-const priorityColor: Record<ItemPriority, string> = {
-  URGENT: "text-urgent",
-  HIGH: "text-high",
-  NORMAL: "text-normal",
-  LOW: "text-low",
-};
-
-const statusColor: Record<ItemStatus, string> = {
-  TODO: "text-fg-dim",
-  IN_PROGRESS: "text-accent",
-  DONE: "text-done",
-  CANCELED: "text-fg-muted",
-  ARCHIVED: "text-fg-muted",
-};
 
 export default function Item({ item, isSelected, paneId }: IItem) {
   const isDone = item.status === "DONE" || item.status === "CANCELED";
@@ -35,11 +21,11 @@ export default function Item({ item, isSelected, paneId }: IItem) {
       onClick={() => select(item.guid)}
     >
       <span className={`text-sm w-20 shrink-0 ${statusColor[item.status] ?? "text-fg-dim"}`}>
-        {item.status === "IN_PROGRESS" ? "PROG" : item.status}
+        {statusMapper[item.status]}
       </span>
 
       <span className={`text-sm w-16 shrink-0 ${priorityColor[item.priority] ?? "text-fg-dim"}`}>
-        {item.priority !== "NORMAL" ? item.priority : ""}
+        {priorityMapper[item.priority]}
       </span>
 
       <span className={`flex-3 truncate ${isDone ? "text-fg-muted line-through" : "text-fg"}`}>

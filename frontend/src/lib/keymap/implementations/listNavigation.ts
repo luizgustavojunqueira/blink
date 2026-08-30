@@ -6,6 +6,7 @@ export const listNavigationBindings: KeyBinding[] = [
     keys: ["j", "arrowdown"],
     modes: ["normal"],
     scope: "list",
+    description: "Move down",
     run: ({ app }) => {
       app.ui.moveDown(1);
       return true;
@@ -16,6 +17,7 @@ export const listNavigationBindings: KeyBinding[] = [
     keys: ["k", "arrowup"],
     modes: ["normal"],
     scope: "list",
+    description: "Move up",
     run: ({ app }) => {
       app.ui.moveUp(1);
       return true;
@@ -26,6 +28,7 @@ export const listNavigationBindings: KeyBinding[] = [
     keys: ["ctrl+d", "ctrl+arrowdown"],
     modes: ["normal"],
     scope: "list",
+    description: "Move 5 down",
     run: ({ app }) => {
       app.ui.moveDown(5);
       return true;
@@ -36,6 +39,7 @@ export const listNavigationBindings: KeyBinding[] = [
     keys: ["ctrl+u", "ctrl+arrowup"],
     modes: ["normal"],
     scope: "list",
+    description: "Move 5 up",
     run: ({ app }) => {
       app.ui.moveUp(5);
       return true;

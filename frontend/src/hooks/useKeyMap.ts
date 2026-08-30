@@ -19,9 +19,10 @@ export function useKeyMap(app: AppContext) {
         pane,
       };
 
-      const binding = resolve(eventToKey(e), ctx);
+      const key = eventToKey(e);
+      const binding = resolve(key, ctx);
       if (!binding) return;
-      if (binding.run(ctx) == false) return;
+      if (binding.run(ctx, key) == false) return;
       e.preventDefault();
     };
 

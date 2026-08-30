@@ -22,15 +22,33 @@ for (const b of Object.values(keyBindings)) {
   }
 }
 
-export function resolve(key: string, ctx: KeyContext): KeyBinding | undefined {
-  return byKey
-    .get(key)
-    ?.find(
-      (b) =>
-        b.modes.includes(ctx.app.ui.mode) &&
-        (b.scope === "global" || b.scope === ctx.pane.type) &&
-        (b.when?.(ctx) ?? true),
-    );
+const matches = (b: KeyBinding, ctx: KeyContext) =>
+  b.modes.includes(ctx.app.ui.mode) &&
+  (b.scope === "global" || b.scope === ctx.pane.type) &&
+  (b.when?.(ctx) ?? true);
+
+export function resolve(key: string, ctx: KeyContext) {
+  return byKey.get(key)?.find((b) => matches(b, ctx));
+}
+
+export type AvailableBinding = {
+  binding: KeyBinding;
+  keys: string[];
+  group: string;
+};
+
+export function availableKeys(ctx: KeyContext): AvailableBinding[] {
+  console.log(ctx);
+  const active = new Set(keyBindings.filter((b) => matches(b, ctx)));
+  const winner = (key: string) => byKey.get(key)?.find((b) => active.has(b));
+
+  return [...active]
+    .map((binding) => ({
+      binding,
+      keys: binding.keys.filter((k) => winner(k) === binding),
+      group: binding.hint?.group ?? "misc",
+    }))
+    .filter(({ keys }) => keys.length > 0);
 }
 
 const keyBidingsIndex: Record<string, KeyBinding> = Object.values(keyBindings).reduce(

@@ -7,6 +7,10 @@ export const paneNavigation: KeyBinding[] = [
     keys: ["l", "arrowright"],
     modes: ["normal"],
     scope: "list",
+    description: "Enter details",
+    when: ({ pane }) => {
+      return pane.type === "list" && pane.selectedId !== null && pane.selectedId !== undefined;
+    },
     run: ({ app, pane }) => {
       if (pane.type !== "list" || !pane.selectedId) return;
       app.ui.pushPane(createListPane(crypto.randomUUID(), pane.selectedId));
@@ -17,6 +21,10 @@ export const paneNavigation: KeyBinding[] = [
     keys: ["h", "arrowleft"],
     modes: ["normal"],
     scope: "global",
+    description: "Pop pane",
+    when: ({ app }) => {
+      return app.ui.panes.length > 1;
+    },
     run: ({ app }) => {
       app.ui.popPane();
     },
@@ -26,6 +34,11 @@ export const paneNavigation: KeyBinding[] = [
     keys: ["ctrl+l", "ctrl+arrowright"],
     modes: ["normal"],
     scope: "global",
+    description: "Right pane",
+    when: ({ app }) => {
+      const activePaneIdx = app.ui.panes.findIndex((p) => p.id == app.ui.activePaneId);
+      return app.ui.panes.length > 1 && activePaneIdx % 2 == 0;
+    },
     run: ({ app }) => {
       app.ui.moveRight();
     },
@@ -35,6 +48,11 @@ export const paneNavigation: KeyBinding[] = [
     keys: ["ctrl+h", "ctrl+arrowleft"],
     modes: ["normal"],
     scope: "global",
+    description: "Left pane",
+    when: ({ app }) => {
+      const activePaneIdx = app.ui.panes.findIndex((p) => p.id == app.ui.activePaneId);
+      return app.ui.panes.length > 1 && activePaneIdx % 2 == 1;
+    },
     run: ({ app }) => {
       app.ui.moveLeft();
     },

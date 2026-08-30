@@ -5,6 +5,7 @@ export const escapeBind: KeyBinding = {
   keys: ["escape"],
   modes: ["normal", "insert"],
   scope: "list",
+  description: "Escape",
   run: (ctx) => {
     ctx.app.ui.escape();
   },

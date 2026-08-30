@@ -1,26 +1,22 @@
 import type { KeyBinding } from "../types";
 
-const prefixBind = (key: string): KeyBinding => ({
-  id: `insert:${key}`,
-  keys: [key],
-  modes: ["normal"],
-  scope: "list",
-  run: ({ app }) => app.ui.enterInsert(key),
-});
-
-const insertModeBind: KeyBinding = {
-  id: "insertMode",
-  keys: ["i"],
-  modes: ["normal"],
-  scope: "list",
-  run: ({ app }) => app.ui.enterInsert(),
-};
-
 export const prefixKeyBindings: KeyBinding[] = [
-  insertModeBind,
-  prefixBind("#"),
-  prefixBind("!"),
-  prefixBind("@"),
-  prefixBind(":"),
-  prefixBind("/"),
+  {
+    id: "insertMode",
+    keys: ["i"],
+    modes: ["normal"],
+    scope: "list",
+    description: "Enter insert mode",
+    when: () => true,
+    run: ({ app }) => app.ui.enterInsert(),
+  },
+  {
+    id: "insertPrefix",
+    keys: ["#", "!", "@", ":"],
+    modes: ["normal"],
+    scope: "list",
+    description: "Enter insert mode with mod",
+    when: () => true,
+    run: ({ app }, key) => app.ui.enterInsert(key),
+  },
 ];

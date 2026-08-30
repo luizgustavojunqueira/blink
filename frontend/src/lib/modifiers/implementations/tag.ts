@@ -1,6 +1,7 @@
 import { TAG_MODIFIER } from "../delimiters";
 import type { CommandDefinition } from "../../commands/types";
 import { extractDelimited } from "../extract";
+import { normalizeTagText } from "../../tags/normalizeTagText";
 
 export const tagModifier: CommandDefinition = {
   id: TAG_MODIFIER,
@@ -9,5 +10,5 @@ export const tagModifier: CommandDefinition = {
   getOptions: (_rawArgs) => {
     return []
   },
-  extract: (raw) => extractDelimited(raw, TAG_MODIFIER),
+  extract: (raw) => extractDelimited(normalizeTagText(raw), TAG_MODIFIER),
 };

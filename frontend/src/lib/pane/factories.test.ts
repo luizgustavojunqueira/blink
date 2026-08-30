@@ -35,7 +35,6 @@ describe("createDetailPane", () => {
       id: "d1",
       parentId: "parent",
       type: "detail",
-      prompt: "",
       itemId: "item-42",
     });
   });

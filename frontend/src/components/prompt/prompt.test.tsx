@@ -45,7 +45,7 @@ function seedRoot(mode: "insert" | "normal" = "insert") {
   mockApp.value = {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { setStatus: vi.fn(), create: vi.fn(), update: vi.fn() },
+    items: { setField: vi.fn(), create: vi.fn(), update: vi.fn() },
   };
   return pane;
 }

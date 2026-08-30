@@ -4,10 +4,11 @@ import type { KeyBinding } from "../types";
 export const paneNavigation: KeyBinding[] = [
   {
     id: "list:l",
-    keys: ["l", "arrowright"],
+    keys: ["l", "arrowright", "enter"],
     modes: ["normal"],
     scope: "list",
     description: "Enter details",
+    hint: { group: "nav" },
     when: ({ pane }) => {
       return pane.type === "list" && pane.selectedId !== null && pane.selectedId !== undefined;
     },
@@ -22,6 +23,7 @@ export const paneNavigation: KeyBinding[] = [
     modes: ["normal"],
     scope: "global",
     description: "Pop pane",
+    hint: { group: "nav" },
     when: ({ app }) => {
       return app.ui.panes.length > 1;
     },
@@ -35,6 +37,7 @@ export const paneNavigation: KeyBinding[] = [
     modes: ["normal"],
     scope: "global",
     description: "Right pane",
+    hint: { group: "nav" },
     when: ({ app }) => {
       const activePaneIdx = app.ui.panes.findIndex((p) => p.id == app.ui.activePaneId);
       return app.ui.panes.length > 1 && activePaneIdx % 2 == 0;
@@ -49,6 +52,7 @@ export const paneNavigation: KeyBinding[] = [
     modes: ["normal"],
     scope: "global",
     description: "Left pane",
+    hint: { group: "nav" },
     when: ({ app }) => {
       const activePaneIdx = app.ui.panes.findIndex((p) => p.id == app.ui.activePaneId);
       return app.ui.panes.length > 1 && activePaneIdx % 2 == 1;

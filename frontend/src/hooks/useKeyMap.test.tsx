@@ -17,8 +17,7 @@ function makeApp() {
     setTheme: vi.fn(),
     items: {
       findItem: vi.fn(),
-      setStatus: vi.fn(),
-      setPriority: vi.fn(),
+      setField: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
@@ -96,7 +95,7 @@ describe("useKeyMap", () => {
     renderHook(() => useKeyMap(app));
     press("3");
 
-    expect(app.items.setStatus).toHaveBeenCalledWith("item-1", Done);
+    expect(app.items.setField).toHaveBeenCalledWith("item-1", "status", Done);
   });
 
   it("moves the selection through the real store", () => {
@@ -133,8 +132,8 @@ describe("useKeyMap", () => {
     rerender({ app: second });
     press("3");
 
-    expect(first.items.setStatus).not.toHaveBeenCalled();
-    expect(second.items.setStatus).toHaveBeenCalledWith("item-1", Done);
+    expect(first.items.setField).not.toHaveBeenCalled();
+    expect(second.items.setField).toHaveBeenCalledWith("item-1", "status", Done);
   });
 
   it("prevents the default of a handled key", () => {

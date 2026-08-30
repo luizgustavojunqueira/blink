@@ -4,7 +4,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { setTheme } from "../lib/theme";
 import { useUiStore } from "../stores/ui";
 import type { AppContext } from "../lib/types";
-import type { GetItemResponse, ItemPriority, ItemStatus } from "../types/backend";
+import type {
+  GetItemResponse,
+  ItemPriority,
+  ItemStatus,
+  UpdateItemRequest,
+} from "../types/backend";
 
 export function useAppContext(): AppContext {
   const queryClient = useQueryClient();
@@ -38,20 +43,15 @@ export function useAppContext(): AppContext {
     [queryClient],
   );
 
-  const setStatus = useCallback(
-    (guid: string, status: ItemStatus) => {
+  const setField = useCallback(
+    (
+      guid: string,
+      key: keyof UpdateItemRequest,
+      value: string | string[] | ItemStatus | ItemPriority,
+    ) => {
       const current = findItem(guid);
-      if (current?.status === status) return;
-      return update({ guid, status });
-    },
-    [update, findItem],
-  );
-
-  const setPriority = useCallback(
-    (guid: string, priority: ItemPriority) => {
-      const current = findItem(guid);
-      if (current?.priority === priority) return;
-      return update({ guid, priority });
+      if (current && current[key] === value) return;
+      return update({ guid, [key]: value });
     },
     [update, findItem],
   );
@@ -62,12 +62,11 @@ export function useAppContext(): AppContext {
       setTheme,
       items: {
         findItem,
-        setStatus,
-        setPriority,
+        setField,
         create,
         update,
       },
     }),
-    [ui, create, update, setStatus, setPriority, findItem],
+    [ui, create, update, setField, findItem],
   );
 }

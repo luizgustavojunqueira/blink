@@ -19,7 +19,6 @@ export const createDetailPane = (
 ): DetailPane => ({
   id,
   parentId,
-  prompt: "",
   type: "detail",
   itemId,
   selectedField: "title",

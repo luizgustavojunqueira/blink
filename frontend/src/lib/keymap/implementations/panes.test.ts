@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { paneNavigation } from "./panes";
 import { useUiStore } from "../../../stores/ui";
-import { createRootPane } from "../../pane/factories";
+import { createDetailPane, createRootPane } from "../../pane/factories";
 import type { AppContext } from "../../types";
 import type { KeyContext } from "../types";
 
@@ -11,7 +11,12 @@ function app(): AppContext {
   return {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { findItem: vi.fn(), setStatus: vi.fn(), setPriority: vi.fn(), create: vi.fn(), update: vi.fn() },
+    items: {
+      findItem: vi.fn(),
+      setField: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
   };
 }
 
@@ -35,12 +40,19 @@ describe("list:l", () => {
 
     const store = useUiStore.getState();
     expect(store.panes).toHaveLength(2);
-    expect(store.panes[1]).toMatchObject({ type: "detail", itemId: "item-1", parentId: "item-1" });
+    expect(store.panes[1]).toMatchObject({
+      type: "detail",
+      itemId: "item-1",
+      parentId: "item-1",
+    });
     expect(store.activePaneId).toBe(store.panes[1].id);
   });
 
   it("does nothing when nothing is selected", () => {
-    const c = ctx() as { app: KeyContext["app"]; pane: ReturnType<typeof createRootPane> };
+    const c = ctx() as {
+      app: KeyContext["app"];
+      pane: ReturnType<typeof createRootPane>;
+    };
     c.pane.selectedId = null;
 
     byId["list:l"].run(c, "l");
@@ -50,7 +62,13 @@ describe("list:l", () => {
 
   it("does nothing on a detail pane", () => {
     const c = ctx();
-    c.pane = { id: "d1", parentId: null, prompt: "", type: "detail", itemId: "item-1", selectedField: "title" };
+    c.pane = {
+      id: "d1",
+      parentId: null,
+      type: "detail",
+      itemId: "item-1",
+      selectedField: "title",
+    };
 
     byId["list:l"].run(c, "l");
 
@@ -64,6 +82,20 @@ describe("list:h", () => {
     useUiStore.setState({
       panes: [root, { ...createRootPane(), id: "child" }],
       activePaneId: "child",
+    });
+
+    byId["list:h"].run(ctx(), "h");
+
+    const store = useUiStore.getState();
+    expect(store.panes.map((p) => p.id)).toEqual(["root"]);
+    expect(store.activePaneId).toBe("root");
+  });
+
+  it("closes a detail pane just the same, since popping does not care about pane type", () => {
+    const root = createRootPane();
+    useUiStore.setState({
+      panes: [root, createDetailPane("d1", root.id, "item-1")],
+      activePaneId: "d1",
     });
 
     byId["list:h"].run(ctx(), "h");

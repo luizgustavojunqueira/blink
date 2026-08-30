@@ -16,6 +16,22 @@ import { priorityMapper, statusMapper } from "../../../utils/status";
 
 export const detailPageNavigation: KeyBinding[] = [
   {
+    id: "detail:insert",
+    keys: ["i"],
+    modes: ["normal"],
+    scope: "detail",
+    description: "Edit",
+    when: ({ pane }) => {
+      return (
+        pane.type === "detail" &&
+        (pane.selectedField === "title" ||
+          pane.selectedField === "description" ||
+          pane.selectedField === "tags")
+      );
+    },
+    run: ({ app }) => app.ui.enterInsert(),
+  },
+  {
     id: "detail:down",
     keys: ["j", "arrowdown"],
     modes: ["normal"],
@@ -69,7 +85,7 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
   },
   run: ({ app, pane }) => {
     if (pane.type !== "detail" || pane.selectedField !== "status") return;
-    if (pane.itemId) app.items.setStatus(pane.itemId, status);
+    if (pane.itemId) app.items.setField(pane.itemId, "status", status);
   },
 });
 
@@ -98,7 +114,7 @@ const updatePriorityBinds = (priority: ItemPriority): KeyBinding => ({
   },
   run: ({ app, pane }) => {
     if (pane.type !== "detail" || pane.selectedField !== "priority") return;
-    if (pane.itemId) app.items.setPriority(pane.itemId, priority);
+    if (pane.itemId) app.items.setField(pane.itemId, "priority", priority);
   },
 });
 

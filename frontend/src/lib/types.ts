@@ -12,8 +12,11 @@ export type AppContext = {
   setTheme: (theme: string) => void;
   items: {
     findItem: (guid: string) => GetItemResponse | undefined;
-    setStatus: (guid: string, status: ItemStatus) => void;
-    setPriority: (guid: string, priority: ItemPriority) => void;
+    setField: (
+      guid: string,
+      key: keyof UpdateItemRequest,
+      value: string | string[] | ItemStatus | ItemPriority,
+    ) => void;
     create: (req: CreateItemRequest) => Promise<GetItemResponse>;
     update: (req: UpdateItemRequest) => Promise<GetItemResponse>;
   };

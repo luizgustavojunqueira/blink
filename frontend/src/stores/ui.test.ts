@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useUiStore } from "./ui";
 import { createDetailPane, createListPane, createRootPane } from "../lib/pane/factories";
-import type { ListPane } from "../lib/pane/types";
+import type { DetailPane, ListPane } from "../lib/pane/types";
 
 const state = () => useUiStore.getState();
 
@@ -218,15 +218,51 @@ describe("ui store: escape", () => {
 
     expect(firstPane().selectedId).toBeNull();
   });
+
+  it("pops the detail pane in normal mode, without leaving a stale copy behind", () => {
+    const root = createRootPane();
+    const detail = createDetailPane("d1", root.id, "item-1");
+    useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: "d1" });
+
+    state().escape();
+
+    expect(state().panes).toEqual([root]);
+    expect(state().activePaneId).toBe(root.id);
+  });
+
+  it("only leaves insert mode on the first escape, without popping the detail pane yet", () => {
+    const root = createRootPane();
+    const detail = createDetailPane("d1", root.id, "item-1");
+    useUiStore.setState({ mode: "insert", panes: [root, detail], activePaneId: "d1" });
+
+    state().escape();
+
+    expect(state().mode).toBe("normal");
+    expect(state().panes).toHaveLength(2);
+    expect(state().activePaneId).toBe("d1");
+  });
+
+  it("does nothing when the detail pane is the only pane left", () => {
+    const detail = createDetailPane("d1", null, "item-1");
+    useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "d1" });
+
+    state().escape();
+
+    expect(state().panes).toEqual([detail]);
+    expect(state().activePaneId).toBe("d1");
+  });
 });
 
 describe("ui store: select", () => {
   it("sets the selection and makes the pane active", () => {
     seedRoot(["a", "b"], "a");
 
+    useUiStore.setState({ mode: "insert" });
+
     state().select("root", "b");
 
     expect(state().activePaneId).toBe("root");
+    expect(state().mode).toBe("normal");
     expect(firstPane().selectedId).toBe("b");
   });
 
@@ -374,5 +410,115 @@ describe("ui store: moveLeft", () => {
 
     expect(state().activePaneId).toBe("root");
     expect(state().panes).toHaveLength(2);
+  });
+});
+
+describe("ui store: moveField", () => {
+  function seedDetail(selectedField: DetailPane["selectedField"] = "title") {
+    const detail = { ...createDetailPane("d1", null, "item-1"), selectedField };
+    useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "d1" });
+    return () => useUiStore.getState().panes[0] as DetailPane;
+  }
+
+  it("moves to the next field", () => {
+    const pane = seedDetail("title");
+
+    state().moveField(1);
+
+    expect(pane().selectedField).toBe("description");
+  });
+
+  it("moves to the previous field", () => {
+    const pane = seedDetail("description");
+
+    state().moveField(-1);
+
+    expect(pane().selectedField).toBe("title");
+  });
+
+  it("stops at the last field instead of wrapping around", () => {
+    const pane = seedDetail("priority");
+
+    state().moveField(1);
+
+    expect(pane().selectedField).toBe("priority");
+  });
+
+  it("stops at the first field instead of wrapping around", () => {
+    const pane = seedDetail("title");
+
+    state().moveField(-1);
+
+    expect(pane().selectedField).toBe("title");
+  });
+
+  it("selects the first field when nothing is selected yet", () => {
+    const pane = seedDetail(null);
+
+    state().moveField(1);
+
+    expect(pane().selectedField).toBe("title");
+  });
+
+  it("does nothing on a list pane", () => {
+    seedRoot();
+
+    state().moveField(1);
+
+    expect(firstPane().type).toBe("list");
+  });
+});
+
+describe("ui store: selectField", () => {
+  it("selects the field and activates the pane", () => {
+    const root = createRootPane();
+    const detail = createDetailPane("d1", root.id, "item-1");
+    useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: root.id });
+
+    state().selectField("d1", "status");
+
+    expect(state().activePaneId).toBe("d1");
+    expect((state().panes[1] as DetailPane).selectedField).toBe("status");
+  });
+
+  it("does nothing when the field is already selected", () => {
+    const detail = { ...createDetailPane("d1", null, "item-1"), selectedField: "status" as const };
+    useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "root" });
+
+    state().selectField("d1", "status");
+
+    expect(state().activePaneId).toBe("root");
+  });
+
+  it("does nothing on a list pane", () => {
+    const root = seedRoot();
+    useUiStore.setState({ panes: [root], activePaneId: root.id });
+
+    state().selectField(root.id, "status");
+
+    expect(firstPane().type).toBe("list");
+  });
+});
+
+describe("ui store: selectPane", () => {
+  it("activates the pane and sets the given mode", () => {
+    const root = createRootPane();
+    const detail = createDetailPane("d1", root.id, "item-1");
+    useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: root.id });
+
+    state().selectPane("d1", "insert");
+
+    expect(state().activePaneId).toBe("d1");
+    expect(state().mode).toBe("insert");
+  });
+
+  it("does nothing when the pane does not exist", () => {
+    const root = seedRoot();
+    useUiStore.setState({ mode: "normal", panes: [root], activePaneId: root.id });
+
+    state().selectPane("missing", "insert");
+
+    expect(state().activePaneId).toBe(root.id);
+    expect(state().mode).toBe("normal");
   });
 });

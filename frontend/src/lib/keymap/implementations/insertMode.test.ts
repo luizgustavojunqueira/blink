@@ -4,6 +4,7 @@ import { useUiStore } from "../../../stores/ui";
 import { createRootPane } from "../../pane/factories";
 import type { AppContext } from "../../types";
 import type { KeyContext } from "../types";
+import type { ListPane } from "../../pane/types";
 
 const byId = Object.fromEntries(prefixKeyBindings.map((b) => [b.id, b]));
 
@@ -11,7 +12,12 @@ function ctx(): KeyContext {
   const app: AppContext = {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { findItem: vi.fn(), setStatus: vi.fn(), setPriority: vi.fn(), create: vi.fn(), update: vi.fn() },
+    items: {
+      findItem: vi.fn(),
+      setField: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
   };
   return { app, pane: app.ui.panes[0] };
 }
@@ -27,15 +33,17 @@ describe("insertPrefix", () => {
 
     const store = useUiStore.getState();
     expect(store.mode).toBe("insert");
-    expect(store.panes[0].prompt).toBe("@");
+    expect((store.panes[0] as ListPane).prompt).toBe("@");
   });
 
   it("appends the prefix to what is already typed", () => {
-    useUiStore.setState((s) => ({ panes: [{ ...s.panes[0], prompt: "buy " }] }));
+    useUiStore.setState((s) => ({
+      panes: [{ ...s.panes[0], prompt: "buy " }],
+    }));
 
     byId["insertPrefix"].run(ctx(), "#");
 
-    expect(useUiStore.getState().panes[0].prompt).toBe("buy #");
+    expect((useUiStore.getState().panes[0] as ListPane).prompt).toBe("buy #");
   });
 });
 
@@ -47,6 +55,6 @@ describe("insertMode", () => {
 
     const store = useUiStore.getState();
     expect(store.mode).toBe("insert");
-    expect(store.panes[0].prompt).toBe("buy");
+    expect((store.panes[0] as ListPane).prompt).toBe("buy");
   });
 });

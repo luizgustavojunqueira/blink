@@ -13,4 +13,12 @@ describe("tagModifier", () => {
       remaining: "title",
     });
   });
+
+  it("collapses repeated # markers before extracting, instead of keeping them in the value", () => {
+    expect(tagModifier.extract!("title ###dev")).toEqual({
+      values: ["dev"],
+      invalid: [],
+      remaining: "title",
+    });
+  });
 });

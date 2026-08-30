@@ -7,6 +7,7 @@ export const listNavigationBindings: KeyBinding[] = [
     modes: ["normal"],
     scope: "list",
     description: "Move down",
+    hint: { group: "nav" },
     run: ({ app }) => {
       app.ui.moveDown(1);
       return true;
@@ -18,6 +19,7 @@ export const listNavigationBindings: KeyBinding[] = [
     modes: ["normal"],
     scope: "list",
     description: "Move up",
+    hint: { group: "nav" },
     run: ({ app }) => {
       app.ui.moveUp(1);
       return true;
@@ -29,6 +31,7 @@ export const listNavigationBindings: KeyBinding[] = [
     modes: ["normal"],
     scope: "list",
     description: "Move 5 down",
+    hint: { group: "nav" },
     run: ({ app }) => {
       app.ui.moveDown(5);
       return true;
@@ -40,6 +43,7 @@ export const listNavigationBindings: KeyBinding[] = [
     modes: ["normal"],
     scope: "list",
     description: "Move 5 up",
+    hint: { group: "nav" },
     run: ({ app }) => {
       app.ui.moveUp(5);
       return true;

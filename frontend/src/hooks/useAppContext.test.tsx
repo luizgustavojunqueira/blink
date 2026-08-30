@@ -99,7 +99,7 @@ describe("useAppContext", () => {
   });
 });
 
-describe("useAppContext: setStatus", () => {
+describe("useAppContext: setField with status", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -108,7 +108,7 @@ describe("useAppContext: setStatus", () => {
     const { result, client } = renderAppContext();
     client.setQueryData(["items", {}], [item("item-1", Done)]);
 
-    await result.current.items.setStatus("item-1", Done);
+    result.current.items.setField("item-1", "status", Done);
 
     expect(updateItem).not.toHaveBeenCalled();
   });
@@ -119,10 +119,13 @@ describe("useAppContext: setStatus", () => {
     const { result, client } = renderAppContext();
     client.setQueryData(["items", {}], [item("item-1", ToDo)]);
 
-    await result.current.items.setStatus("item-1", Done);
+    result.current.items.setField("item-1", "status", Done);
 
-    expect(updateItem).toHaveBeenCalledOnce();
-    expect(vi.mocked(updateItem).mock.calls[0][0]).toEqual({ guid: "item-1", status: Done });
+    await waitFor(() => expect(updateItem).toHaveBeenCalledOnce());
+    expect(vi.mocked(updateItem).mock.calls[0][0]).toEqual({
+      guid: "item-1",
+      status: Done,
+    });
   });
 
   it("sends the update when the item is in no cached list", async () => {
@@ -130,17 +133,20 @@ describe("useAppContext: setStatus", () => {
 
     const { result } = renderAppContext();
 
-    await result.current.items.setStatus("item-1", Done);
+    result.current.items.setField("item-1", "status", Done);
 
-    expect(updateItem).toHaveBeenCalledOnce();
-    expect(vi.mocked(updateItem).mock.calls[0][0]).toEqual({ guid: "item-1", status: Done });
+    await waitFor(() => expect(updateItem).toHaveBeenCalledOnce());
+    expect(vi.mocked(updateItem).mock.calls[0][0]).toEqual({
+      guid: "item-1",
+      status: Done,
+    });
   });
 
   it("finds the item in a list cached under any filter", async () => {
     const { result, client } = renderAppContext();
     client.setQueryData(["items", { status: [ToDo] }], [item("item-1", ToDo)]);
 
-    await result.current.items.setStatus("item-1", ToDo);
+    result.current.items.setField("item-1", "status", ToDo);
 
     expect(updateItem).not.toHaveBeenCalled();
   });

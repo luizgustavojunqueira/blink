@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getKeyBinding, keyBindings, resolve } from "./registry";
+import { availableKeys, getKeyBinding, keyBindings, resolve } from "./registry";
 import type { KeyContext, Mode } from "./types";
 import type { DetailField, ListPane } from "../pane/types";
 
@@ -26,7 +26,6 @@ const detailCtx = (mode: Mode, selectedField: DetailField): KeyContext => {
     id: "detail-0",
     type: "detail" as const,
     parentId: null,
-    prompt: "",
     itemId: "item-1",
     selectedField,
   };
@@ -116,5 +115,64 @@ describe("keymap registry: getKeyBinding", () => {
 
   it("returns undefined for an unknown id", () => {
     expect(getKeyBinding("nope")).toBeUndefined();
+  });
+});
+
+describe("keymap registry: availableKeys", () => {
+  const find = (list: ReturnType<typeof availableKeys>, id: string) =>
+    list.find((a) => a.binding.id === id);
+
+  it("only returns bindings that match the given context", () => {
+    const list = availableKeys(ctx("normal"));
+
+    expect(find(list, "list:down")).toBeDefined();
+    expect(find(list, "detail:down")).toBeUndefined();
+  });
+
+  it("merges every key of a binding into one entry, instead of one per key", () => {
+    const list = availableKeys(ctx("normal"));
+
+    const down = find(list, "list:down");
+    expect(down?.keys.sort()).toEqual(["arrowdown", "j"]);
+  });
+
+  it("groups by the binding's hint, falling back to misc when there is none", () => {
+    const list = availableKeys(ctx("normal"));
+
+    expect(find(list, "list:down")?.group).toBe("nav");
+    expect(find(list, "escape")?.group).toBe("misc");
+  });
+
+  it("switches which bindings are available between list and detail contexts", () => {
+    const listEntries = availableKeys(ctx("normal"));
+    const detailEntries = availableKeys(detailCtx("normal", "status"));
+
+    expect(find(listEntries, "list:down")).toBeDefined();
+    expect(find(listEntries, "detail:down")).toBeUndefined();
+
+    expect(find(detailEntries, "detail:down")).toBeDefined();
+    expect(find(detailEntries, "list:down")).toBeUndefined();
+  });
+
+  it("only surfaces the status bind matching the selected field", () => {
+    const list = availableKeys(detailCtx("normal", "status"));
+
+    expect(find(list, "detail:status:DONE")).toBeDefined();
+    expect(find(list, "detail:priority:HIGH")).toBeUndefined();
+  });
+
+  it("still includes global bindings while typing in insert mode", () => {
+    const list = availableKeys(ctx("insert"));
+
+    expect(find(list, "escape")).toBeDefined();
+    expect(find(list, "list:down")).toBeUndefined();
+  });
+
+  it("never returns an entry with no keys left", () => {
+    for (const c of [ctx("normal"), ctx("insert"), detailCtx("normal", "title")]) {
+      for (const entry of availableKeys(c)) {
+        expect(entry.keys.length).toBeGreaterThan(0);
+      }
+    }
   });
 });

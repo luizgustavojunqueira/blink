@@ -46,7 +46,6 @@ export type AvailableBinding = {
 };
 
 export function availableKeys(ctx: KeyContext): AvailableBinding[] {
-  console.log(ctx);
   const active = new Set(keyBindings.filter((b) => matches(b, ctx)));
   const winner = (key: string) => byKey.get(key)?.find((b) => active.has(b));
 

@@ -7,7 +7,12 @@ function fakeApp(create = vi.fn().mockResolvedValue({})): AppContext {
   return {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { findItem: vi.fn(), setStatus: vi.fn(), setPriority: vi.fn(), create, update: vi.fn() },
+    items: {
+      findItem: vi.fn(),
+      setField: vi.fn(),
+      create,
+      update: vi.fn(),
+    },
   };
 }
 
@@ -95,7 +100,10 @@ describe("createCommand", () => {
     const create = vi.fn().mockResolvedValue({});
     const app = fakeApp(create);
 
-    const result = await createCommand.execute!({ rawArgs: "buy milk !high", app });
+    const result = await createCommand.execute!({
+      rawArgs: "buy milk !high",
+      app,
+    });
 
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ title: "buy milk", priority: "HIGH" }),
@@ -105,7 +113,10 @@ describe("createCommand", () => {
 
   it("reports a parse error without calling the API", async () => {
     const create = vi.fn();
-    const result = await createCommand.execute!({ rawArgs: "@todo", app: fakeApp(create) });
+    const result = await createCommand.execute!({
+      rawArgs: "@todo",
+      app: fakeApp(create),
+    });
 
     expect(create).not.toHaveBeenCalled();
     expect(result?.message).toMatch(/title is required/i);
@@ -115,7 +126,10 @@ describe("createCommand", () => {
   it("surfaces an API failure as a message instead of rejecting", async () => {
     const create = vi.fn().mockRejectedValue(new Error("title is required"));
 
-    const result = await createCommand.execute!({ rawArgs: "buy milk", app: fakeApp(create) });
+    const result = await createCommand.execute!({
+      rawArgs: "buy milk",
+      app: fakeApp(create),
+    });
 
     expect(result).toEqual({ message: "title is required" });
   });
@@ -123,7 +137,10 @@ describe("createCommand", () => {
   it("keeps the typed text when the API fails, so nothing is lost", async () => {
     const create = vi.fn().mockRejectedValue(new Error("boom"));
 
-    const result = await createCommand.execute!({ rawArgs: "buy milk", app: fakeApp(create) });
+    const result = await createCommand.execute!({
+      rawArgs: "buy milk",
+      app: fakeApp(create),
+    });
 
     expect(result?.shouldClearPrompt).toBeFalsy();
   });

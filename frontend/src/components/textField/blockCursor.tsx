@@ -4,7 +4,7 @@ interface BlockCursorProps {
 }
 
 export function BlockCursor({ char, idle }: BlockCursorProps) {
-  const glyph = char === "" || char === "\n" ? "\u00A0" : char;
+  const glyph = char === "" || char === "\n" ? " " : char;
 
   return (
     <span

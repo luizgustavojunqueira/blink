@@ -31,7 +31,7 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
   },
   run: ({ app, pane }) => {
     if (pane.type !== "list") return;
-    if (pane.selectedId) app.items.setStatus(pane.selectedId, status);
+    if (pane.selectedId) app.items.setField(pane.selectedId, "status", status);
   },
 });
 

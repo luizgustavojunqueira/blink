@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { GetItemRequest } from "../types/backend";
-import { DETAIL_FIELDS, type Pane } from "../lib/pane/types";
+import { DETAIL_FIELDS, type DetailField, type Pane } from "../lib/pane/types";
 import { createDetailPane, createRootPane } from "../lib/pane/factories";
 
 type Mode = "insert" | "normal";
@@ -27,6 +27,8 @@ export type UiActions = {
   moveRight: () => void;
   moveLeft: () => void;
   moveField: (dir: 1 | -1) => void;
+  selectField: (paneId: string, selectedField: DetailField) => void;
+  selectPane: (paneId: string, mode: Mode) => void;
 };
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
@@ -146,7 +148,29 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
 
       return {
         activePaneId: paneId,
+        mode: "normal",
         panes: mapActivePane(s.panes, paneId, { ...pane, selectedId }),
+      };
+    }),
+
+  selectPane: (paneId, mode: Mode = "normal") =>
+    set((s) => {
+      const pane = findPane(s.panes, paneId);
+      if (!pane) return {};
+
+      return {
+        activePaneId: paneId,
+        mode: mode,
+      };
+    }),
+
+  selectField: (paneId: string, selectedField: DetailField) =>
+    set((s) => {
+      const pane = findPane(s.panes, paneId);
+      if (!pane || pane.type !== "detail" || pane.selectedField === selectedField) return {};
+      return {
+        activePaneId: paneId,
+        panes: mapActivePane(s.panes, paneId, { ...pane, selectedField }),
       };
     }),
 
@@ -156,6 +180,7 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
     set((s) => {
       const pane = findPane(s.panes, s.activePaneId);
       if (!pane) return {};
+      if (pane.type !== "list") return { mode: "insert" };
       const prompt = seed === undefined ? pane.prompt : pane.prompt + seed;
       return {
         mode: "insert",
@@ -191,15 +216,9 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
         return {};
       }
 
-      if (pane.prompt !== "") {
-        return {
-          panes: mapActivePane(s.panes, s.activePaneId, {
-            ...pane,
-            prompt: "",
-          }),
-        };
-      }
-      return {};
+      if (s.panes.length <= 1) return {};
+      const panes = s.panes.slice(0, -1);
+      return { panes, activePaneId: panes[panes.length - 1].id };
     }),
 
   pushPane: (pane: Pane) =>

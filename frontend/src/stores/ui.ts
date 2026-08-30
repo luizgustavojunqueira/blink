@@ -9,6 +9,7 @@ export type UiState = {
   mode: Mode;
   panes: Pane[];
   activePaneId: string;
+  showHint: boolean;
 };
 
 export type UiActions = {
@@ -29,6 +30,7 @@ export type UiActions = {
   moveField: (dir: 1 | -1) => void;
   selectField: (paneId: string, selectedField: DetailField) => void;
   selectPane: (paneId: string, mode: Mode) => void;
+  toggleHint: () => void;
 };
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
@@ -42,6 +44,12 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   mode: "normal",
   panes: [rootPane],
   activePaneId: rootPane.id,
+  showHint: true,
+
+  toggleHint: () =>
+    set((s) => {
+      return { showHint: !s.showHint };
+    }),
 
   setRenderedIds: (paneId, newIds) =>
     set((s) => {

@@ -32,6 +32,8 @@ export default function Hint() {
   const pane = app.ui.panes.find((p) => p.id === app.ui.activePaneId);
   const hintsGrouped = pane ? groupBy(availableKeys({ app, pane }), "group") : {};
 
+  if (!app.ui.showHint) return;
+
   return (
     <div className="absolute bottom-0 right-2.5 flex flex-row items-end justify-end p-2">
       <div className="flex flex-col w-fit bg-bg-soft/90 px-2 rounded-md border border-accent/20">

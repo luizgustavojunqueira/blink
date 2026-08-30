@@ -12,7 +12,7 @@ interface IItemList {
 export function ItemList({ paneId }: IItemList) {
   const t = useListPane(paneId);
 
-  const { data: items = [], isFetching, isError, error } = useItems(t.pane.filter);
+  const { data: items = [], isFetching, isError } = useItems(t.pane.filter);
 
   const idsString = items.map((item) => item.guid).join(",");
 
@@ -30,7 +30,7 @@ export function ItemList({ paneId }: IItemList) {
       <div className="flex-1 overflow-y-auto">
         {isFetching && <Loading />}
 
-        {isError && <div className="px-4 py-2 text-urgent text-sm">erro: {error.message}</div>}
+        {isError && <div className="px-4 py-2 text-urgent text-sm">could not load items</div>}
 
         <ul className="flex flex-col">
           {items.map((item) => (

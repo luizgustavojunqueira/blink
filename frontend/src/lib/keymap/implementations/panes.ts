@@ -1,4 +1,4 @@
-import { createListPane } from "../../pane/factories";
+import { createDetailPane } from "../../pane/factories";
 import type { KeyBinding } from "../types";
 
 export const paneNavigation: KeyBinding[] = [
@@ -13,7 +13,7 @@ export const paneNavigation: KeyBinding[] = [
     },
     run: ({ app, pane }) => {
       if (pane.type !== "list" || !pane.selectedId) return;
-      app.ui.pushPane(createListPane(crypto.randomUUID(), pane.selectedId));
+      app.ui.pushPane(createDetailPane(crypto.randomUUID(), pane.selectedId, pane.selectedId));
     },
   },
   {

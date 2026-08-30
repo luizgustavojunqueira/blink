@@ -25,7 +25,7 @@ export default function Item({ item, isSelected, paneId }: IItem) {
       </span>
 
       <span className={`text-sm w-16 shrink-0 ${priorityColor[item.priority] ?? "text-fg-dim"}`}>
-        {priorityMapper[item.priority]}
+        {item.priority !== "NORMAL" && priorityMapper[item.priority]}
       </span>
 
       <span className={`flex-3 truncate ${isDone ? "text-fg-muted line-through" : "text-fg"}`}>

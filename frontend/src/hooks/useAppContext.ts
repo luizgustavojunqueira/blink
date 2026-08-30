@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { setTheme } from "../lib/theme";
 import { useUiStore } from "../stores/ui";
 import type { AppContext } from "../lib/types";
-import type { GetItemResponse, ItemStatus } from "../types/backend";
+import type { GetItemResponse, ItemPriority, ItemStatus } from "../types/backend";
 
 export function useAppContext(): AppContext {
   const queryClient = useQueryClient();
@@ -47,16 +47,27 @@ export function useAppContext(): AppContext {
     [update, findItem],
   );
 
+  const setPriority = useCallback(
+    (guid: string, priority: ItemPriority) => {
+      const current = findItem(guid);
+      if (current?.priority === priority) return;
+      return update({ guid, priority });
+    },
+    [update, findItem],
+  );
+
   return useMemo(
     () => ({
       ui,
       setTheme,
       items: {
+        findItem,
         setStatus,
+        setPriority,
         create,
         update,
       },
     }),
-    [ui, create, update, setStatus],
+    [ui, create, update, setStatus, setPriority, findItem],
   );
 }

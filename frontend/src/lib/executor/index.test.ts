@@ -8,7 +8,7 @@ import { useUiStore } from "../../stores/ui";
 const app: AppContext = {
   ui: useUiStore.getState(),
   setTheme: vi.fn(),
-  items: { setStatus: vi.fn(), create: vi.fn(), update: vi.fn() },
+  items: { findItem: vi.fn(), setStatus: vi.fn(), setPriority: vi.fn(), create: vi.fn(), update: vi.fn() },
 };
 
 function stubCommand(def: Partial<CommandDefinition>): CommandDefinition {

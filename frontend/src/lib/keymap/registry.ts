@@ -1,3 +1,8 @@
+import {
+  detailPageNavigation,
+  detailPriorityKeyBindings,
+  detailStatusKeyBindings,
+} from "./implementations/detailPane";
 import { escapeBind } from "./implementations/escape";
 import { prefixKeyBindings } from "./implementations/insertMode";
 import { listNavigationBindings } from "./implementations/listNavigation";
@@ -11,6 +16,9 @@ export const keyBindings: KeyBinding[] = [
   escapeBind,
   ...statusKeyBindings,
   ...paneNavigation,
+  ...detailPageNavigation,
+  ...detailStatusKeyBindings,
+  ...detailPriorityKeyBindings,
 ];
 
 export type KeyMapId = keyof typeof keyBindings;

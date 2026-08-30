@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { GetItemRequest } from "../types/backend";
-import type { Pane } from "../lib/pane/types";
+import { DETAIL_FIELDS, type Pane } from "../lib/pane/types";
 import { createDetailPane, createRootPane } from "../lib/pane/factories";
 
 type Mode = "insert" | "normal";
@@ -26,6 +26,7 @@ export type UiActions = {
   openDetail: (itemId: string) => void;
   moveRight: () => void;
   moveLeft: () => void;
+  moveField: (dir: 1 | -1) => void;
 };
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
@@ -262,5 +263,19 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
       const prev = s.panes[Math.max(i - 1, lo)];
       if (!prev || prev.id === s.activePaneId) return {};
       return { activePaneId: prev.id };
+    }),
+
+  moveField: (dir: 1 | -1) =>
+    set((s) => {
+      const pane = findPane(s.panes, s.activePaneId);
+      if (!pane || pane.type !== "detail") return {};
+      const idx = pane.selectedField ? DETAIL_FIELDS.indexOf(pane.selectedField) : -1;
+      const next = Math.min(Math.max(idx + dir, 0), DETAIL_FIELDS.length - 1);
+      return {
+        panes: mapActivePane(s.panes, s.activePaneId, {
+          ...pane,
+          selectedField: DETAIL_FIELDS[next],
+        }),
+      };
     }),
 }));

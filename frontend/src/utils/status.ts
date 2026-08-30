@@ -15,6 +15,14 @@ export const statusColor: Record<ItemStatus, string> = {
   ARCHIVED: "text-fg-muted",
 };
 
+export const statusColorBg: Record<ItemStatus, string> = {
+  TODO: "bg-bg-lighter",
+  IN_PROGRESS: "bg-accent",
+  DONE: "bg-done",
+  CANCELED: "bg-fg-muted",
+  ARCHIVED: "bg-fg-muted",
+};
+
 export const statusMapper: Record<ItemStatus, string> = {
   TODO: "TODO",
   IN_PROGRESS: "PROG",
@@ -24,8 +32,15 @@ export const statusMapper: Record<ItemStatus, string> = {
 };
 
 export const priorityMapper: Record<ItemPriority, string> = {
-  URGENT: "URGT",
-  HIGH: "HIGH",
-  NORMAL: "",
   LOW: "LOW",
+  NORMAL: "NORMAL",
+  HIGH: "HIGH",
+  URGENT: "URGT",
+};
+
+export const priorityColorBg: Record<ItemPriority, string> = {
+  URGENT: "bg-urgent",
+  HIGH: "bg-high",
+  NORMAL: "bg-normal",
+  LOW: "bg-low",
 };

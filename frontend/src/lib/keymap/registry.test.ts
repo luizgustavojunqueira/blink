@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getKeyBinding, keyBindings, resolve } from "./registry";
 import type { KeyContext, Mode } from "./types";
-import type { ListPane } from "../pane/types";
+import type { DetailField, ListPane } from "../pane/types";
 
 type CtxOptions = { panes?: number; activeIdx?: number; selectedId?: string | null };
 
@@ -19,6 +19,18 @@ const ctx = (mode: Mode, { panes = 1, activeIdx = 0, selectedId = "item-1" }: Ct
   const list = Array.from({ length: panes }, (_, i) => listPane(`pane-${i}`, selectedId));
   const pane = list[activeIdx];
   return { app: { ui: { mode, panes: list, activePaneId: pane.id } }, pane } as KeyContext;
+};
+
+const detailCtx = (mode: Mode, selectedField: DetailField): KeyContext => {
+  const pane = {
+    id: "detail-0",
+    type: "detail" as const,
+    parentId: null,
+    prompt: "",
+    itemId: "item-1",
+    selectedField,
+  };
+  return { app: { ui: { mode, panes: [pane], activePaneId: pane.id } }, pane } as KeyContext;
 };
 
 describe("keymap registry: resolve", () => {
@@ -81,6 +93,9 @@ describe("keymap registry: resolve", () => {
       ctx("normal", { selectedId: null }),
       ctx("normal", { panes: 2, activeIdx: 0 }),
       ctx("normal", { panes: 2, activeIdx: 1 }),
+      detailCtx("normal", "status"),
+      detailCtx("normal", "priority"),
+      detailCtx("normal", "title"),
     ];
 
     for (const binding of keyBindings) {

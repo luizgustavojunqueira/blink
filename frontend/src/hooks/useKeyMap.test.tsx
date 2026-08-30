@@ -16,7 +16,9 @@ function makeApp() {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
     items: {
+      findItem: vi.fn(),
       setStatus: vi.fn(),
+      setPriority: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },

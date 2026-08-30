@@ -2,11 +2,12 @@ import { useAppContext } from "../../hooks/useAppContext";
 import { availableKeys } from "../../lib/keymap/registry";
 
 const replaceArrows = (t: string) => {
-  return t
-    .replace(/arrowleft/gi, "\u2190")
-    .replace(/arrowup/gi, "\u2191")
-    .replace(/arrowright/gi, "\u2192")
-    .replace(/arrowdown/gi, "\u2193");
+  if (t !== undefined && t != null)
+    return t
+      .replace(/arrowleft/gi, "\u2190")
+      .replace(/arrowup/gi, "\u2191")
+      .replace(/arrowright/gi, "\u2192")
+      .replace(/arrowdown/gi, "\u2193");
 };
 
 function groupBy<T>(items: Array<T>, field: keyof T): Record<string, Array<T>> {
@@ -33,7 +34,7 @@ export default function Hint() {
 
   return (
     <div className="absolute bottom-0 w-full flex flex-row items-end justify-end p-2">
-      <div className="flex flex-col w-fit bg-bg-soft/90 p-2 rounded-md border border-accent/20">
+      <div className="flex flex-col w-fit bg-bg-soft/90 px-2 rounded-md border border-accent/20">
         {Object.keys(hintsGrouped).map((g) => (
           <>
             <span className="my-1 text-fg-dim border-b border-accent/10">{g}</span>

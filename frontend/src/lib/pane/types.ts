@@ -1,4 +1,4 @@
-import type { GetItemRequest } from "../../types/backend";
+import type { GetItemRequest, GetItemResponse } from "../../types/backend";
 
 export type PaneType = "list" | "detail";
 
@@ -18,6 +18,19 @@ export type DetailPane = {
   parentId: string | null;
   prompt: string;
   itemId: string;
+  selectedField: DetailField;
 };
 
 export type Pane = ListPane | DetailPane;
+
+type EditableField = keyof Omit<GetItemResponse, "guid" | "type">;
+
+export const DETAIL_FIELDS = [
+  "title",
+  "status",
+  "priority",
+  "tags",
+  "description",
+] as const satisfies readonly EditableField[];
+
+export type DetailField = (typeof DETAIL_FIELDS)[number];

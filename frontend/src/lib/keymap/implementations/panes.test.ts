@@ -11,7 +11,7 @@ function app(): AppContext {
   return {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { setStatus: vi.fn(), create: vi.fn(), update: vi.fn() },
+    items: { findItem: vi.fn(), setStatus: vi.fn(), setPriority: vi.fn(), create: vi.fn(), update: vi.fn() },
   };
 }
 
@@ -29,13 +29,13 @@ beforeEach(() => {
 });
 
 describe("list:l", () => {
-  it("pushes a new list pane parented to the selected item and activates it", () => {
+  it("pushes a detail pane for the selected item and activates it", () => {
     const c = ctx();
     byId["list:l"].run(c, "l");
 
     const store = useUiStore.getState();
     expect(store.panes).toHaveLength(2);
-    expect(store.panes[1]).toMatchObject({ type: "list", parentId: "item-1" });
+    expect(store.panes[1]).toMatchObject({ type: "detail", itemId: "item-1", parentId: "item-1" });
     expect(store.activePaneId).toBe(store.panes[1].id);
   });
 
@@ -50,7 +50,7 @@ describe("list:l", () => {
 
   it("does nothing on a detail pane", () => {
     const c = ctx();
-    c.pane = { id: "d1", parentId: null, prompt: "", type: "detail", itemId: "item-1" };
+    c.pane = { id: "d1", parentId: null, prompt: "", type: "detail", itemId: "item-1", selectedField: "title" };
 
     byId["list:l"].run(c, "l");
 

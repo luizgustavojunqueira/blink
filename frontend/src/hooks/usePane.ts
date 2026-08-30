@@ -30,3 +30,7 @@ export function usePane(paneId: string) {
 export function useListPane(paneId: string) {
   return usePaneCore(paneId, (p) => (p?.type === "list" ? p : undefined));
 }
+
+export function useDetailPane(paneId: string) {
+  return usePaneCore(paneId, (p) => (p?.type === "detail" ? p : undefined));
+}

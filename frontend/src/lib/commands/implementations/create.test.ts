@@ -7,7 +7,7 @@ function fakeApp(create = vi.fn().mockResolvedValue({})): AppContext {
   return {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
-    items: { setStatus: vi.fn(), create, update: vi.fn() },
+    items: { findItem: vi.fn(), setStatus: vi.fn(), setPriority: vi.fn(), create, update: vi.fn() },
   };
 }
 

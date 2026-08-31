@@ -15,6 +15,7 @@ export default function Item({ item, isSelected, paneId }: IItem) {
   const select = t.select;
   return (
     <li
+      data-item-id={item.guid}
       className={`group w-full px-4 py-1.5 flex items-center gap-3 transition-colors duration-75 ${
         isSelected ? "bg-bg-lighter" : "hover:bg-bg-soft"
       }`}

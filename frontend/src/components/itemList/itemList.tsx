@@ -2,7 +2,7 @@ import { useItems } from "../../hooks/useItems";
 import Loading from "../loading";
 import Prompt from "../prompt/prompt";
 import Item from "./item";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useListPane } from "../../hooks/usePane";
 
 interface IItemList {
@@ -21,6 +21,17 @@ export function ItemList({ paneId }: IItemList) {
     t.setRenderedIds(idsString ? idsString.split(",") : []);
   }, [idsString, t]);
 
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    if (!t.pane.selectedId) return;
+    const element = listRef.current?.querySelector<HTMLElement>(
+      `[data-item-id="${t.pane.selectedId}"]`,
+    );
+
+    element?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [t.pane.selectedId]);
+
   return (
     <div
       className={`w-full h-full flex flex-col border ${t.isActive ? "border-b-accent" : "border-bg"}`}
@@ -32,7 +43,7 @@ export function ItemList({ paneId }: IItemList) {
 
         {isError && <div className="px-4 py-2 text-urgent text-sm">could not load items</div>}
 
-        <ul className="flex flex-col">
+        <ul ref={listRef} className="flex flex-col">
           {items.map((item) => (
             <Item
               key={item.guid}

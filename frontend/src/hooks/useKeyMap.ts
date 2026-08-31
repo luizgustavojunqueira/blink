@@ -8,6 +8,8 @@ export function useKeyMap(app: AppContext) {
   const appRef = useRef(app);
   appRef.current = app;
 
+  const currentSeq = useRef<string>("");
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const state = useUiStore.getState();
@@ -20,8 +22,23 @@ export function useKeyMap(app: AppContext) {
       };
 
       const key = eventToKey(e);
-      const binding = resolve(key, ctx);
-      if (!binding) return;
+      let finalKey = "";
+      if (currentSeq.current != "") {
+        finalKey = `${currentSeq.current}`;
+      }
+
+      finalKey = `${finalKey}${key}`;
+
+      const binding = resolve(finalKey, ctx);
+      if (!binding) {
+        if (currentSeq.current == "") {
+          currentSeq.current = key;
+        } else {
+          currentSeq.current = "";
+        }
+
+        return;
+      }
       if (binding.run(ctx, key) == false) return;
       e.preventDefault();
     };

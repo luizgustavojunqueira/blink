@@ -37,7 +37,11 @@ function renderComponent() {
 describe("ItemList", () => {
   beforeEach(() => {
     const pane = createRootPane();
-    useUiStore.setState({ mode: "insert", panes: [pane], activePaneId: pane.id });
+    useUiStore.setState({
+      mode: "insert",
+      panes: [pane],
+      activePaneId: pane.id,
+    });
   });
 
   it("renders loading state", () => {
@@ -63,7 +67,7 @@ describe("ItemList", () => {
 
     renderComponent();
 
-    expect(screen.getByText("erro: failed")).toBeInTheDocument();
+    expect(screen.getByText("could not load items")).toBeInTheDocument();
   });
 
   it("renders empty state", () => {

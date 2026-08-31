@@ -20,8 +20,8 @@ export type UiActions = {
   enterInsert: (seed?: string) => void;
   escape: () => void;
   setRenderedIds: (paneId: string, renderedIds: string[]) => void;
-  moveUp: (steps: number) => void;
-  moveDown: (steps: number) => void;
+  moveUp: (steps?: number, all?: boolean) => void;
+  moveDown: (steps?: number, all?: boolean) => void;
   pushPane: (pane: Pane) => void;
   popPane: () => void;
   openDetail: (itemId: string) => void;
@@ -75,10 +75,19 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
       return { panes: mapActivePane(s.panes, paneId, nextPane) };
     }),
 
-  moveDown: (steps = 1) =>
+  moveDown: (steps = 1, all = false) =>
     set((s) => {
       const pane = findPane(s.panes, s.activePaneId);
       if (!pane || pane.type !== "list" || pane.renderedIds.length === 0) return {};
+
+      if (all) {
+        return {
+          panes: mapActivePane(s.panes, s.activePaneId, {
+            ...pane,
+            selectedId: pane.renderedIds[pane.renderedIds.length - 1],
+          }),
+        };
+      }
 
       let newIndex = 0;
 
@@ -103,10 +112,18 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
       };
     }),
 
-  moveUp: (steps = 1) =>
+  moveUp: (steps = 1, all = false) =>
     set((s) => {
       const pane = findPane(s.panes, s.activePaneId);
       if (!pane || pane.type !== "list" || pane.renderedIds.length === 0) return {};
+      if (all) {
+        return {
+          panes: mapActivePane(s.panes, s.activePaneId, {
+            ...pane,
+            selectedId: pane.renderedIds[0],
+          }),
+        };
+      }
 
       let newIndex = pane.renderedIds.length - 1;
 

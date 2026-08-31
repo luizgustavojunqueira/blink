@@ -2,6 +2,30 @@ import type { KeyBinding } from "../types";
 
 export const listNavigationBindings: KeyBinding[] = [
   {
+    id: "list:top",
+    keys: ["gg"],
+    modes: ["normal"],
+    scope: "list",
+    description: "Move to top",
+    hint: { group: "nav" },
+    run: ({ app }) => {
+      app.ui.moveUp(undefined, true);
+      return true;
+    },
+  },
+  {
+    id: "list:bottom",
+    keys: ["G"],
+    modes: ["normal"],
+    scope: "list",
+    description: "Move to bottom",
+    hint: { group: "nav" },
+    run: ({ app }) => {
+      app.ui.moveDown(undefined, true);
+      return true;
+    },
+  },
+  {
     id: "list:down",
     keys: ["j", "arrowdown"],
     modes: ["normal"],

@@ -9,17 +9,19 @@ function usePaneCore<N extends Pane>(
   const pane = useUiStore((s) => narrow(s.panes.find((p) => p.id === paneId)));
   const select = useUiStore((s) => s.select);
   const setRenderedIds = useUiStore((s) => s.setRenderedIds);
+  const pushPane = useUiStore((s) => s.pushPane);
   const activePaneId = useUiStore((s) => s.activePaneId);
   const isActive = pane?.id === activePaneId;
 
   return useMemo(
     () => ({
       pane: pane!,
+      pushPane,
       isActive,
       select: (id: string) => select(paneId, id),
       setRenderedIds: (ids: string[]) => setRenderedIds(paneId, ids),
     }),
-    [pane, paneId, isActive, select, setRenderedIds],
+    [pane, paneId, pushPane, isActive, select, setRenderedIds],
   );
 }
 

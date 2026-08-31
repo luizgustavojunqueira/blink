@@ -1,4 +1,5 @@
 import { usePane } from "../../hooks/usePane";
+import { createDetailPane } from "../../lib/pane/factories";
 import type { GetItemResponse } from "../../types/backend";
 import { priorityColor, priorityMapper, statusColor, statusMapper } from "../../utils/status";
 
@@ -13,6 +14,7 @@ export default function Item({ item, isSelected, paneId }: IItem) {
   const t = usePane(paneId);
 
   const select = t.select;
+  const pushPane = t.pushPane;
   return (
     <li
       data-item-id={item.guid}
@@ -20,6 +22,11 @@ export default function Item({ item, isSelected, paneId }: IItem) {
         isSelected ? "bg-bg-lighter" : "hover:bg-bg-soft"
       }`}
       onClick={() => select(item.guid)}
+      onDoubleClick={() => {
+        select(item.guid);
+
+        pushPane(createDetailPane(crypto.randomUUID(), item.guid, item.guid));
+      }}
     >
       <span className={`text-sm w-20 shrink-0 ${statusColor[item.status] ?? "text-fg-dim"}`}>
         {statusMapper[item.status]}

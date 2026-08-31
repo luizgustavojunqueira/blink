@@ -14,6 +14,7 @@ type Querier interface {
 	DeleteItem(ctx context.Context, guid string) error
 	GetItem(ctx context.Context, id int64) (Item, error)
 	GetItemsByParent(ctx context.Context, parentID sql.NullInt64) ([]Item, error)
+	GetTags(ctx context.Context) ([]string, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
 }
 

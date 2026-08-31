@@ -17,6 +17,14 @@ type MockItemService struct {
 	simulateErr error
 }
 
+func (m *MockItemService) GetTags(ctx context.Context) (*models.GetTagsResponse, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+
+	return &models.GetTagsResponse{Tags: []string{"tag1", "tag2"}}, nil
+}
+
 func (m *MockItemService) UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error) {
 	if m.simulateErr != nil {
 		return nil, m.simulateErr

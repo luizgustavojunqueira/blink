@@ -13,6 +13,7 @@ type Repository interface {
 	CreateItem(ctx context.Context, arg db.CreateItemParams) (db.Item, error)
 	UpdateItem(ctx context.Context, arg db.UpdateItemParams) (db.Item, error)
 	GetItemsDynamic(ctx context.Context, filter db.GetIemsFilter) ([]db.Item, error)
+	GetTags(ctx context.Context) ([]string, error)
 }
 
 type Service struct {

@@ -126,3 +126,16 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 
 	return itemsResponse, nil
 }
+
+func (s *Service) GetTags(ctx context.Context) (*models.GetTagsResponse, error) {
+	tags, err := s.repo.GetTags(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &models.GetTagsResponse{
+		Tags: tags,
+	}
+
+	return result, nil
+}

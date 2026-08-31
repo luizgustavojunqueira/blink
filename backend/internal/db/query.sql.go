@@ -132,6 +132,50 @@ func (q *Queries) GetItemsByParent(ctx context.Context, parentID sql.NullInt64) 
 	return items, nil
 }
 
+const getTags = `-- name: GetTags :many
+WITH all_tags AS (
+    SELECT
+        TRIM(json_each.value) AS tag
+    FROM
+        items,
+        json_each('["' || REPLACE(tags, ',', '","') || '"]')
+    WHERE
+        tags IS NOT NULL
+        AND tags != ''
+)
+SELECT DISTINCT
+    tag
+FROM
+    all_tags
+WHERE
+    tag != ''
+ORDER BY
+    tag ASC
+`
+
+func (q *Queries) GetTags(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var tag string
+		if err := rows.Scan(&tag); err != nil {
+			return nil, err
+		}
+		items = append(items, tag)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateItem = `-- name: UpdateItem :one
 UPDATE items
 SET

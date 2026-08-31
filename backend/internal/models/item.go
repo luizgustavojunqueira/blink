@@ -66,6 +66,10 @@ type GetItemResponse struct {
 	Tags        []string     `json:"tags"`
 }
 
+type GetTagsResponse struct {
+	Tags []string `json:"tags,omitempty"`
+}
+
 func (req *GetItemRequest) Validate() error {
 	for _, reqType := range req.Type {
 		if reqType != Task && reqType != Group {

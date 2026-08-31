@@ -8,6 +8,20 @@ import (
 	"github.com/luizgustavojunqueira/blink/internal/models"
 )
 
+func (a *API) GetTags(w http.ResponseWriter, r *http.Request) {
+	tagsResponse, err := a.itemService.GetTags(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(tagsResponse); err != nil {
+		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (a *API) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	var updateItemReq models.UpdateItemRequest
 	err := json.NewDecoder(r.Body).Decode(&updateItemReq)

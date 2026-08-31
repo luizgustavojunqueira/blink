@@ -64,6 +64,13 @@ func (m *MockRepository) GetItemsDynamic(ctx context.Context, filter db.GetIemsF
 	}, nil
 }
 
+func (m *MockRepository) GetTags(ctx context.Context) ([]string, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+	return []string{"tag1", "tag2"}, nil
+}
+
 func TestService_CreateItem(t *testing.T) {
 	mockRepo := &MockRepository{}
 	svc := service.NewService(mockRepo)

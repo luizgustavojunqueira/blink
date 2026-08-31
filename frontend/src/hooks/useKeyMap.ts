@@ -22,6 +22,7 @@ export function useKeyMap(app: AppContext) {
       };
 
       const key = eventToKey(e);
+      if (!key) return;
       let finalKey = "";
       if (currentSeq.current != "") {
         finalKey = `${currentSeq.current}`;
@@ -39,6 +40,7 @@ export function useKeyMap(app: AppContext) {
 
         return;
       }
+      currentSeq.current = "";
       if (binding.run(ctx, key) == false) return;
       e.preventDefault();
     };
@@ -49,11 +51,16 @@ export function useKeyMap(app: AppContext) {
 }
 
 export function eventToKey(e: KeyboardEvent): string {
+  if (["Control", "Alt", "Meta", "Shift"].includes(e.key)) {
+    return "";
+  }
   const parts: string[] = [];
   if (e.ctrlKey) parts.push("ctrl");
   if (e.altKey) parts.push("alt");
   if (e.metaKey) parts.push("meta");
   if (e.shiftKey && e.key.length > 1) parts.push("shift");
+
   parts.push(e.key.length === 1 ? e.key : e.key.toLowerCase());
+
   return parts.join("+");
 }

@@ -159,4 +159,18 @@ describe("useKeyMap", () => {
 
     expect(firstPane().selectedId).toBeNull();
   });
+
+  it("handles double key key bindings", () => {
+    seedRoot(["a", "b", "c"], "c");
+
+    renderHook(() => useKeyMap(makeApp()));
+    press("g");
+    press("g");
+
+    expect(firstPane().selectedId).toBe("a");
+
+    press("G");
+
+    expect(firstPane().selectedId).toBe("c");
+  });
 });

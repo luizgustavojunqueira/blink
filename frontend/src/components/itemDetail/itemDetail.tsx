@@ -146,30 +146,36 @@ export default function ItemDetail({ paneId }: IItemDetail) {
             break;
 
           case "priority":
-            content = Object.keys(priorityMapper).map((k) => (
-              <span
+            content = (Object.keys(priorityMapper) as (keyof typeof priorityMapper)[]).map((k) => (
+              <button
                 key={k}
-                className={`p-2 border border-accent/20 rounded-xl hover:cursor-pointer ${
-                  item.priority === k ? priorityColorBg[k] : ""
+                type="button"
+                className={`px-2.5 py-1 text-xs font-medium border rounded-md transition-colors cursor-pointer select-none ${
+                  item.priority === k
+                    ? priorityColorBg[k]
+                    : "border-border text-fg-dim hover:bg-bg-lighter hover:text-fg hover:border-fg-dim"
                 }`}
                 onClick={() => app.items.setField(item.guid, "priority", k)}
               >
                 {priorityMapper[k]}
-              </span>
+              </button>
             ));
             break;
 
           case "status":
-            content = Object.keys(statusMapper).map((k) => (
-              <span
+            content = (Object.keys(statusMapper) as (keyof typeof statusMapper)[]).map((k) => (
+              <button
                 key={k}
-                className={`p-2 border border-accent/20 rounded-xl hover:cursor-pointer ${
-                  item.status === k ? statusColorBg[k] : ""
+                type="button"
+                className={`px-2.5 py-1 text-xs font-medium border rounded-md transition-colors cursor-pointer select-none ${
+                  item.status === k
+                    ? statusColorBg[k]
+                    : "border-border text-fg-dim hover:bg-bg-lighter hover:text-fg hover:border-fg-dim"
                 }`}
                 onClick={() => app.items.setField(item.guid, "status", k)}
               >
                 {statusMapper[k]}
-              </span>
+              </button>
             ));
             break;
 

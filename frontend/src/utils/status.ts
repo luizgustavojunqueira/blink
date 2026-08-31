@@ -16,11 +16,11 @@ export const statusColor: Record<ItemStatus, string> = {
 };
 
 export const statusColorBg: Record<ItemStatus, string> = {
-  TODO: "bg-bg-lighter",
-  IN_PROGRESS: "bg-accent",
-  DONE: "bg-done",
-  CANCELED: "bg-fg-muted",
-  ARCHIVED: "bg-fg-muted",
+  TODO: "bg-fg-dim/15 text-fg-dim border-fg-dim",
+  IN_PROGRESS: "bg-accent/20 text-accent border-accent",
+  DONE: "bg-done/20 text-done border-done",
+  CANCELED: "bg-fg-muted/20 text-fg-muted border-fg-muted",
+  ARCHIVED: "bg-fg-muted/20 text-fg-muted border-fg-muted",
 };
 
 export const statusMapper: Record<ItemStatus, string> = {
@@ -39,8 +39,8 @@ export const priorityMapper: Record<ItemPriority, string> = {
 };
 
 export const priorityColorBg: Record<ItemPriority, string> = {
-  URGENT: "bg-urgent",
-  HIGH: "bg-high",
-  NORMAL: "bg-normal",
-  LOW: "bg-low",
+  URGENT: "bg-urgent/20 text-urgent border-urgent",
+  HIGH: "bg-high/20 text-high border-high",
+  NORMAL: "bg-normal/20 text-normal border-normal",
+  LOW: "bg-low/20 text-low border-low",
 };

@@ -1,12 +1,16 @@
 // Package models
 package models
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 type (
 	ItemType     string
 	ItemStatus   string
 	ItemPriority string
+	OrderField   string
 )
 
 const (
@@ -27,6 +31,14 @@ const (
 	Normal ItemPriority = "NORMAL"
 	High   ItemPriority = "HIGH"
 	Urgent ItemPriority = "URGENT"
+)
+
+const (
+	OrderTitle    OrderField = "title"
+	OrderCreated  OrderField = "created"
+	OrderUpdated  OrderField = "updated"
+	OrderStatus   OrderField = "status"
+	OrderPriority OrderField = "priority"
 )
 
 type CreateItemRequest struct {
@@ -54,6 +66,12 @@ type GetItemRequest struct {
 	Status      []ItemStatus   `json:"status,omitempty"`
 	Priority    []ItemPriority `json:"priority,omitempty"`
 	Tags        []string       `json:"tags,omitempty"`
+	Order       []string       `json:"order,omitempty"`
+}
+
+type OrderBy struct {
+	Field OrderField `json:"field"`
+	Desc  bool       `json:"desc"`
 }
 
 type GetItemResponse struct {
@@ -85,6 +103,14 @@ func (req *GetItemRequest) Validate() error {
 
 	for _, reqPriority := range req.Priority {
 		if err := validPriority(reqPriority); err != nil {
+			return err
+		}
+	}
+
+	parsedOrders := ParseOrders(req.Order)
+
+	for _, pO := range parsedOrders {
+		if err := validField(pO.Field); err != nil {
 			return err
 		}
 	}
@@ -141,6 +167,16 @@ func validStatus(s ItemStatus) error {
 	return nil
 }
 
+func validField(field OrderField) error {
+	validFields := map[OrderField]bool{
+		OrderPriority: true, OrderTitle: true, OrderStatus: true, OrderCreated: true, OrderUpdated: true,
+	}
+	if !validFields[field] {
+		return errors.New("invalid field")
+	}
+	return nil
+}
+
 func validPriority(p ItemPriority) error {
 	validPriorities := map[ItemPriority]bool{
 		Low: true, Normal: true, High: true, Urgent: true,
@@ -149,4 +185,17 @@ func validPriority(p ItemPriority) error {
 		return errors.New("invalid priority")
 	}
 	return nil
+}
+
+func ParseOrders(orders []string) []OrderBy {
+	parsedOrders := make([]OrderBy, 0, len(orders))
+
+	for _, order := range orders {
+		res, found := strings.CutPrefix(order, "-")
+		parsedOrders = append(parsedOrders, OrderBy{
+			Field: OrderField(strings.ToLower(res)),
+			Desc:  found,
+		})
+	}
+	return parsedOrders
 }

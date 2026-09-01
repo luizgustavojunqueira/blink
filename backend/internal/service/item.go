@@ -88,6 +88,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 		Status:      toStringSlice(req.Status),
 		Type:        toStringSlice(req.Type),
 		Tags:        tags,
+		Order:       toDBOrders(models.ParseOrders(req.Order)),
 	}
 
 	if filter.Title != nil {

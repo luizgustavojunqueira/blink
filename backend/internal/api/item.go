@@ -85,6 +85,7 @@ func (a *API) GetItems(w http.ResponseWriter, r *http.Request) {
 	req.Priority = toUpperCase(parseQueryList[models.ItemPriority](queryParams["priority"]))
 	req.Type = toUpperCase(parseQueryList[models.ItemType](queryParams["type"]))
 	req.Tags = parseQueryList[string](queryParams["tags"])
+	req.Order = parseQueryList[string](queryParams["order"])
 
 	if err := req.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

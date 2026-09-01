@@ -15,6 +15,12 @@ type GetIemsFilter struct {
 	Title       *string
 	Description *string
 	Tags        []string
+	Order       []OrderBy
+}
+
+type OrderBy struct {
+	Field string
+	Desc  bool
 }
 
 type SQLStore struct {
@@ -27,6 +33,22 @@ func NewRepository(dbConn *sql.DB) *SQLStore {
 		db:      dbConn,
 		Queries: New(dbConn),
 	}
+}
+
+const (
+	statusRankExpr   = "CASE status WHEN 'TODO' THEN 0 WHEN 'IN_PROGRESS' THEN 1 WHEN 'DONE' THEN 2 WHEN 'CANCELED' THEN 3 WHEN 'ARCHIVED' THEN 4 ELSE 5 END"
+	priorityRankExpr = "CASE priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'NORMAL' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END"
+	orderTiebreaker  = "id DESC"
+)
+
+var defaultOrder = []string{statusRankExpr + " ASC", "created_at DESC"}
+
+var orderColumns = map[string]string{
+	"title":    "title",
+	"created":  "created_at",
+	"updated":  "updated_at",
+	"priority": priorityRankExpr,
+	"status":   statusRankExpr,
 }
 
 func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([]Item, error) {
@@ -58,7 +80,21 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 		})
 	}
 
-	query = query.OrderBy("status DESC", "created_at DESC")
+	if len(filter.Order) == 0 {
+		query = query.OrderBy(defaultOrder...)
+	} else {
+		for _, order := range filter.Order {
+			if expr, ok := orderColumns[order.Field]; ok {
+				if order.Desc {
+					query = query.OrderBy(expr + " DESC")
+				} else {
+					query = query.OrderBy(expr + " ASC")
+				}
+			}
+		}
+	}
+
+	query = query.OrderBy(orderTiebreaker)
 
 	sql, args, err := query.ToSql()
 	if err != nil {

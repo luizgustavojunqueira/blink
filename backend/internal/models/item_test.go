@@ -119,6 +119,20 @@ func TestGetItemRequest_Validate(t *testing.T) {
 			},
 			expectError: true,
 		},
+		{
+			name: "Success - Correct order",
+			req: models.GetItemRequest{
+				Order: []string{"priority", "-status"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Error - Invalid order field",
+			req: models.GetItemRequest{
+				Order: []string{"created_at"},
+			},
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -199,6 +213,61 @@ func TestUpdateItemRequest_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.req.Validate()
 			parseError(t, err, tt.expectError)
+		})
+	}
+}
+
+func TestParseOrders(t *testing.T) {
+	tests := []struct {
+		name     string
+		orders   []string
+		expected []models.OrderBy
+	}{
+		{
+			name:     "Empty input yields no entries",
+			orders:   []string{},
+			expected: []models.OrderBy{},
+		},
+		{
+			name:     "Bare field is ascending",
+			orders:   []string{"title"},
+			expected: []models.OrderBy{{Field: models.OrderTitle, Desc: false}},
+		},
+		{
+			name:     "Dash prefix is descending",
+			orders:   []string{"-created"},
+			expected: []models.OrderBy{{Field: models.OrderCreated, Desc: true}},
+		},
+		{
+			name:     "Field is normalized to lower case",
+			orders:   []string{"-STATUS"},
+			expected: []models.OrderBy{{Field: models.OrderStatus, Desc: true}},
+		},
+		{
+			name:   "Input order is preserved",
+			orders: []string{"priority", "-status", "title"},
+			expected: []models.OrderBy{
+				{Field: models.OrderPriority, Desc: false},
+				{Field: models.OrderStatus, Desc: true},
+				{Field: models.OrderTitle, Desc: false},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := models.ParseOrders(tt.orders)
+
+			if len(got) != len(tt.expected) {
+				t.Fatalf("Expected %v but got %v", tt.expected, got)
+			}
+
+			for i := range got {
+				if got[i] != tt.expected[i] {
+					t.Errorf("Expected %v but got %v", tt.expected, got)
+					break
+				}
+			}
 		})
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/luizgustavojunqueira/blink/internal/db"
+	"github.com/luizgustavojunqueira/blink/internal/models"
 )
 
 type Repository interface {
@@ -45,6 +46,17 @@ func toStringSlice[T ~string](items []T) []string {
 	result := make([]string, len(items))
 	for i, v := range items {
 		result[i] = string(v)
+	}
+	return result
+}
+
+func toDBOrders(orders []models.OrderBy) []db.OrderBy {
+	if orders == nil {
+		return nil
+	}
+	result := make([]db.OrderBy, 0, len(orders))
+	for _, o := range orders {
+		result = append(result, db.OrderBy{Field: string(o.Field), Desc: o.Desc})
 	}
 	return result
 }

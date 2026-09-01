@@ -19,6 +19,7 @@ export function useAppContext(): AppContext {
     mutationFn: createItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     },
   });
 
@@ -28,6 +29,7 @@ export function useAppContext(): AppContext {
       queryClient.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
         old?.map((i) => (i.guid === updated.guid ? updated : i)),
       );
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     },
   });
 

@@ -11,6 +11,10 @@ const mockItems = vi.hoisted(() => ({
   setField: vi.fn(),
 }));
 
+vi.mock("../../hooks/useItems", () => ({
+  useTags: () => ({ data: [] }),
+}));
+
 vi.mock("../../hooks/useAppContext", () => ({
   useAppContext: () => ({
     ui: useUiStore(),

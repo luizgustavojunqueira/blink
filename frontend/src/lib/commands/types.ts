@@ -1,10 +1,6 @@
 import type { PromptOption } from "../promptOptions";
 import type { AppContext } from "../types";
 
-
-
-
-
 export type ExecuteResult = {
   shouldClearPrompt?: boolean;
   message?: string;
@@ -15,12 +11,12 @@ export type CommandContext = {
   app: AppContext;
 };
 
-export type CommandDefinition = {
+export type CommandDefinition<TOptions = any> = {
   id: string;
   displayName: string;
   description: string;
 
-  getOptions?: (rawArgs: string) => PromptOption[];
+  getOptions?: (rawArgs: string, options?: TOptions) => PromptOption[];
   execute?: (context: CommandContext) => Promise<ExecuteResult | void> | ExecuteResult | void;
   extract?: (raw: string) => {
     values: string[];

@@ -2,6 +2,7 @@ import type {
   CreateItemRequest,
   GetItemRequest,
   GetItemResponse,
+  GetTagsResponse,
   UpdateItemRequest,
 } from "../types/backend";
 import { api } from "./client";
@@ -36,4 +37,8 @@ export function updateItem(req: UpdateItemRequest) {
     method: "PATCH",
     body: JSON.stringify(req),
   });
+}
+
+export function getTags() {
+  return api<GetTagsResponse>("/tags");
 }

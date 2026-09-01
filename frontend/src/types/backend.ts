@@ -53,3 +53,6 @@ export interface GetItemResponse {
   priority: ItemPriority;
   tags: string[];
 }
+export interface GetTagsResponse {
+  tags?: string[];
+}

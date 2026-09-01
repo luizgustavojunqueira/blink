@@ -2,6 +2,7 @@ import { useCallback, useState, type KeyboardEvent } from "react";
 import { getModifier } from "../lib/modifiers/registry";
 import { TAG_MODIFIER } from "../lib/modifiers/delimiters";
 import type { PromptOption } from "../lib/promptOptions";
+import { useTags } from "./useItems";
 
 function currentWord(text: string, cursor: number) {
   const start = text.slice(0, cursor).lastIndexOf(" ") + 1;
@@ -17,6 +18,7 @@ export function useTagAutocomplete(
 ) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [options, setOptions] = useState<PromptOption[]>([]);
+  const { data: tags } = useTags();
 
   const isOpen = options.length > 0;
 
@@ -35,9 +37,9 @@ export function useTagAutocomplete(
       return;
     }
 
-    setOptions(getModifier(TAG_MODIFIER)?.getOptions?.(word.slice(1)) ?? []);
+    setOptions(getModifier(TAG_MODIFIER)?.getOptions?.(word.slice(1), { tags }) ?? []);
     setSelectedIndex(0);
-  }, [inputRef]);
+  }, [inputRef, tags]);
 
   const onSelect = (index?: number) => {
     const input = inputRef.current;

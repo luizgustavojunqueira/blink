@@ -21,9 +21,9 @@ export const modifiers = {
 } as const satisfies Record<string, CommandDefinition>;
 
 export function getModifier(id: string): CommandDefinition | undefined {
-  return modifiers[id as keyof typeof modifiers]
+  return modifiers[id as keyof typeof modifiers];
 }
 
 export function getAllModifiers(): CommandDefinition[] {
-  return Object.values(modifiers)
+  return Object.values(modifiers);
 }

@@ -4,6 +4,10 @@ import { useTagAutocomplete } from "./useTagAutocomplete";
 import { getModifier } from "../lib/modifiers/registry";
 import { toPromptOption } from "../lib/promptOptions";
 
+vi.mock("./useItems", () => ({
+  useTags: vi.fn(() => ({ data: [] })),
+}));
+
 vi.mock("../lib/modifiers/registry", () => ({
   getModifier: vi.fn(),
 }));

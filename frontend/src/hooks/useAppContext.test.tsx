@@ -78,6 +78,7 @@ describe("useAppContext", () => {
 
     await waitFor(() => {
       expect(invalidate).toHaveBeenCalledWith({ queryKey: ["items"] });
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ["tags"] });
     });
   });
 
@@ -169,7 +170,8 @@ describe("useAppContext: update", () => {
 
     expect(client.getQueryData(["items", {}])).toEqual([updated, item("item-2", InProgress)]);
     expect(client.getQueryData(["items", { status: [ToDo] }])).toEqual([updated]);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["items"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["tags"] });
   });
 
   it("leaves untouched lists alone", async () => {

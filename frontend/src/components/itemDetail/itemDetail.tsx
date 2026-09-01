@@ -125,6 +125,7 @@ export default function ItemDetail({ paneId }: IItemDetail) {
           case "tags":
             content = (
               <TextField
+                ref={tagInputRef}
                 onRequestEdit={() => handleClickEdit("tags")}
                 onKeyDown={(e) => {
                   if (tagHelper.onKeyDown(e)) return;

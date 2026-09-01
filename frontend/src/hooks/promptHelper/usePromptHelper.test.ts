@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { usePromptHelper } from "./usePromptHelper";
 import { COMMAND_PREFIX } from "../../lib/commands/registry";
 
+vi.mock("../useItems", () => ({
+  useTags: vi.fn(() => ({ data: [] })),
+}));
+
 function cmd(rest: string) {
   return `${COMMAND_PREFIX}${rest}`;
 }

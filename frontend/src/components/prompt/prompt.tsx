@@ -35,9 +35,14 @@ export default function Prompt({ paneId }: IPrompt) {
   }, [editing, helperUpdate]);
 
   const handleKeyDown = async (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (helper.onKeyDown(e)) return;
+    if (helper.onKeyDown(e)) {
+      e.stopPropagation();
+      return;
+    }
 
     if (e.key !== "Enter") return;
+
+    e.stopPropagation();
 
     if (e.ctrlKey || e.metaKey || e.altKey) {
       e.preventDefault();

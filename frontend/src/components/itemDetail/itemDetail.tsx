@@ -42,7 +42,9 @@ export default function ItemDetail({ paneId }: IItemDetail) {
 
     if (e.key !== "Enter") return;
 
-    if (e.ctrlKey || e.metaKey || (e.altKey && t.pane.selectedField === "description")) {
+    e.stopPropagation();
+
+    if ((e.ctrlKey || e.metaKey || e.altKey) && field === "description") {
       e.preventDefault();
       const el = e.currentTarget;
       const pos = el.selectionStart ?? currentValue.length;
@@ -128,7 +130,10 @@ export default function ItemDetail({ paneId }: IItemDetail) {
                 ref={tagInputRef}
                 onRequestEdit={() => handleClickEdit("tags")}
                 onKeyDown={(e) => {
-                  if (tagHelper.onKeyDown(e)) return;
+                  if (tagHelper.onKeyDown(e)) {
+                    e.stopPropagation();
+                    return;
+                  }
                   handleKeyDown(e, mapTagsToString(item.tags), itemTags, setItemTags, "tags");
                 }}
                 value={itemTags}

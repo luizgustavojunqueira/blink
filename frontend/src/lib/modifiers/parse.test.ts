@@ -82,8 +82,8 @@ describe("parseModifiers()", () => {
   it("handles empty input", () => {
     expect(parseModifiers("")).toEqual({
       text: "",
-      values: { "@": [], "!": [], "#": [], $: [] },
-      invalid: { "@": [], "!": [], "#": [], $: [] },
+      values: { "@": [], "!": [], "#": [], $: [], "%": [] },
+      invalid: { "@": [], "!": [], "#": [], $: [], "%": [] },
     });
   });
 });

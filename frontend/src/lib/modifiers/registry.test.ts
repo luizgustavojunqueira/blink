@@ -8,6 +8,7 @@ describe("modifiers registry", () => {
     expect(getModifier("#")?.id).toBe("#");
     expect(getModifier("?")?.id).toBe("?");
     expect(getModifier("$")?.id).toBe("$");
+    expect(getModifier("%")?.id).toBe("%");
   });
 
   it("registers $ as a rest-kind modifier", () => {
@@ -21,7 +22,7 @@ describe("modifiers registry", () => {
 
   it("lists every registered modifier", () => {
     const ids = getAllModifiers().map((m) => m.id);
-    expect(ids).toEqual(expect.arrayContaining(["@", "!", "#", "$", "?"]));
-    expect(ids).toHaveLength(5);
+    expect(ids).toEqual(expect.arrayContaining(["@", "!", "#", "$", "?", "%"]));
+    expect(ids).toHaveLength(6);
   });
 });

@@ -1,11 +1,18 @@
 import type { CommandDefinition } from "../../commands/types";
 import { toPromptOption } from "../../promptOptions";
 import { descriptionModifier } from "./description";
+import { orderModifier } from "./order";
 import { priorityModifier } from "./priority";
 import { statusModifier } from "./status";
 import { tagModifier } from "./tag";
 
-const OTHER_MODIFIERS = [statusModifier, priorityModifier, tagModifier, descriptionModifier];
+const OTHER_MODIFIERS = [
+  statusModifier,
+  priorityModifier,
+  tagModifier,
+  descriptionModifier,
+  orderModifier,
+];
 
 export const helpModifier: CommandDefinition = {
   id: "?",

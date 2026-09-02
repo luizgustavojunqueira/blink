@@ -4,7 +4,8 @@ export type PromptOptionKind =
   | "MODIFIER"
   | "STATUS"
   | "PRIORITY"
-  | "TAG";
+  | "TAG"
+  | "ORDER";
 
 export type PromptOption = {
   name: string;

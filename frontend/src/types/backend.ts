@@ -9,6 +9,7 @@ Package models
 export type ItemType = string;
 export type ItemStatus = string;
 export type ItemPriority = string;
+export type OrderField = string;
 export const Task: ItemType = "TASK";
 export const Group: ItemType = "GROUP";
 export const ToDo: ItemStatus = "TODO";
@@ -20,6 +21,11 @@ export const Low: ItemPriority = "LOW";
 export const Normal: ItemPriority = "NORMAL";
 export const High: ItemPriority = "HIGH";
 export const Urgent: ItemPriority = "URGENT";
+export const OrderTitle: OrderField = "title";
+export const OrderCreated: OrderField = "created";
+export const OrderUpdated: OrderField = "updated";
+export const OrderStatus: OrderField = "status";
+export const OrderPriority: OrderField = "priority";
 export interface CreateItemRequest {
   title: string;
   description?: string;
@@ -43,6 +49,11 @@ export interface GetItemRequest {
   status?: ItemStatus[];
   priority?: ItemPriority[];
   tags?: string[];
+  order?: string[];
+}
+export interface OrderBy {
+  field: OrderField;
+  desc: boolean;
 }
 export interface GetItemResponse {
   guid: string;

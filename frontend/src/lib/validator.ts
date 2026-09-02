@@ -8,6 +8,11 @@ import {
   Normal,
   High,
   Urgent,
+  OrderTitle,
+  OrderUpdated,
+  OrderCreated,
+  OrderPriority,
+  OrderStatus,
 } from "../types/backend";
 
 export const STATUS_CLASS: Record<string, string> = {
@@ -25,5 +30,17 @@ export const PRIORITY_CLASS: Record<string, string> = {
   [Urgent.toLowerCase()]: "text-urgent",
 };
 
-export const VALID_STATUS = Object.keys(STATUS_CLASS)
-export const VALID_PRIORITY = Object.keys(PRIORITY_CLASS)
+export const ORDER_FIELD_CLASS: Record<string, string> = {
+  [OrderTitle]: "text-fg",
+  [OrderUpdated]: "text-normal",
+  [OrderCreated]: "text-low",
+  [OrderPriority]: "text-high",
+  [OrderStatus]: "text-status",
+};
+
+export const VALID_STATUS = Object.keys(STATUS_CLASS);
+export const VALID_PRIORITY = Object.keys(PRIORITY_CLASS);
+export const VALID_ORDER_FIELDS = [
+  ...Object.keys(ORDER_FIELD_CLASS),
+  ...Object.keys(ORDER_FIELD_CLASS).map((f) => `-${f}`),
+];

@@ -3,13 +3,14 @@ import {
   TAG_MODIFIER,
   STATUS_MODIFIER,
   DESCRIPTION_MODIFIER,
+  ORDER_MODIFIER,
 } from "../../lib/modifiers/delimiters.ts";
-import { PRIORITY_CLASS, STATUS_CLASS } from "../../lib/validator";
+import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS } from "../../lib/validator";
 import type { Token } from "../textField/textOverlay";
 
 export function tokenizePrompt(text: string): Token[] {
   const regex = new RegExp(
-    `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
+    `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}\\${ORDER_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
     "g",
   );
   const parts = text.split(regex);
@@ -25,7 +26,11 @@ export function tokenizePrompt(text: string): Token[] {
       continue;
     }
 
-    if (part.startsWith(PRIORITY_MODIFIER) || part.startsWith(STATUS_MODIFIER)) {
+    if (
+      part.startsWith(PRIORITY_MODIFIER) ||
+      part.startsWith(STATUS_MODIFIER) ||
+      part.startsWith(ORDER_MODIFIER)
+    ) {
       const value = part.slice(1).toLowerCase();
 
       if (!value) {
@@ -33,9 +38,19 @@ export function tokenizePrompt(text: string): Token[] {
         continue;
       }
 
-      const colorClass = part.startsWith(PRIORITY_MODIFIER)
-        ? PRIORITY_CLASS[value]
-        : STATUS_CLASS[value];
+      let colorClass = "";
+
+      switch (part[0]) {
+        case PRIORITY_MODIFIER:
+          colorClass = PRIORITY_CLASS[value];
+          break;
+        case STATUS_MODIFIER:
+          colorClass = STATUS_CLASS[value];
+          break;
+        case ORDER_MODIFIER:
+          colorClass = ORDER_FIELD_CLASS[value.startsWith("-") ? value.slice(1) : value];
+          break;
+      }
 
       tokens.push({
         text: part,

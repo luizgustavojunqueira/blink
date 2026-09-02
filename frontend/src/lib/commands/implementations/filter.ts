@@ -1,6 +1,7 @@
 import type { GetItemRequest } from "../../../types/backend";
 import {
   DESCRIPTION_MODIFIER,
+  ORDER_MODIFIER,
   PRIORITY_MODIFIER,
   STATUS_MODIFIER,
   TAG_MODIFIER,
@@ -15,6 +16,7 @@ export function parseFilter(raw: string): GetItemRequest {
   const tags = values[TAG_MODIFIER];
   const status = values[STATUS_MODIFIER];
   const priority = values[PRIORITY_MODIFIER];
+  const order = values[ORDER_MODIFIER];
 
   return {
     title: text || undefined,
@@ -22,6 +24,7 @@ export function parseFilter(raw: string): GetItemRequest {
     tags: tags.length ? tags : undefined,
     priority: priority.length ? priority : undefined,
     status: status.length ? status : undefined,
+    order: order.length ? order : undefined,
   };
 }
 

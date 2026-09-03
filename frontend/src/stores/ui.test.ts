@@ -266,13 +266,16 @@ describe("ui store: select", () => {
     expect(firstPane().selectedId).toBe("b");
   });
 
-  it("does nothing when the selection is unchanged", () => {
-    const pane = seedRoot(["a", "b"], "a");
-    pane.renderedIds = ["a", "b"];
+  it("does nothing when the selection is unchanged, leaving mode and pane untouched", () => {
+    seedRoot(["a", "b"], "a");
+    useUiStore.setState({ mode: "insert", activePaneId: "other" });
+    const previous = firstPane();
 
     state().select("root", "a");
 
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane()).toBe(previous);
+    expect(state().mode).toBe("insert");
+    expect(state().activePaneId).toBe("other");
   });
 
   it("does nothing on a detail pane", () => {

@@ -203,25 +203,30 @@ describe("ItemDetail", () => {
     expect(input.value).toBe("2% please\n");
   });
 
-  it("Ctrl+Enter on the singleLine title also splices in a raw newline, since ctrlKey is not field-scoped", () => {
-    seed("title", "insert");
+  it("inserts a literal newline in the description on Alt+Enter too", () => {
+    seed("description", "insert");
     render(<ItemDetail paneId={DETAIL_ID} />);
 
-    const input = screen.getByDisplayValue("Buy milk") as HTMLTextAreaElement;
-    fireEvent.keyDown(input, { key: "Enter", ctrlKey: true });
+    const input = screen.getByDisplayValue("2% please") as HTMLTextAreaElement;
+    fireEvent.keyDown(input, { key: "Enter", altKey: true });
 
     expect(mockItems.setField).not.toHaveBeenCalled();
-    expect(input.value).toBe("Buy milk\n");
+    expect(input.value).toBe("2% please\n");
   });
 
-  it("Alt+Enter commits the title instead of inserting a newline, unlike in the description", () => {
+  it.each([
+    ["Ctrl", { ctrlKey: true }],
+    ["Alt", { altKey: true }],
+    ["Meta", { metaKey: true }],
+  ])("commits the singleLine title on %s+Enter, never splicing a raw newline into it", (_, mod) => {
     const item = seed("title", "insert");
     render(<ItemDetail paneId={DETAIL_ID} />);
 
-    const input = screen.getByDisplayValue("Buy milk");
+    const input = screen.getByDisplayValue("Buy milk") as HTMLTextAreaElement;
     fireEvent.change(input, { target: { value: "Buy oat milk" } });
-    fireEvent.keyDown(input, { key: "Enter", altKey: true });
+    fireEvent.keyDown(input, { key: "Enter", ...mod });
 
+    expect(input.value).not.toContain("\n");
     expect(mockItems.setField).toHaveBeenCalledWith(item.guid, "title", "Buy oat milk");
   });
 });

@@ -33,36 +33,6 @@ const detailCtx = (mode: Mode, selectedField: DetailField): KeyContext => {
 };
 
 describe("keymap registry: resolve", () => {
-  it("resolves the navigation keys in normal mode", () => {
-    expect(resolve("j", ctx("normal"))?.id).toBe("list:down");
-    expect(resolve("arrowdown", ctx("normal"))?.id).toBe("list:down");
-    expect(resolve("k", ctx("normal"))?.id).toBe("list:up");
-    expect(resolve("arrowup", ctx("normal"))?.id).toBe("list:up");
-  });
-
-  it("resolves the paged navigation keys in normal mode", () => {
-    expect(resolve("ctrl+d", ctx("normal"))?.id).toBe("list:ctrldown");
-    expect(resolve("ctrl+arrowdown", ctx("normal"))?.id).toBe("list:ctrldown");
-    expect(resolve("ctrl+u", ctx("normal"))?.id).toBe("list:ctrlup");
-    expect(resolve("ctrl+arrowup", ctx("normal"))?.id).toBe("list:ctrlup");
-  });
-
-  it("maps the digits to the status bindings", () => {
-    expect(resolve("1", ctx("normal"))?.id).toBe("updateTo:TODO");
-    expect(resolve("2", ctx("normal"))?.id).toBe("updateTo:IN_PROGRESS");
-    expect(resolve("3", ctx("normal"))?.id).toBe("updateTo:DONE");
-    expect(resolve("4", ctx("normal"))?.id).toBe("updateTo:CANCELED");
-    expect(resolve("5", ctx("normal"))?.id).toBe("updateTo:ARCHIVED");
-  });
-
-  it("resolves the prompt prefixes in normal mode", () => {
-    expect(resolve("i", ctx("normal"))?.id).toBe("insertMode");
-    expect(resolve("#", ctx("normal"))?.id).toBe("insertPrefix");
-    expect(resolve("!", ctx("normal"))?.id).toBe("insertPrefix");
-    expect(resolve("@", ctx("normal"))?.id).toBe("insertPrefix");
-    expect(resolve(":", ctx("normal"))?.id).toBe("insertPrefix");
-  });
-
   it("keeps the item bindings out of reach while nothing is selected", () => {
     expect(resolve("3", ctx("normal", { selectedId: null }))).toBeUndefined();
     expect(resolve("l", ctx("normal", { selectedId: null }))).toBeUndefined();

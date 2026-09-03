@@ -1,6 +1,7 @@
 package models_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/luizgustavojunqueira/blink/internal/models"
@@ -258,15 +259,8 @@ func TestParseOrders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := models.ParseOrders(tt.orders)
 
-			if len(got) != len(tt.expected) {
-				t.Fatalf("Expected %v but got %v", tt.expected, got)
-			}
-
-			for i := range got {
-				if got[i] != tt.expected[i] {
-					t.Errorf("Expected %v but got %v", tt.expected, got)
-					break
-				}
+			if !slices.Equal(got, tt.expected) {
+				t.Errorf("Expected %v but got %v", tt.expected, got)
 			}
 		})
 	}

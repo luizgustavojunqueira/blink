@@ -1,112 +1,103 @@
 import { describe, expect, it } from "vitest";
 import { tokenizePrompt } from "./promptTokenize";
+import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS } from "../../lib/validator";
+import {
+  DESCRIPTION_MODIFIER,
+  ORDER_MODIFIER,
+  PRIORITY_MODIFIER,
+  STATUS_MODIFIER,
+  TAG_MODIFIER,
+} from "../../lib/modifiers/delimiters";
 
-function find(tokens: ReturnType<typeof tokenizePrompt>, text: string) {
-  return tokens.find((t) => t.text === text);
+const INVALID = "text-danger";
+
+function classOf(text: string, token = text) {
+  return tokenizePrompt(text).find((t) => t.text === token)?.className;
 }
+
+const descending = (fields: string[]) => fields.map((f) => `-${f}`);
+
+const KNOWN_VALUES: [string, string[]][] = [
+  [PRIORITY_MODIFIER, Object.keys(PRIORITY_CLASS)],
+  [STATUS_MODIFIER, Object.keys(STATUS_CLASS)],
+  [ORDER_MODIFIER, Object.keys(ORDER_FIELD_CLASS)],
+  [ORDER_MODIFIER, descending(Object.keys(ORDER_FIELD_CLASS))],
+];
+
+const DELIMITERS = [PRIORITY_MODIFIER, STATUS_MODIFIER, ORDER_MODIFIER];
 
 describe("tokenizePrompt", () => {
   it("keeps plain text as a single token without highlight classes", () => {
-    const tokens = tokenizePrompt("hello world");
-    expect(tokens).toEqual([{ text: "hello world", className: "" }]);
+    expect(tokenizePrompt("hello world")).toEqual([{ text: "hello world", className: "" }]);
   });
 
-  it("highlights priority modifier !high", () => {
-    const token = find(tokenizePrompt("!high"), "!high");
-    expect(token?.className).toContain("text-high");
-    expect(token?.className).toContain("font-medium");
+  describe("known values", () => {
+    for (const [delimiter, values] of KNOWN_VALUES) {
+      for (const value of values) {
+        const token = `${delimiter}${value}`;
+
+        it(`highlights ${token} instead of rejecting it`, () => {
+          const className = classOf(token);
+
+          expect(className).toBeTruthy();
+          expect(className).not.toContain(INVALID);
+          expect(className).toContain("font-medium");
+        });
+      }
+    }
   });
 
-  it("highlights priority modifier !urgent", () => {
-    expect(find(tokenizePrompt("!urgent"), "!urgent")?.className).toContain("text-urgent");
+  describe("unknown values", () => {
+    for (const delimiter of DELIMITERS) {
+      it(`marks ${delimiter}banana as invalid, with a strikethrough`, () => {
+        const className = classOf(`${delimiter}banana`);
+
+        expect(className).toContain(INVALID);
+        expect(className).toContain("line-through");
+      });
+    }
+
+    it("rejects a bare descending marker with no field after it", () => {
+      expect(classOf(`${ORDER_MODIFIER}-`)).toContain(INVALID);
+    });
   });
 
-  it("highlights priority modifier !normal", () => {
-    expect(find(tokenizePrompt("!normal"), "!normal")?.className).toContain("text-normal");
+  describe("bare delimiters", () => {
+    for (const delimiter of DELIMITERS) {
+      it(`leaves ${delimiter} pending rather than invalid, since nothing was typed yet`, () => {
+        const className = classOf(delimiter);
+
+        expect(className).toContain("text-accent");
+        expect(className).not.toContain("line-through");
+      });
+    }
   });
 
-  it("highlights priority modifier !low", () => {
-    expect(find(tokenizePrompt("!low"), "!low")?.className).toContain("text-low");
+  it("highlights a tag without validating it, since any tag may be new", () => {
+    expect(classOf(`${TAG_MODIFIER}anything-at-all`)).toContain("text-tag");
   });
 
-  it("marks unknown priority as danger with strikethrough", () => {
-    const token = find(tokenizePrompt("!custom"), "!custom");
-    expect(token?.className).toContain("text-danger");
-    expect(token?.className).toContain("line-through");
-    expect(token?.className).toContain("font-bold");
+  it("highlights the description delimiter, then dims the text after it", () => {
+    const text = `title ${DESCRIPTION_MODIFIER} some description`;
+
+    expect(classOf(text, DESCRIPTION_MODIFIER)).toContain("text-accent");
+    expect(classOf(text, " some description")).toContain("text-fg-dim");
   });
 
-  it("uses accent for bare priority delimiter", () => {
-    const token = find(tokenizePrompt("!"), "!");
-    expect(token?.className).toContain("text-accent");
-    expect(token?.className).not.toContain("line-through");
+  it("keeps modifiers after the description delimiter highlighted as modifiers", () => {
+    const text = `title ${DESCRIPTION_MODIFIER} desc ${PRIORITY_MODIFIER}high ${TAG_MODIFIER}tag`;
+
+    expect(classOf(text, `${PRIORITY_MODIFIER}high`)).not.toContain("text-fg-dim");
+    expect(classOf(text, `${TAG_MODIFIER}tag`)).toContain("text-tag");
   });
 
-  it("highlights tag modifier #dev", () => {
-    const token = find(tokenizePrompt("#dev"), "#dev");
-    expect(token?.className).toContain("text-tag");
-    expect(token?.className).toContain("font-medium");
-  });
-
-  it("highlights status modifier @done with done color", () => {
-    expect(find(tokenizePrompt("@done"), "@done")?.className).toContain("text-done");
-  });
-
-  it("highlights status modifier @todo with fg-dim color", () => {
-    expect(find(tokenizePrompt("@todo"), "@todo")?.className).toContain("text-fg-dim");
-  });
-
-  it("highlights status modifier @in_progress with accent color", () => {
-    expect(find(tokenizePrompt("@in_progress"), "@in_progress")?.className).toContain(
-      "text-accent",
-    );
-  });
-
-  it("highlights status modifier @canceled with fg-muted color", () => {
-    expect(find(tokenizePrompt("@canceled"), "@canceled")?.className).toContain("text-fg-muted");
-  });
-
-  it("highlights status modifier @archived with fg-muted color", () => {
-    expect(find(tokenizePrompt("@archived"), "@archived")?.className).toContain("text-fg-muted");
-  });
-
-  it("marks unknown status as danger with strikethrough", () => {
-    const token = find(tokenizePrompt("@banana"), "@banana");
-    expect(token?.className).toContain("text-danger");
-    expect(token?.className).toContain("line-through");
-    expect(token?.className).toContain("font-bold");
-  });
-
-  it("uses accent for bare status delimiter", () => {
-    const token = find(tokenizePrompt("@"), "@");
-    expect(token?.className).toContain("text-accent");
-    expect(token?.className).not.toContain("line-through");
-  });
-
-  it("highlights description delimiter $ with accent color", () => {
-    expect(find(tokenizePrompt("title $ description"), "$")?.className).toContain("text-accent");
-  });
-
-  it("highlights text after $ as description (fg-dim)", () => {
-    const token = tokenizePrompt("title $ description text").find((t) =>
-      t.text.includes("description text"),
-    );
-    expect(token?.className).toContain("text-fg-dim");
-  });
-
-  it("highlights modifiers after $ with their own colors", () => {
-    const tokens = tokenizePrompt("title $ desc !high #tag");
-    expect(find(tokens, "!high")?.className).toContain("text-high");
-    expect(find(tokens, "#tag")?.className).toContain("text-tag");
-  });
-
-  it("highlights mixed modifiers correctly", () => {
-    const tokens = tokenizePrompt("title !high @done #dev");
+  it("leaves the title untouched while highlighting the modifiers around it", () => {
+    const tokens = tokenizePrompt("title !high @done #dev %priority");
     const title = tokens.find((t) => t.text.includes("title"));
-    expect(title?.className).not.toContain("text-high");
-    expect(title?.className).not.toContain("text-tag");
-    expect(find(tokens, "!high")?.className).toContain("text-high");
-    expect(find(tokens, "@done")?.className).toContain("text-done");
-    expect(find(tokens, "#dev")?.className).toContain("text-tag");
+
+    expect(title?.className).toBe("");
+    for (const token of ["!high", "@done", "#dev", "%priority"]) {
+      expect(classOf("title !high @done #dev %priority", token)).toBeTruthy();
+    }
   });
 });

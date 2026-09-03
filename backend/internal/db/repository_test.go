@@ -3,6 +3,7 @@ package db_test
 import (
 	"context"
 	"database/sql"
+	"slices"
 	"testing"
 
 	"github.com/luizgustavojunqueira/blink/internal/db"
@@ -115,15 +116,8 @@ func TestGetItemsDynamic_Order(t *testing.T) {
 				got = append(got, i.Guid)
 			}
 
-			if len(got) != len(tt.expected) {
-				t.Fatalf("Expected %v but got %v", tt.expected, got)
-			}
-
-			for i := range got {
-				if got[i] != tt.expected[i] {
-					t.Errorf("Expected %v but got %v", tt.expected, got)
-					break
-				}
+			if !slices.Equal(got, tt.expected) {
+				t.Errorf("Expected %v but got %v", tt.expected, got)
 			}
 		})
 	}

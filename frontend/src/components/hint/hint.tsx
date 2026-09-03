@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { useAppContext } from "../../hooks/useAppContext";
 import { availableKeys } from "../../lib/keymap/registry";
 
@@ -38,10 +39,8 @@ export default function Hint() {
     <div className="absolute bottom-0 right-2.5 flex flex-row items-end justify-end p-2">
       <div className="flex flex-col w-fit bg-bg-soft/90 px-2 rounded-md border border-accent/20">
         {Object.keys(hintsGrouped).map((g) => (
-          <>
-            <span key={g} className="my-1 text-fg-dim border-b border-accent/10">
-              {g}
-            </span>
+          <Fragment key={g}>
+            <span className="my-1 text-fg-dim border-b border-accent/10">{g}</span>
 
             {hintsGrouped[g].map((h) => (
               <span key={h.binding.id} className="flex flex-row justify-between gap-5 text-sm">
@@ -49,7 +48,7 @@ export default function Hint() {
                 <span>{h.binding.description}</span>
               </span>
             ))}
-          </>
+          </Fragment>
         ))}
       </div>
     </div>

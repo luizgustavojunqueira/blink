@@ -160,6 +160,26 @@ describe("useKeyMap", () => {
     expect(firstPane().selectedId).toBeNull();
   });
 
+  it.skip("does not swallow the next key after an unbound one", () => {
+    seedRoot(["a", "b"]);
+
+    renderHook(() => useKeyMap(makeApp()));
+    press("d");
+    press("j");
+
+    expect(firstPane().selectedId).toBe("a");
+  });
+
+  it.skip("restarts the sequence instead of losing the key that broke it", () => {
+    seedRoot(["a", "b"]);
+
+    renderHook(() => useKeyMap(makeApp()));
+    press("g");
+    press("j");
+
+    expect(firstPane().selectedId).toBe("a");
+  });
+
   it("handles double key key bindings", () => {
     seedRoot(["a", "b", "c"], "c");
 

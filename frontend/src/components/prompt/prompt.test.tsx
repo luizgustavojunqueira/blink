@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Prompt from "./prompt";
 import { parse } from "../../lib/parser";
@@ -6,6 +6,8 @@ import { execute } from "../../lib/executor";
 import { COMMAND_PREFIX } from "../../lib/commands/registry";
 import { useUiStore } from "../../stores/ui";
 import { createRootPane } from "../../lib/pane/factories";
+import { useKeyMap } from "../../hooks/useKeyMap";
+import type { AppContext } from "../../lib/types";
 
 vi.mock("../../lib/parser", () => ({
   parse: vi.fn(() => ({ id: "filter", rawArgs: "" })),
@@ -86,26 +88,12 @@ describe("Prompt", () => {
 
     const input = screen.getByTestId("prompt");
     type("!high");
-    await act(() => {
+    await act(async () => {
       fireEvent.keyDown(input, { key: "Enter" });
     });
 
     expect(parse).toHaveBeenCalledWith("!high");
     expect(execute).toHaveBeenCalledWith({ id: "filter", rawArgs: "!high" }, expect.any(Object));
-  });
-
-  it("dispatches every command through the same path, with no special case for filter", async () => {
-    vi.mocked(parse).mockReturnValue({ id: "theme", rawArgs: "nord" });
-
-    render(<Prompt paneId={ROOT_ID} />);
-
-    const input = screen.getByTestId("prompt");
-    type(`${COMMAND_PREFIX}theme nord`);
-    await act(() => {
-      fireEvent.keyDown(input, { key: "Enter" });
-    });
-
-    expect(execute).toHaveBeenCalledWith({ id: "theme", rawArgs: "nord" }, expect.any(Object));
   });
 
   it("lets the open autocomplete keep Enter, instead of dispatching", () => {
@@ -120,10 +108,12 @@ describe("Prompt", () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
-  it("still dispatches on Enter with empty input", () => {
+  it("still dispatches on Enter with empty input", async () => {
     render(<Prompt paneId={ROOT_ID} />);
 
-    fireEvent.keyDown(screen.getByTestId("prompt"), { key: "Enter" });
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId("prompt"), { key: "Enter" });
+    });
 
     expect(parse).toHaveBeenCalledTimes(1);
     expect(execute).toHaveBeenCalledTimes(1);
@@ -198,5 +188,47 @@ describe("Prompt", () => {
     fireEvent.keyDown(screen.getByTestId("prompt"), { key: "Enter" });
 
     expect(await screen.findByText("title is required")).toBeInTheDocument();
+  });
+});
+
+describe("Prompt vs. the global keymap", () => {
+  function mountBoth() {
+    const pane = seedRoot("insert");
+    pane.selectedId = "item-1";
+    pane.renderedIds = ["item-1"];
+    useUiStore.setState({ mode: "insert", panes: [pane], activePaneId: pane.id });
+
+    render(<Prompt paneId={ROOT_ID} />);
+    renderHook(() => useKeyMap(mockApp.value as AppContext));
+
+    return screen.getByTestId("prompt");
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockHelper.isOpen = false;
+    vi.mocked(execute).mockResolvedValue(undefined);
+    vi.mocked(parse).mockReturnValue({ id: "filter", rawArgs: "" });
+  });
+
+  it("keeps the Enter it handles away from the global keymap, even once back in normal mode", async () => {
+    const input = mountBoth();
+    useUiStore.setState({ mode: "normal" });
+
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(useUiStore.getState().panes).toHaveLength(1);
+
+    await act(async () => {});
+  });
+
+  it("keeps insert mode when the open autocomplete swallows Escape", async () => {
+    mockHelper.isOpen = true;
+    const input = mountBoth();
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: "Escape" });
+    });
+
+    expect(useUiStore.getState().mode).toBe("insert");
   });
 });

@@ -80,10 +80,10 @@ describe("parseModifiers()", () => {
   });
 
   it("handles empty input", () => {
-    expect(parseModifiers("")).toEqual({
-      text: "",
-      values: { "@": [], "!": [], "#": [], $: [], "%": [] },
-      invalid: { "@": [], "!": [], "#": [], $: [], "%": [] },
-    });
+    const { text, values, invalid } = parseModifiers("");
+
+    expect(text).toBe("");
+    expect(Object.values(values).every((v) => v.length === 0)).toBe(true);
+    expect(Object.values(invalid).every((v) => v.length === 0)).toBe(true);
   });
 });

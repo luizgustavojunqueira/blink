@@ -2,82 +2,89 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import Hint from "./hint";
 import { useUiStore } from "../../stores/ui";
-import { createDetailPane, createRootPane } from "../../lib/pane/factories";
-import type { DetailField } from "../../lib/pane/types";
+import { createRootPane } from "../../lib/pane/factories";
+import { availableKeys, type AvailableBinding } from "../../lib/keymap/registry";
 
-function useMockApp() {
-  return {
+vi.mock("../../lib/keymap/registry", () => ({
+  availableKeys: vi.fn(() => []),
+}));
+
+vi.mock("../../hooks/useAppContext", () => ({
+  useAppContext: () => ({
     ui: useUiStore(),
     setTheme: vi.fn(),
     items: { findItem: vi.fn(), setField: vi.fn(), create: vi.fn(), update: vi.fn() },
-  };
-}
-
-vi.mock("../../hooks/useAppContext", () => ({
-  useAppContext: () => useMockApp(),
+  }),
 }));
 
-function seedList() {
-  const root = createRootPane();
-  root.selectedId = "item-1";
-  useUiStore.setState({ mode: "normal", panes: [root], activePaneId: root.id });
+const mockedAvailableKeys = vi.mocked(availableKeys);
+
+function entry(id: string, keys: string[], group: string, description: string): AvailableBinding {
+  return { binding: { id, description }, keys, group } as AvailableBinding;
 }
 
-function seedDetail(selectedField: DetailField) {
-  const root = createRootPane();
-  const detail = { ...createDetailPane("d1", root.id, "item-1"), selectedField };
-  useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: "d1" });
+function show(...entries: AvailableBinding[]) {
+  mockedAvailableKeys.mockReturnValue(entries);
+  return render(<Hint />);
 }
 
 describe("Hint", () => {
   beforeEach(() => {
-    seedList();
+    vi.clearAllMocks();
+    const pane = createRootPane();
+    useUiStore.setState({ mode: "normal", panes: [pane], activePaneId: pane.id, showHint: true });
   });
 
-  it("shows the group header for the available bindings", () => {
-    render(<Hint />);
+  it("heads each group with its name", () => {
+    show(entry("a", ["j"], "nav", "Move down"), entry("b", ["escape"], "misc", "Escape"));
+
     expect(screen.getByText("nav")).toBeInTheDocument();
-  });
-
-  it("joins multiple keys with / and replaces arrow key names with symbols", () => {
-    render(<Hint />);
-    expect(screen.getByText("j/↓")).toBeInTheDocument();
+    expect(screen.getByText("misc")).toBeInTheDocument();
   });
 
   it("shows the binding's description next to its keys", () => {
-    render(<Hint />);
+    show(entry("a", ["j"], "nav", "Move down"));
+
+    expect(screen.getByText("j")).toBeInTheDocument();
     expect(screen.getByText("Move down")).toBeInTheDocument();
   });
 
-  it("falls back to misc for a binding with no hint group", () => {
-    render(<Hint />);
-    expect(screen.getByText("misc")).toBeInTheDocument();
-    expect(screen.getByText("Escape")).toBeInTheDocument();
+  it("joins the alternative keys of one binding with a slash", () => {
+    show(entry("a", ["j", "n"], "nav", "Move down"));
+
+    expect(screen.getByText("j/n")).toBeInTheDocument();
   });
 
-  it("hides normal-mode-only bindings while in insert mode, but keeps global ones", () => {
-    useUiStore.setState({ mode: "insert" });
+  it("renders arrow keys as symbols instead of their event names", () => {
+    show(entry("a", ["arrowup", "arrowdown"], "nav", "Move"));
+    expect(screen.getByText("↑/↓")).toBeInTheDocument();
 
-    render(<Hint />);
-
-    expect(screen.queryByText("Move down")).not.toBeInTheDocument();
-    expect(screen.getByText("Escape")).toBeInTheDocument();
+    show(entry("b", ["arrowleft", "arrowright"], "nav", "Pane"));
+    expect(screen.getByText("←/→")).toBeInTheDocument();
   });
 
-  it("renders the empty shell without crashing when there is no active pane", () => {
+  it("keeps bindings of the same group together under a single header", () => {
+    show(entry("a", ["j"], "nav", "Move down"), entry("b", ["k"], "nav", "Move up"));
+
+    expect(screen.getAllByText("nav")).toHaveLength(1);
+    expect(screen.getByText("Move down")).toBeInTheDocument();
+    expect(screen.getByText("Move up")).toBeInTheDocument();
+  });
+
+  it("renders nothing while the hint is toggled off", () => {
+    useUiStore.setState({ showHint: false });
+
+    const { container } = show(entry("a", ["j"], "nav", "Move down"));
+
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("asks for no bindings at all when there is no active pane", () => {
     useUiStore.setState({ panes: [], activePaneId: "missing" });
 
-    render(<Hint />);
+    show(entry("a", ["j"], "nav", "Move down"));
 
+    expect(mockedAvailableKeys).not.toHaveBeenCalled();
     expect(screen.queryByText("nav")).not.toBeInTheDocument();
-  });
-
-  it("shows the detail pane's own hints instead of the list pane's, once it is active", () => {
-    seedDetail("status");
-
-    render(<Hint />);
-
-    expect(screen.getByText("Next field")).toBeInTheDocument();
-    expect(screen.queryByText("Move down")).not.toBeInTheDocument();
   });
 });

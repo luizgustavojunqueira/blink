@@ -67,6 +67,11 @@ describe("eventToKey", () => {
     expect(eventToKey(event)).toBe("ctrl+arrowdown");
   });
 
+  it("names the space key instead of returning it raw, so it cannot pass for a separator", () => {
+    expect(eventToKey(new KeyboardEvent("keydown", { key: " " }))).toBe("space");
+    expect(eventToKey(new KeyboardEvent("keydown", { key: " ", ctrlKey: true }))).toBe("ctrl+space");
+  });
+
   it("drops shift for single characters, since the key already carries it", () => {
     const event = new KeyboardEvent("keydown", { key: "A", shiftKey: true });
 
@@ -160,7 +165,7 @@ describe("useKeyMap", () => {
     expect(firstPane().selectedId).toBeNull();
   });
 
-  it.skip("does not swallow the next key after an unbound one", () => {
+  it("does not swallow the next key after an unbound one", () => {
     seedRoot(["a", "b"]);
 
     renderHook(() => useKeyMap(makeApp()));
@@ -170,7 +175,7 @@ describe("useKeyMap", () => {
     expect(firstPane().selectedId).toBe("a");
   });
 
-  it.skip("restarts the sequence instead of losing the key that broke it", () => {
+  it("restarts the sequence instead of losing the key that broke it", () => {
     seedRoot(["a", "b"]);
 
     renderHook(() => useKeyMap(makeApp()));

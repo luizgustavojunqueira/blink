@@ -44,7 +44,16 @@ export default function Hint() {
 
             {hintsGrouped[g].map((h) => (
               <span key={h.binding.id} className="flex flex-row justify-between gap-5 text-sm">
-                <span>{h.keys.map((k) => replaceArrows(k)).join("/")}</span>
+                <span>
+                  {h.keys
+                    .map((k) =>
+                      k
+                        .split(" ")
+                        .map((t) => replaceArrows(t))
+                        .join(""),
+                    )
+                    .join("/")}
+                </span>
                 <span>{h.binding.description}</span>
               </span>
             ))}

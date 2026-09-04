@@ -3,7 +3,7 @@ import type { KeyBinding } from "../types";
 export const listNavigationBindings: KeyBinding[] = [
   {
     id: "list:top",
-    keys: ["gg"],
+    keys: ["g g"],
     modes: ["normal"],
     scope: "list",
     description: "Move to top",

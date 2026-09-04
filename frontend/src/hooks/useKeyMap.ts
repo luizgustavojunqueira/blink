@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import type { AppContext } from "../lib/types";
 import type { KeyContext } from "../lib/keymap/types";
 import { useUiStore } from "../stores/ui";
-import { resolve } from "../lib/keymap/registry";
+import { isPrefix, resolve } from "../lib/keymap/registry";
 
 export function useKeyMap(app: AppContext) {
   const appRef = useRef(app);
@@ -23,26 +23,27 @@ export function useKeyMap(app: AppContext) {
 
       const key = eventToKey(e);
       if (!key) return;
-      let finalKey = "";
-      if (currentSeq.current != "") {
-        finalKey = `${currentSeq.current}`;
-      }
 
-      finalKey = `${finalKey}${key}`;
+      const pending = currentSeq.current;
+      currentSeq.current = "";
 
-      const binding = resolve(finalKey, ctx);
-      if (!binding) {
-        if (currentSeq.current == "") {
-          currentSeq.current = key;
-        } else {
-          currentSeq.current = "";
+      const attempts = pending ? [`${pending} ${key}`, key] : [key];
+
+      for (const seq of attempts) {
+        const binding = resolve(seq, ctx);
+
+        if (binding) {
+          if (binding.run(ctx, key) == false) return;
+          e.preventDefault();
+          return;
         }
 
-        return;
+        if (isPrefix(seq, ctx)) {
+          currentSeq.current = seq;
+          e.preventDefault();
+          return;
+        }
       }
-      currentSeq.current = "";
-      if (binding.run(ctx, key) == false) return;
-      e.preventDefault();
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -60,7 +61,11 @@ export function eventToKey(e: KeyboardEvent): string {
   if (e.metaKey) parts.push("meta");
   if (e.shiftKey && e.key.length > 1) parts.push("shift");
 
-  parts.push(e.key.length === 1 ? e.key : e.key.toLowerCase());
+  if (e.key === " ") {
+    parts.push("space");
+  } else {
+    parts.push(e.key.length === 1 ? e.key : e.key.toLowerCase());
+  }
 
   return parts.join("+");
 }

@@ -63,6 +63,12 @@ describe("Hint", () => {
     expect(screen.getByText("←/→")).toBeInTheDocument();
   });
 
+  it("collapses a multi-key sequence into one label, apart from the alternatives", () => {
+    show(entry("a", ["g g", "home"], "nav", "Move to top"));
+
+    expect(screen.getByText("gg/home")).toBeInTheDocument();
+  });
+
   it("keeps bindings of the same group together under a single header", () => {
     show(entry("a", ["j"], "nav", "Move down"), entry("b", ["k"], "nav", "Move up"));
 

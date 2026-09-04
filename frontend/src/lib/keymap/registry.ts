@@ -25,10 +25,17 @@ export const keyBindings: KeyBinding[] = [
 
 export type KeyMapId = keyof typeof keyBindings;
 
+const prefixes = new Map<string, KeyBinding[]>();
 const byKey = new Map<string, KeyBinding[]>();
 for (const b of Object.values(keyBindings)) {
   for (const k of b.keys) {
     byKey.set(k, [...(byKey.get(k) ?? []), b]);
+
+    const tokens = k.split(" ");
+    for (let i = 1; i < tokens.length; i++) {
+      const prefix = tokens.slice(0, i).join(" ");
+      prefixes.set(prefix, [...(prefixes.get(prefix) ?? []), b]);
+    }
   }
 }
 
@@ -36,6 +43,10 @@ const matches = (b: KeyBinding, ctx: KeyContext) =>
   b.modes.includes(ctx.app.ui.mode) &&
   (b.scope === "global" || b.scope === ctx.pane.type) &&
   (b.when?.(ctx) ?? true);
+
+export function isPrefix(seq: string, ctx: KeyContext) {
+  return prefixes.get(seq)?.some((b) => matches(b, ctx)) ?? false;
+}
 
 export function resolve(key: string, ctx: KeyContext) {
   return byKey.get(key)?.find((b) => matches(b, ctx));

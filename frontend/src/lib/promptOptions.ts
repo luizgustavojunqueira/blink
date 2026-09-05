@@ -3,6 +3,7 @@ export type PromptOptionKind =
   | "COMMAND_ARG"
   | "MODIFIER"
   | "STATUS"
+  | "TYPE"
   | "PRIORITY"
   | "TAG"
   | "ORDER";

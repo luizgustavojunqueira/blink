@@ -1,7 +1,13 @@
 import { create, type StateCreator } from "zustand";
-import type { GetItemRequest } from "../types/backend";
-import { DETAIL_FIELDS, type DetailField, type Pane } from "../lib/pane/types";
-import { createDetailPane, createRootPane } from "../lib/pane/factories";
+import { Group, Task, type GetItemRequest, type ItemType } from "../types/backend";
+import {
+  DETAIL_FIELDS,
+  type DetailField,
+  type ListPane,
+  type Pane,
+  type PaneType,
+} from "../lib/pane/types";
+import { createDetailPane, createListPane, createRootPane } from "../lib/pane/factories";
 
 type Mode = "insert" | "normal";
 
@@ -19,12 +25,16 @@ export type UiActions = {
   select: (paneId: string, id: string | null) => void;
   enterInsert: (seed?: string) => void;
   escape: () => void;
-  setRenderedIds: (paneId: string, renderedIds: string[]) => void;
+  setRendered: (
+    paneId: string,
+    renderedIds: string[],
+    renderedTypes: Record<string, ItemType>,
+  ) => void;
   moveUp: (steps?: number, all?: boolean) => void;
   moveDown: (steps?: number, all?: boolean) => void;
   pushPane: (pane: Pane) => void;
   popPane: () => void;
-  openDetail: (itemId: string) => void;
+  openChildPane: (itemId: string, paneType: PaneType) => void;
   moveRight: () => void;
   moveLeft: () => void;
   moveField: (dir: 1 | -1) => void;
@@ -35,6 +45,9 @@ export type UiActions = {
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
 
+const hasUserFilter = (pane: ListPane) =>
+  Object.entries(pane.filter).some(([key, value]) => key !== "parent_id" && value !== undefined);
+
 const mapActivePane = (panes: Pane[], activePaneId: string, nextPane: Pane): Pane[] =>
   panes.map((p) => (p.id === activePaneId ? nextPane : p));
 
@@ -42,14 +55,19 @@ const syncChild = (parent: Pane, child: Pane): Pane => {
   if (parent.type !== "list") return child;
 
   const target = parent.selectedId;
+  const targetType = target ? parent.renderedTypes[target] : undefined;
+
+  if (targetType === Group) {
+    if (child.type === "list" && child.parentId === target) return child;
+    return createListPane(child.id, target);
+  }
 
   if (child.type === "detail") {
     if (child.itemId === (target ?? "")) return child;
     return { ...child, itemId: target ?? "", selectedField: null };
   }
 
-  if (child.parentId === target) return child;
-  return { ...child, parentId: target, selectedId: null, renderedIds: [] };
+  return { ...createDetailPane(child.id, target ?? ""), selectedField: null };
 };
 
 const syncChildPanes = (prev: Pane[], next: Pane[]): Pane[] => {
@@ -69,6 +87,8 @@ const syncChildPanes = (prev: Pane[], next: Pane[]): Pane[] => {
     if (child !== next[i]) changed = true;
 
     out.push(child);
+
+    if (child.type !== next[i].type) return out;
   }
 
   return changed ? out : next;
@@ -82,11 +102,25 @@ const withPaneSync =
     config(
       (partial, replace) => {
         const patch = typeof partial === "function" ? partial(get()) : partial;
-        const synced =
-          patch && "panes" in patch && patch.panes
-            ? { ...patch, panes: syncChildPanes(get().panes, patch.panes) }
-            : patch;
-        set(synced as UiStore, replace as true);
+
+        if (!patch || !("panes" in patch) || !patch.panes) {
+          set(patch as UiStore, replace as true);
+          return;
+        }
+
+        const panes = syncChildPanes(get().panes, patch.panes);
+        const activePaneId = patch.activePaneId ?? get().activePaneId;
+        const stillThere = panes.some((p) => p.id === activePaneId);
+
+        set(
+          {
+            ...patch,
+            panes,
+            activePaneId:
+              stillThere || panes.length === 0 ? activePaneId : panes[panes.length - 1].id,
+          } as UiStore,
+          replace as true,
+        );
       },
       get,
       api,
@@ -106,14 +140,16 @@ export const useUiStore = create<UiStore>(
         return { showHint: !s.showHint };
       }),
 
-    setRenderedIds: (paneId, newIds) =>
+    setRendered: (paneId, newIds, newTypes) =>
       set((s) => {
         const pane = findPane(s.panes, paneId);
         if (!pane || pane.type !== "list") return {};
 
         if (
           pane.renderedIds.length === newIds.length &&
-          pane.renderedIds.every((id, i) => id === newIds[i])
+          pane.renderedIds.every(
+            (id, i) => id === newIds[i] && pane.renderedTypes[id] === newTypes[id],
+          )
         ) {
           return {};
         }
@@ -121,6 +157,7 @@ export const useUiStore = create<UiStore>(
         const nextPane: Pane = {
           ...pane,
           renderedIds: newIds,
+          renderedTypes: newTypes,
           selectedId:
             pane.selectedId && !newIds.includes(pane.selectedId)
               ? (newIds[0] ?? null)
@@ -276,12 +313,12 @@ export const useUiStore = create<UiStore>(
         if (!pane) return {};
 
         if (pane.type === "list") {
-          if (pane.prompt !== "" || Object.keys(pane.filter).length > 0) {
+          if (pane.prompt !== "" || hasUserFilter(pane)) {
             return {
               panes: mapActivePane(s.panes, s.activePaneId, {
                 ...pane,
                 prompt: "",
-                filter: {},
+                filter: { parent_id: pane.parentId ?? undefined },
               }),
             };
           }
@@ -315,36 +352,35 @@ export const useUiStore = create<UiStore>(
         return { panes, activePaneId: panes[panes.length - 1].id };
       }),
 
-    openDetail: (itemId) =>
+    openChildPane: (itemId, paneType) =>
       set((s) => {
         const idx = s.panes.findIndex((p) => p.id === s.activePaneId);
         if (idx === -1) return {};
 
-        const active = s.panes[idx];
-
-        if (active.type === "detail") {
-          if (active.itemId === itemId) return {};
-          return {
-            panes: [...s.panes.slice(0, idx), { ...active, itemId }],
-            activePaneId: active.id,
-          };
-        }
-
         const child = s.panes[idx + 1];
 
-        if (child?.type === "detail") {
-          if (child.itemId === itemId) return { activePaneId: child.id };
+        if (paneType === "detail") {
+          if (child?.type === "detail") {
+            if (child.itemId === itemId) return { activePaneId: child.id };
+            return {
+              panes: [...s.panes.slice(0, idx + 1), { ...child, itemId }],
+              activePaneId: child.id,
+            };
+          }
+          const pane = createDetailPane(crypto.randomUUID(), itemId);
           return {
-            panes: [...s.panes.slice(0, idx + 1), { ...child, itemId }],
-            activePaneId: child.id,
+            panes: [...s.panes.slice(0, idx + 1), pane],
+            activePaneId: pane.id,
+          };
+        } else if (paneType === "list") {
+          const pane = createListPane(crypto.randomUUID(), itemId);
+          return {
+            panes: [...s.panes.slice(0, idx + 1), pane],
+            activePaneId: pane.id,
           };
         }
 
-        const pane = createDetailPane(crypto.randomUUID(), itemId);
-        return {
-          panes: [...s.panes.slice(0, idx + 1), pane],
-          activePaneId: pane.id,
-        };
+        return {};
       }),
 
     moveRight: () =>

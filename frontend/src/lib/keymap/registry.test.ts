@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import { availableKeys, getKeyBinding, keyBindings, resolve } from "./registry";
 import type { KeyQueryContext, Mode } from "./types";
 import type { DetailField, ListPane } from "../pane/types";
+import { Group, Task } from "../../types/backend";
+import type { ItemType } from "../../types/backend";
 
 type CtxOptions = {
   panes?: number;
   activeIdx?: number;
   selectedId?: string | null;
+  itemType?: ItemType;
 };
 
 const listPane = (id: string, selectedId: string | null): ListPane => ({
@@ -19,12 +22,16 @@ const listPane = (id: string, selectedId: string | null): ListPane => ({
   filter: {},
 });
 
-const ctx = (mode: Mode, { panes = 1, activeIdx = 0, selectedId = "item-1" }: CtxOptions = {}) => {
+const ctx = (
+  mode: Mode,
+  { panes = 1, activeIdx = 0, selectedId = "item-1", itemType = Task }: CtxOptions = {},
+) => {
   const list = Array.from({ length: panes }, (_, i) => listPane(`pane-${i}`, selectedId));
   const pane = list[activeIdx];
   return {
     ui: { mode, panes: list, activePaneId: pane.id },
     pane,
+    itemType: selectedId ? itemType : undefined,
   } as KeyQueryContext;
 };
 
@@ -67,6 +74,7 @@ describe("keymap registry: resolve", () => {
   it("reaches every binding through each of its keys, so none is shadowed", () => {
     const contexts = [
       ctx("normal"),
+      ctx("normal", { itemType: Group }),
       ctx("insert"),
       ctx("normal", { selectedId: null }),
       ctx("normal", { panes: 2, activeIdx: 0 }),

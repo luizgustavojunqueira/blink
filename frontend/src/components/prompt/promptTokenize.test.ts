@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { tokenizePrompt } from "./promptTokenize";
-import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS } from "../../lib/validator";
+import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS, TYPE_CLASS } from "../../lib/validator";
 import {
   DESCRIPTION_MODIFIER,
   ORDER_MODIFIER,
   PRIORITY_MODIFIER,
   STATUS_MODIFIER,
   TAG_MODIFIER,
+  TYPE_MODIFIER,
 } from "../../lib/modifiers/delimiters";
 
 const INVALID = "text-danger";
@@ -22,9 +23,10 @@ const KNOWN_VALUES: [string, string[]][] = [
   [STATUS_MODIFIER, Object.keys(STATUS_CLASS)],
   [ORDER_MODIFIER, Object.keys(ORDER_FIELD_CLASS)],
   [ORDER_MODIFIER, descending(Object.keys(ORDER_FIELD_CLASS))],
+  [TYPE_MODIFIER, Object.keys(TYPE_CLASS)],
 ];
 
-const DELIMITERS = [PRIORITY_MODIFIER, STATUS_MODIFIER, ORDER_MODIFIER];
+const DELIMITERS = [PRIORITY_MODIFIER, STATUS_MODIFIER, ORDER_MODIFIER, TYPE_MODIFIER];
 
 describe("tokenizePrompt", () => {
   it("keeps plain text as a single token without highlight classes", () => {

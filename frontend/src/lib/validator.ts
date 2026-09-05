@@ -13,6 +13,8 @@ import {
   OrderCreated,
   OrderPriority,
   OrderStatus,
+  Task,
+  Group,
 } from "../types/backend";
 
 export const STATUS_CLASS: Record<string, string> = {
@@ -38,9 +40,15 @@ export const ORDER_FIELD_CLASS: Record<string, string> = {
   [OrderStatus]: "text-status",
 };
 
+export const TYPE_CLASS: Record<string, string> = {
+  [Group.toLowerCase()]: "text-group",
+  [Task.toLowerCase()]: "text-task",
+};
+
 export const VALID_STATUS = Object.keys(STATUS_CLASS);
 export const VALID_PRIORITY = Object.keys(PRIORITY_CLASS);
 export const VALID_ORDER_FIELDS = [
   ...Object.keys(ORDER_FIELD_CLASS),
   ...Object.keys(ORDER_FIELD_CLASS).map((f) => `-${f}`),
 ];
+export const VALID_TYPE = Object.keys(TYPE_CLASS);

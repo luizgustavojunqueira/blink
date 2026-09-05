@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useUiStore } from "./ui";
 import { createDetailPane, createListPane, createRootPane } from "../lib/pane/factories";
 import type { DetailPane, ListPane } from "../lib/pane/types";
+import { Group, Task, type ItemType } from "../types/backend";
 
 const state = () => useUiStore.getState();
 
@@ -9,9 +10,17 @@ function firstPane(): ListPane {
   return useUiStore.getState().panes[0] as ListPane;
 }
 
-function seedRoot(renderedIds: string[] = [], selectedId: string | null = null) {
+const allTasks = (ids: string[]): Record<string, ItemType> =>
+  Object.fromEntries(ids.map((id) => [id, Task]));
+
+function seedRoot(
+  renderedIds: string[] = [],
+  selectedId: string | null = null,
+  renderedTypes: Record<string, ItemType> = allTasks(renderedIds),
+) {
   const pane = createRootPane();
   pane.renderedIds = renderedIds;
+  pane.renderedTypes = renderedTypes;
   pane.selectedId = selectedId;
   useUiStore.setState({ mode: "normal", panes: [pane], activePaneId: pane.id });
   return pane;
@@ -21,18 +30,34 @@ beforeEach(() => {
   seedRoot();
 });
 
-describe("ui store: setRenderedIds", () => {
+describe("ui store: setRendered", () => {
   it("stores the rendered ids", () => {
-    state().setRenderedIds("root", ["a", "b", "c"]);
+    state().setRendered("root", ["a", "b", "c"], allTasks(["a", "b", "c"]));
 
     expect(firstPane().renderedIds).toEqual(["a", "b", "c"]);
   });
 
+  it("stores the type of each rendered item", () => {
+    state().setRendered("root", ["a", "b"], { a: Task, b: Group });
+
+    expect(firstPane().renderedTypes).toEqual({ a: Task, b: Group });
+  });
+
+  it("updates the pane when only a type changed", () => {
+    state().setRendered("root", ["a"], { a: Task });
+    const previous = firstPane();
+
+    state().setRendered("root", ["a"], { a: Group });
+
+    expect(firstPane()).not.toBe(previous);
+    expect(firstPane().renderedTypes).toEqual({ a: Group });
+  });
+
   it("keeps the previous array when the ids did not change", () => {
-    state().setRenderedIds("root", ["a", "b"]);
+    state().setRendered("root", ["a", "b"], allTasks(["a", "b"]));
     const previous = firstPane().renderedIds;
 
-    state().setRenderedIds("root", ["a", "b"]);
+    state().setRendered("root", ["a", "b"], allTasks(["a", "b"]));
 
     expect(firstPane().renderedIds).toBe(previous);
   });
@@ -40,7 +65,7 @@ describe("ui store: setRenderedIds", () => {
   it("keeps the selection when it survives the new list", () => {
     seedRoot(["a", "b"], "b");
 
-    state().setRenderedIds("root", ["b", "c"]);
+    state().setRendered("root", ["b", "c"], allTasks(["b", "c"]));
 
     expect(firstPane().selectedId).toBe("b");
   });
@@ -48,7 +73,7 @@ describe("ui store: setRenderedIds", () => {
   it("falls back to the first id when the selected item drops out", () => {
     seedRoot(["a", "b"], "a");
 
-    state().setRenderedIds("root", ["b", "c"]);
+    state().setRendered("root", ["b", "c"], allTasks(["b", "c"]));
 
     expect(firstPane().selectedId).toBe("b");
   });
@@ -56,9 +81,75 @@ describe("ui store: setRenderedIds", () => {
   it("clears the selection when the list becomes empty", () => {
     seedRoot(["a"], "a");
 
-    state().setRenderedIds("root", []);
+    state().setRendered("root", [], allTasks([]));
 
     expect(firstPane().selectedId).toBeNull();
+  });
+});
+
+describe("ui store: child pane sync", () => {
+  const seedWithChild = (child: ListPane | DetailPane, selectedId: string, activeId?: string) => {
+    const root = createRootPane();
+    root.renderedIds = ["t1", "g1", "g2"];
+    root.renderedTypes = { t1: Task, g1: Group, g2: Group };
+    root.selectedId = selectedId;
+    useUiStore.setState({
+      mode: "normal",
+      panes: [root, child],
+      activePaneId: activeId ?? root.id,
+    });
+  };
+
+  it("turns the child into a list when the selection moves onto a group", () => {
+    seedWithChild(createDetailPane("child", "t1"), "t1");
+
+    state().select("root", "g1");
+
+    expect(state().panes[1]).toMatchObject({ id: "child", type: "list", parentId: "g1" });
+  });
+
+  it("turns the child into a detail when the selection leaves a group", () => {
+    seedWithChild(createListPane("child", "g1"), "g1");
+
+    state().select("root", "t1");
+
+    expect(state().panes[1]).toMatchObject({ id: "child", type: "detail", itemId: "t1" });
+  });
+
+  it("retargets without rebuilding the child when the type stays the same", () => {
+    seedWithChild(createListPane("child", "g1"), "g1");
+
+    state().select("root", "g2");
+
+    expect(state().panes[1]).toMatchObject({ id: "child", type: "list", parentId: "g2" });
+  });
+
+  it("drops the panes below the child when its type changes", () => {
+    seedWithChild(createListPane("child", "g1"), "g1");
+    useUiStore.setState({
+      panes: [...state().panes, createDetailPane("grandchild", "inner")],
+    });
+
+    state().select("root", "t1");
+
+    expect(state().panes.map((p) => p.id)).toEqual(["root", "child"]);
+  });
+
+  it("falls back to the last pane when the dropped one had the focus", () => {
+    const root = createRootPane();
+    root.renderedIds = ["t1", "g1"];
+    root.renderedTypes = { t1: Task, g1: Group };
+    root.selectedId = "g1";
+    useUiStore.setState({
+      mode: "normal",
+      panes: [root, createListPane("child", "g1"), createDetailPane("grandchild", "inner")],
+      activePaneId: "grandchild",
+    });
+
+    state().setRendered("root", ["t1"], { t1: Task });
+
+    expect(state().panes.map((p) => p.id)).toEqual(["root", "child"]);
+    expect(state().activePaneId).toBe("child");
   });
 });
 
@@ -219,10 +310,26 @@ describe("ui store: escape", () => {
     expect(firstPane().selectedId).toBeNull();
   });
 
+  it("deselects on a group pane too, since its parent scope is not a filter", () => {
+    const child = createListPane("child", "g1");
+    child.selectedId = "a";
+    useUiStore.setState({ mode: "normal", panes: [createRootPane(), child], activePaneId: "child" });
+
+    state().escape();
+
+    const pane = state().panes[1] as ListPane;
+    expect(pane.selectedId).toBeNull();
+    expect(pane.filter).toMatchObject({ parent_id: "g1" });
+  });
+
   it("pops the detail pane in normal mode, without leaving a stale copy behind", () => {
     const root = createRootPane();
     const detail = createDetailPane("d1", "item-1");
-    useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: "d1" });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [root, detail],
+      activePaneId: "d1",
+    });
 
     state().escape();
 
@@ -233,7 +340,11 @@ describe("ui store: escape", () => {
   it("only leaves insert mode on the first escape, without popping the detail pane yet", () => {
     const root = createRootPane();
     const detail = createDetailPane("d1", "item-1");
-    useUiStore.setState({ mode: "insert", panes: [root, detail], activePaneId: "d1" });
+    useUiStore.setState({
+      mode: "insert",
+      panes: [root, detail],
+      activePaneId: "d1",
+    });
 
     state().escape();
 
@@ -244,7 +355,11 @@ describe("ui store: escape", () => {
 
   it("does nothing when the detail pane is the only pane left", () => {
     const detail = createDetailPane("d1", "item-1");
-    useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "d1" });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [detail],
+      activePaneId: "d1",
+    });
 
     state().escape();
 
@@ -281,7 +396,11 @@ describe("ui store: select", () => {
   it("does nothing on a detail pane", () => {
     const root = createRootPane();
     const detail = createDetailPane("d1", "item-1");
-    useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: "d1" });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [root, detail],
+      activePaneId: "d1",
+    });
 
     state().select("d1", "x");
 
@@ -344,14 +463,17 @@ describe("ui store: popPane", () => {
   });
 });
 
-describe("ui store: openDetail", () => {
+describe("ui store: openChildPane", () => {
   it("opens a detail pane after the active one and activates it", () => {
     seedRoot(["a"], "a");
 
-    state().openDetail("item-1");
+    state().openChildPane("item-1", "detail");
 
     expect(state().panes).toHaveLength(2);
-    expect(state().panes[1]).toMatchObject({ type: "detail", itemId: "item-1" });
+    expect(state().panes[1]).toMatchObject({
+      type: "detail",
+      itemId: "item-1",
+    });
     expect(state().activePaneId).toBe(state().panes[1].id);
   });
 
@@ -362,7 +484,7 @@ describe("ui store: openDetail", () => {
     useUiStore.setState({ panes: [root, detail], activePaneId: root.id });
     const before = state().panes;
 
-    state().openDetail("item-1");
+    state().openChildPane("item-1", "detail");
 
     expect(state().panes).toBe(before);
     expect(state().activePaneId).toBe("d1");
@@ -373,23 +495,41 @@ describe("ui store: openDetail", () => {
     const detail = createDetailPane("d1", "old");
     useUiStore.setState({ panes: [root, detail], activePaneId: root.id });
 
-    state().openDetail("item-1");
+    state().openChildPane("item-1", "detail");
 
     expect(state().panes).toHaveLength(2);
     expect(state().panes[1]).toMatchObject({ id: "d1", itemId: "item-1" });
     expect(state().activePaneId).toBe("d1");
   });
 
-  it("updates the item id when the active pane is already a detail", () => {
-    const root = createRootPane();
-    const detail = createDetailPane("d1", "old");
-    useUiStore.setState({ panes: [root, detail], activePaneId: "d1" });
+  it("opens a list pane scoped to the group and activates it", () => {
+    seedRoot(["g1"], "g1", { g1: Group });
 
-    state().openDetail("new");
+    state().openChildPane("g1", "list");
 
     expect(state().panes).toHaveLength(2);
-    expect(state().panes[1]).toMatchObject({ type: "detail", itemId: "new" });
-    expect(state().activePaneId).toBe("d1");
+    expect(state().panes[1]).toMatchObject({
+      type: "list",
+      parentId: "g1",
+      filter: { parent_id: "g1" },
+    });
+    expect(state().activePaneId).toBe(state().panes[1].id);
+  });
+
+  it("replaces the child detail when the same slot opens a group", () => {
+    const root = createRootPane();
+    root.renderedIds = ["g1"];
+    root.renderedTypes = { g1: Group };
+    root.selectedId = "g1";
+    useUiStore.setState({
+      panes: [root, createDetailPane("d1", "old")],
+      activePaneId: root.id,
+    });
+
+    state().openChildPane("g1", "list");
+
+    expect(state().panes).toHaveLength(2);
+    expect(state().panes[1]).toMatchObject({ type: "list", parentId: "g1" });
   });
 });
 
@@ -444,7 +584,11 @@ describe("ui store: moveLeft", () => {
 describe("ui store: moveField", () => {
   function seedDetail(selectedField: DetailPane["selectedField"] = "title") {
     const detail = { ...createDetailPane("d1", "item-1"), selectedField };
-    useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "d1" });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [detail],
+      activePaneId: "d1",
+    });
     return () => useUiStore.getState().panes[0] as DetailPane;
   }
 
@@ -501,7 +645,11 @@ describe("ui store: selectField", () => {
   it("selects the field and activates the pane", () => {
     const root = createRootPane();
     const detail = createDetailPane("d1", "item-1");
-    useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: root.id });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [root, detail],
+      activePaneId: root.id,
+    });
 
     state().selectField("d1", "status");
 
@@ -510,8 +658,15 @@ describe("ui store: selectField", () => {
   });
 
   it("does nothing when the field is already selected", () => {
-    const detail = { ...createDetailPane("d1", "item-1"), selectedField: "status" as const };
-    useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "root" });
+    const detail = {
+      ...createDetailPane("d1", "item-1"),
+      selectedField: "status" as const,
+    };
+    useUiStore.setState({
+      mode: "normal",
+      panes: [detail],
+      activePaneId: "root",
+    });
 
     state().selectField("d1", "status");
 
@@ -532,7 +687,11 @@ describe("ui store: selectPane", () => {
   it("activates the pane and sets the given mode", () => {
     const root = createRootPane();
     const detail = createDetailPane("d1", "item-1");
-    useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: root.id });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [root, detail],
+      activePaneId: root.id,
+    });
 
     state().selectPane("d1", "insert");
 
@@ -542,7 +701,11 @@ describe("ui store: selectPane", () => {
 
   it("does nothing when the pane does not exist", () => {
     const root = seedRoot();
-    useUiStore.setState({ mode: "normal", panes: [root], activePaneId: root.id });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [root],
+      activePaneId: root.id,
+    });
 
     state().selectPane("missing", "insert");
 

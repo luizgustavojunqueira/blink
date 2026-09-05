@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import type { GetItemResponse } from "../types/backend";
 
-const MOCK_ITEM_COUNT = 10000;
+const MOCK_ITEM_COUNT = 5000;
 
 const statuses = ["TODO", "IN_PROGRESS", "DONE", "CANCELED", "ARCHIVED"] as const;
 const priorities = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;

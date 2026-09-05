@@ -1,19 +1,68 @@
+import { Group, Task } from "../../../types/backend";
 import type { KeyBinding } from "../types";
 
 export const paneNavigation: KeyBinding[] = [
   {
-    id: "list:l",
+    id: "list:l:group",
+    keys: ["l", "arrowright"],
+    modes: ["normal"],
+    scope: "list",
+    description: "Enter group",
+    hint: { group: "nav" },
+    when: ({ pane, itemType }) => {
+      return (
+        pane.type === "list" &&
+        pane.selectedId !== null &&
+        pane.selectedId !== undefined &&
+        itemType === Group
+      );
+    },
+    run: ({ app, pane, itemType }) => {
+      if (pane.type !== "list" || !pane.selectedId) return;
+      if (!itemType || itemType !== Group) return;
+      app.ui.openChildPane(pane.selectedId, "list");
+    },
+  },
+  {
+    id: "list:l:detail",
     keys: ["l", "arrowright", "enter"],
     modes: ["normal"],
     scope: "list",
     description: "Enter details",
     hint: { group: "nav" },
-    when: ({ pane }) => {
-      return pane.type === "list" && pane.selectedId !== null && pane.selectedId !== undefined;
+    when: ({ pane, itemType }) => {
+      return (
+        pane.type === "list" &&
+        pane.selectedId !== null &&
+        pane.selectedId !== undefined &&
+        itemType === Task
+      );
     },
-    run: ({ app, pane }) => {
+    run: ({ app, pane, itemType }) => {
       if (pane.type !== "list" || !pane.selectedId) return;
-      app.ui.openDetail(pane.selectedId);
+      if (!itemType || itemType !== Task) return;
+      app.ui.openChildPane(pane.selectedId, "detail");
+    },
+  },
+  {
+    id: "list:enter",
+    keys: ["enter"],
+    modes: ["normal"],
+    scope: "list",
+    description: "Enter details",
+    hint: { group: "nav" },
+    when: ({ pane, itemType }) => {
+      return (
+        pane.type === "list" &&
+        pane.selectedId !== null &&
+        pane.selectedId !== undefined &&
+        itemType === Group
+      );
+    },
+    run: ({ app, pane, itemType }) => {
+      if (pane.type !== "list" || !pane.selectedId || itemType !== Group) return;
+
+      app.ui.openChildPane(pane.selectedId, "detail");
     },
   },
   {
@@ -39,7 +88,7 @@ export const paneNavigation: KeyBinding[] = [
     hint: { group: "nav" },
     when: ({ ui }) => {
       const activePaneIdx = ui.panes.findIndex((p) => p.id == ui.activePaneId);
-      return ui.panes.length > 1 && activePaneIdx % 2 == 0;
+      return activePaneIdx >= 0 && activePaneIdx < ui.panes.length - 1;
     },
     run: ({ app }) => {
       app.ui.moveRight();
@@ -54,7 +103,7 @@ export const paneNavigation: KeyBinding[] = [
     hint: { group: "nav" },
     when: ({ ui }) => {
       const activePaneIdx = ui.panes.findIndex((p) => p.id == ui.activePaneId);
-      return ui.panes.length > 1 && activePaneIdx % 2 == 1;
+      return ui.panes.length > 1 && activePaneIdx > Math.max(0, ui.panes.length - 2);
     },
     run: ({ app }) => {
       app.ui.moveLeft();

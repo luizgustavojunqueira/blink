@@ -6,6 +6,7 @@ import {
   PRIORITY_MODIFIER,
   STATUS_MODIFIER,
   TAG_MODIFIER,
+  TYPE_MODIFIER,
 } from "./delimiters";
 import { descriptionModifier } from "./implementations/description";
 import { helpModifier } from "./implementations/help";
@@ -13,6 +14,7 @@ import { orderModifier } from "./implementations/order";
 import { priorityModifier } from "./implementations/priority";
 import { statusModifier } from "./implementations/status";
 import { tagModifier } from "./implementations/tag";
+import { typeModifier } from "./implementations/type";
 
 export const modifiers = {
   [STATUS_MODIFIER]: statusModifier,
@@ -21,6 +23,7 @@ export const modifiers = {
   [DESCRIPTION_MODIFIER]: descriptionModifier,
   [HELP_MODIFIER]: helpModifier,
   [ORDER_MODIFIER]: orderModifier,
+  [TYPE_MODIFIER]: typeModifier,
 } as const satisfies Record<string, CommandDefinition>;
 
 export function getModifier(id: string): CommandDefinition | undefined {

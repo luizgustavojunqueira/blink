@@ -1,5 +1,6 @@
 import { Fragment, memo, useMemo } from "react";
 import { availableKeys, type AvailableBinding } from "../../lib/keymap/registry";
+import { queryContext } from "../../lib/keymap/context";
 import { useUiStore, type UiState } from "../../stores/ui";
 import { useCachedSelector } from "../../hooks/usePane";
 
@@ -9,7 +10,7 @@ const selectHints = (s: UiState): AvailableBinding[] => {
   if (!s.showHint) return NO_HINTS;
   const pane = s.panes.find((p) => p.id === s.activePaneId);
   if (!pane) return NO_HINTS;
-  return availableKeys({ ui: s, pane });
+  return availableKeys(queryContext(s, pane));
 };
 
 const sameHints = (a: AvailableBinding[], b: AvailableBinding[]) =>

@@ -5,9 +5,10 @@ export const createListPane = (id: string, parentId: string | null): ListPane =>
   parentId,
   prompt: "",
   type: "list",
-  filter: {},
+  filter: { parent_id: parentId ?? undefined },
   selectedId: null,
   renderedIds: [],
+  renderedTypes: {},
 });
 
 export const createRootPane = (): ListPane => createListPane("root", null);

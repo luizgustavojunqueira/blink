@@ -62,7 +62,7 @@ describe("usePaneValue", () => {
     });
     const before = renders;
 
-    act(() => state().setRenderedIds("root", ["a", "b"]));
+    act(() => state().setRendered("root", ["a", "b"], {}));
 
     expect(renders).toBe(before);
   });

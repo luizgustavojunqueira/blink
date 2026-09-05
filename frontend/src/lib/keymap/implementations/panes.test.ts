@@ -3,7 +3,8 @@ import { paneNavigation } from "./panes";
 import { useUiStore } from "../../../stores/ui";
 import { createDetailPane, createRootPane } from "../../pane/factories";
 import type { AppContext } from "../../types";
-import type { KeyContext } from "../types";
+import type { KeyContext, KeyQueryContext } from "../types";
+import { Group, Task } from "../../../types/backend";
 
 const byId = Object.fromEntries(paneNavigation.map((b) => [b.id, b]));
 
@@ -24,6 +25,7 @@ function ctx(overrides: Partial<KeyContext> = {}): KeyContext {
   return {
     app: app(),
     pane: { ...createRootPane(), selectedId: "item-1" },
+    itemType: Task,
     ...overrides,
   };
 }
@@ -36,7 +38,7 @@ beforeEach(() => {
 describe("list:l", () => {
   it("pushes a detail pane for the selected item and activates it", () => {
     const c = ctx();
-    byId["list:l"].run(c, "l");
+    byId["list:l:detail"].run(c, "l");
 
     const store = useUiStore.getState();
     expect(store.panes).toHaveLength(2);
@@ -54,7 +56,7 @@ describe("list:l", () => {
     };
     c.pane.selectedId = null;
 
-    byId["list:l"].run(c, "l");
+    byId["list:l:detail"].run(c, "l");
 
     expect(useUiStore.getState().panes).toHaveLength(1);
   });
@@ -68,9 +70,20 @@ describe("list:l", () => {
       selectedField: "title",
     };
 
-    byId["list:l"].run(c, "l");
+    byId["list:l:detail"].run(c, "l");
 
     expect(useUiStore.getState().panes).toHaveLength(1);
+  });
+});
+
+describe("list:l on a group", () => {
+  it("pushes a list pane instead of a detail one", () => {
+    byId["list:l:group"].run(ctx({ itemType: Group }), "l");
+
+    const store = useUiStore.getState();
+    expect(store.panes).toHaveLength(2);
+    expect(store.panes[1]).toMatchObject({ type: "list", parentId: "item-1" });
+    expect(store.activePaneId).toBe(store.panes[1].id);
   });
 });
 
@@ -123,5 +136,33 @@ describe("list:ctrll / list:ctrlh", () => {
     byId["list:ctrlh"].run(ctx(), "ctrl+h");
 
     expect(useUiStore.getState().activePaneId).toBe("root");
+  });
+
+  it("offers each direction only where the focus can actually move", () => {
+    const stack = (count: number, activeIdx: number) => {
+      const panes = Array.from({ length: count }, (_, i) => ({
+        ...createRootPane(),
+        id: `pane-${i}`,
+      }));
+      return {
+        ui: { ...useUiStore.getState(), panes, activePaneId: panes[activeIdx].id },
+        pane: panes[activeIdx],
+      } as KeyQueryContext;
+    };
+
+    const canMove = (id: string, ctx: KeyQueryContext) => byId[id].when?.(ctx) ?? true;
+
+    expect(canMove("list:ctrll", stack(1, 0))).toBe(false);
+    expect(canMove("list:ctrlh", stack(1, 0))).toBe(false);
+
+    expect(canMove("list:ctrll", stack(2, 0))).toBe(true);
+    expect(canMove("list:ctrlh", stack(2, 0))).toBe(false);
+    expect(canMove("list:ctrll", stack(2, 1))).toBe(false);
+    expect(canMove("list:ctrlh", stack(2, 1))).toBe(true);
+
+    expect(canMove("list:ctrll", stack(3, 1))).toBe(true);
+    expect(canMove("list:ctrlh", stack(3, 1))).toBe(false);
+    expect(canMove("list:ctrll", stack(3, 2))).toBe(false);
+    expect(canMove("list:ctrlh", stack(3, 2))).toBe(true);
   });
 });

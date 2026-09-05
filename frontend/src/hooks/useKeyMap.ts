@@ -3,6 +3,7 @@ import type { AppContext } from "../lib/types";
 import type { KeyContext, KeyQueryContext } from "../lib/keymap/types";
 import { useUiStore } from "../stores/ui";
 import { isPrefix, resolve } from "../lib/keymap/registry";
+import { queryContext } from "../lib/keymap/context";
 
 export function useKeyMap(app: AppContext) {
   const appRef = useRef(app);
@@ -16,10 +17,7 @@ export function useKeyMap(app: AppContext) {
       const pane = state.panes.find((p) => p.id === state.activePaneId);
       if (!pane) return;
 
-      const ctxQuery: KeyQueryContext = {
-        ui: state,
-        pane,
-      };
+      const ctxQuery: KeyQueryContext = queryContext(state, pane);
 
       const key = eventToKey(e);
       if (!key) return;
@@ -36,6 +34,7 @@ export function useKeyMap(app: AppContext) {
           const ctxRun: KeyContext = {
             app: { ...appRef.current, ui: state },
             pane,
+            itemType: ctxQuery.itemType,
           };
           if (binding.run(ctxRun, key) == false) return;
           e.preventDefault();

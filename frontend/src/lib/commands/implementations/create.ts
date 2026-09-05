@@ -1,9 +1,11 @@
+import { useUiStore } from "../../../stores/ui";
 import { Normal, Task, ToDo, type CreateItemRequest } from "../../../types/backend";
 import {
   DESCRIPTION_MODIFIER,
   PRIORITY_MODIFIER,
   STATUS_MODIFIER,
   TAG_MODIFIER,
+  TYPE_MODIFIER,
 } from "../../modifiers/delimiters";
 import { modifierOptions } from "../../modifiers/options";
 import { parseModifiers } from "../../modifiers/parse";
@@ -16,11 +18,17 @@ export const createCommand: CommandDefinition = {
   strictArgPosition: false,
   getOptions: modifierOptions,
   execute: async ({ rawArgs, app }) => {
+    const state = useUiStore.getState();
+    const pane = state.panes.find((p) => p.id === state.activePaneId);
+    if (!pane || pane.type !== "list") return;
+
     const result = parseCreate(rawArgs);
 
     if (!result.ok) {
       return { message: result.error };
     }
+
+    result.req.parent_id = pane.parentId ?? undefined;
 
     try {
       await app.items.create(result.req);
@@ -66,6 +74,9 @@ export function parseCreate(raw: string): ParseCreateResult {
   const priority = only(values[PRIORITY_MODIFIER], invalid[PRIORITY_MODIFIER], "priority", Normal);
   if (!priority.ok) return priority;
 
+  const type = only(values[TYPE_MODIFIER], invalid[TYPE_MODIFIER], "type", Task);
+  if (!type.ok) return type;
+
   return {
     ok: true,
     req: {
@@ -74,7 +85,7 @@ export function parseCreate(raw: string): ParseCreateResult {
       tags: values[TAG_MODIFIER],
       status: status.value,
       priority: priority.value,
-      type: Task,
+      type: type.value,
     },
   };
 }

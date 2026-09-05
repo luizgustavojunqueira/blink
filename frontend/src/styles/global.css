@@ -18,6 +18,7 @@
   --color-done: var(--done);
   --color-tag: var(--tag);
   --color-group: var(--group);
+  --color-task: var(--task);
   --color-status: var(--status);
   --color-border: var(--border);
   --color-cursor: var(--cursor);

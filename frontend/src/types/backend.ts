@@ -27,6 +27,7 @@ export const OrderUpdated: OrderField = "updated";
 export const OrderStatus: OrderField = "status";
 export const OrderPriority: OrderField = "priority";
 export interface CreateItemRequest {
+  parent_id?: string;
   title: string;
   description?: string;
   type: ItemType;
@@ -43,6 +44,7 @@ export interface UpdateItemRequest {
   tags?: string[];
 }
 export interface GetItemRequest {
+  parent_id?: string;
   title?: string;
   description?: string;
   type?: ItemType[];
@@ -56,6 +58,7 @@ export interface OrderBy {
   desc: boolean;
 }
 export interface GetItemResponse {
+  parent_id?: string;
   guid: string;
   title: string;
   description?: string;

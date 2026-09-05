@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AppContext } from "../../types";
 import { createCommand, parseCreate } from "./create";
 import { useUiStore } from "../../../stores/ui";
+import { createListPane, createRootPane } from "../../pane/factories";
 
 function fakeApp(create = vi.fn().mockResolvedValue({})): AppContext {
   return {
@@ -87,6 +88,24 @@ describe("parseCreate()", () => {
   });
 });
 
+describe("parseCreate() type", () => {
+  it("defaults to a task", () => {
+    expect(req("buy milk").type).toBe("TASK");
+  });
+
+  it("takes the type from the modifier", () => {
+    expect(req("errands =group").type).toBe("GROUP");
+  });
+
+  it("rejects an unknown type", () => {
+    expect(error("buy milk =banana")).toMatch(/invalid type "banana"/i);
+  });
+
+  it("rejects more than one type", () => {
+    expect(error("buy milk =task =group")).toMatch(/only have one type/i);
+  });
+});
+
 describe("createCommand", () => {
   it("has loose arg positioning, since modifiers can appear anywhere", () => {
     expect(createCommand.strictArgPosition).toBe(false);
@@ -109,6 +128,26 @@ describe("createCommand", () => {
       expect.objectContaining({ title: "buy milk", priority: "HIGH" }),
     );
     expect(result).toEqual({ shouldClearPrompt: true });
+  });
+
+  it("creates inside the group the active pane is showing", async () => {
+    const create = vi.fn().mockResolvedValue({});
+    const child = createListPane("child", "group-1");
+    useUiStore.setState({ panes: [createRootPane(), child], activePaneId: child.id });
+
+    await createCommand.execute!({ rawArgs: "buy milk", app: fakeApp(create) });
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ parent_id: "group-1" }));
+  });
+
+  it("creates at the root when the active pane has no parent", async () => {
+    const create = vi.fn().mockResolvedValue({});
+    const root = createRootPane();
+    useUiStore.setState({ panes: [root], activePaneId: root.id });
+
+    await createCommand.execute!({ rawArgs: "buy milk", app: fakeApp(create) });
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ parent_id: undefined }));
   });
 
   it("reports a parse error without calling the API", async () => {

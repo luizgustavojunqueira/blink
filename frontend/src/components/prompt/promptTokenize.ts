@@ -4,13 +4,14 @@ import {
   STATUS_MODIFIER,
   DESCRIPTION_MODIFIER,
   ORDER_MODIFIER,
+  TYPE_MODIFIER,
 } from "../../lib/modifiers/delimiters.ts";
-import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS } from "../../lib/validator";
+import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS, TYPE_CLASS } from "../../lib/validator";
 import type { Token } from "../textField/textOverlay";
 
 export function tokenizePrompt(text: string): Token[] {
   const regex = new RegExp(
-    `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}\\${ORDER_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
+    `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}\\${ORDER_MODIFIER}\\${TYPE_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
     "g",
   );
   const parts = text.split(regex);
@@ -29,7 +30,8 @@ export function tokenizePrompt(text: string): Token[] {
     if (
       part.startsWith(PRIORITY_MODIFIER) ||
       part.startsWith(STATUS_MODIFIER) ||
-      part.startsWith(ORDER_MODIFIER)
+      part.startsWith(ORDER_MODIFIER) ||
+      part.startsWith(TYPE_MODIFIER)
     ) {
       const value = part.slice(1).toLowerCase();
 
@@ -49,6 +51,9 @@ export function tokenizePrompt(text: string): Token[] {
           break;
         case ORDER_MODIFIER:
           colorClass = ORDER_FIELD_CLASS[value.startsWith("-") ? value.slice(1) : value];
+          break;
+        case TYPE_MODIFIER:
+          colorClass = TYPE_CLASS[value];
           break;
       }
 

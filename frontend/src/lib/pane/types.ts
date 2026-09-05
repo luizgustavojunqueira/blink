@@ -1,4 +1,4 @@
-import type { GetItemRequest, GetItemResponse } from "../../types/backend";
+import type { GetItemRequest, GetItemResponse, ItemType } from "../../types/backend";
 
 export type PaneType = "list" | "detail";
 
@@ -9,6 +9,7 @@ export type ListPane = {
   parentId: string | null;
   selectedId: string | null;
   renderedIds: string[];
+  renderedTypes: Record<string, ItemType>;
   filter: GetItemRequest;
 };
 

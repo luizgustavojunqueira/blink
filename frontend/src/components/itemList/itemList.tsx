@@ -6,7 +6,7 @@ import SelectionScroller from "./selectionScroller";
 import { useEffect, useRef } from "react";
 import { paneIsActive, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useUiStore } from "../../stores/ui";
-import type { GetItemRequest } from "../../types/backend";
+import type { GetItemRequest, ItemType } from "../../types/backend";
 
 const EMPTY_FILTER: GetItemRequest = {};
 
@@ -20,15 +20,25 @@ interface IItemList {
 export function ItemList({ paneId }: IItemList) {
   const filter = usePaneValue(paneId, selectFilter);
   const isActive = usePaneValue(paneId, paneIsActive);
-  const setRenderedIds = useUiStore((s) => s.setRenderedIds);
+  const setRendered = useUiStore((s) => s.setRendered);
 
   const { data: items = [], isFetching, isError } = useItems(filter);
 
-  const idsString = items.map((item) => item.guid).join(",");
+  const renderedKey = items.map((item) => `${item.guid}:${item.type}`).join(",");
 
   useEffect(() => {
-    setRenderedIds(paneId, idsString ? idsString.split(",") : []);
-  }, [idsString, paneId, setRenderedIds]);
+    const ids: string[] = [];
+    const types: Record<string, ItemType> = {};
+
+    for (const entry of renderedKey ? renderedKey.split(",") : []) {
+      const sep = entry.lastIndexOf(":");
+      const id = entry.slice(0, sep);
+      ids.push(id);
+      types[id] = entry.slice(sep + 1);
+    }
+
+    setRendered(paneId, ids, types);
+  }, [renderedKey, paneId, setRendered]);
 
   const listRef = useRef<HTMLUListElement>(null);
 

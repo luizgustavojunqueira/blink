@@ -25,7 +25,7 @@ function Main() {
   return (
     <div
       className={`grid grid-rows-1 h-screen bg-bg text-fg font-mono overflow-hidden`}
-      style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+      style={{ gridTemplateColumns: colCount == 1 ? "1fr" : "1fr 2fr" }}
     >
       {panes.map((pane) => {
         const { Component } = paneRegistry[pane.type];

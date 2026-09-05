@@ -1,5 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { filterCommand, parseFilter } from "./filter";
+import { useUiStore } from "../../../stores/ui";
+import { createListPane, createRootPane } from "../../pane/factories";
+import type { AppContext } from "../../types";
+
+function fakeApp(): AppContext {
+  return {
+    ui: useUiStore.getState(),
+    setTheme: vi.fn(),
+    items: { findItem: vi.fn(), setField: vi.fn(), create: vi.fn(), update: vi.fn() },
+  };
+}
 
 describe("parseFilter()", () => {
   it("parses simple title", () => {
@@ -71,6 +82,16 @@ describe("parseFilter()", () => {
   });
 });
 
+describe("parseFilter() type", () => {
+  it("collects every type, since a filter can span both", () => {
+    expect(parseFilter("=task =group").type).toEqual(["task", "group"]);
+  });
+
+  it("leaves the type out when no modifier is given", () => {
+    expect(parseFilter("buy milk").type).toBeUndefined();
+  });
+});
+
 describe("filterCommand", () => {
   it("has loose arg positioning, since its args are free filter text", () => {
     expect(filterCommand.strictArgPosition).toBe(false);
@@ -88,5 +109,18 @@ describe("filterCommand", () => {
 
   it("getOptions returns nothing for plain title text", () => {
     expect(filterCommand.getOptions!("buy milk")).toEqual([]);
+  });
+
+  it("keeps the pane scoped to its group when filtering", () => {
+    const child = createListPane("child", "group-1");
+    useUiStore.setState({ panes: [createRootPane(), child], activePaneId: child.id });
+
+    filterCommand.execute!({ rawArgs: "@todo", app: fakeApp() });
+
+    const pane = useUiStore.getState().panes[1];
+    expect(pane.type === "list" && pane.filter).toMatchObject({
+      parent_id: "group-1",
+      status: ["todo"],
+    });
   });
 });

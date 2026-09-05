@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"strings"
 
 	"github.com/google/uuid"
@@ -30,6 +32,15 @@ func (s *Service) UpdateItem(ctx context.Context, req models.UpdateItemRequest) 
 
 	tags := tagsToStringSlice(item.Tags)
 
+	var parentGuid *string
+	if item.ParentID.Valid {
+		parent, err := s.repo.GetItem(ctx, item.ParentID.Int64)
+		if err != nil {
+			return nil, err
+		}
+		parentGuid = &parent.Guid
+	}
+
 	return &models.GetItemResponse{
 		GUID:        item.Guid,
 		Title:       item.Title,
@@ -38,6 +49,7 @@ func (s *Service) UpdateItem(ctx context.Context, req models.UpdateItemRequest) 
 		Status:      models.ItemStatus(item.Status),
 		Priority:    models.ItemPriority(item.Priority),
 		Tags:        tags,
+		ParentID:    parentGuid,
 	}, nil
 }
 
@@ -48,6 +60,22 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		tagsStr = &joined
 	}
 
+	parentId := sql.NullInt64{Valid: false}
+
+	if req.ParentID != nil {
+		parentItem, err := s.repo.GetItemByGuid(ctx, *req.ParentID)
+		if err != nil {
+			return nil, err
+		}
+
+		if parentItem.Type != string(models.Group) {
+			return nil, errors.New("parent is not of type Group")
+		}
+
+		parentId.Int64 = parentItem.ID
+		parentId.Valid = true
+	}
+
 	item, err := s.repo.CreateItem(ctx, db.CreateItemParams{
 		Guid:        uuid.New().String(),
 		Title:       req.Title,
@@ -56,6 +84,7 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		Status:      string(req.Status),
 		Priority:    string(req.Priority),
 		Tags:        pointerToNullString(tagsStr),
+		ParentID:    parentId,
 	})
 	if err != nil {
 		return nil, err
@@ -71,6 +100,7 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		Status:      models.ItemStatus(item.Status),
 		Priority:    models.ItemPriority(item.Priority),
 		Tags:        tags,
+		ParentID:    req.ParentID,
 	}, nil
 }
 
@@ -89,6 +119,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 		Type:        toStringSlice(req.Type),
 		Tags:        tags,
 		Order:       toDBOrders(models.ParseOrders(req.Order)),
+		ParentID:    req.ParentID,
 	}
 
 	if filter.Title != nil {
@@ -120,6 +151,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 			Status:      models.ItemStatus(item.Status),
 			Priority:    models.ItemPriority(item.Priority),
 			Tags:        tags,
+			ParentID:    nullStringToPointer(item.ParentGuid),
 		}
 
 		itemsResponse = append(itemsResponse, itemResp)

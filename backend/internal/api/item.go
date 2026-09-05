@@ -86,6 +86,7 @@ func (a *API) GetItems(w http.ResponseWriter, r *http.Request) {
 	req.Type = toUpperCase(parseQueryList[models.ItemType](queryParams["type"]))
 	req.Tags = parseQueryList[string](queryParams["tags"])
 	req.Order = parseQueryList[string](queryParams["order"])
+	req.ParentID = parseQueryValue[string](r.URL.Query().Get("parent_id"))
 
 	if err := req.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

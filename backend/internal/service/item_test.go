@@ -13,6 +13,13 @@ import (
 
 type MockRepository struct {
 	simulateErr          error
+	getItemByGuidErr     error
+	getItemErr           error
+	itemsByGuid          map[string]db.Item
+	itemsByID            map[int64]db.Item
+	updateItemParentID   sql.NullInt64
+	getItemCalled        bool
+	capturedGetItemID    *int64
 	capturedFilter       *db.GetIemsFilter
 	capturedCreateParams *db.CreateItemParams
 	capturedUpdateParams *db.UpdateItemParams
@@ -29,6 +36,7 @@ func (m *MockRepository) UpdateItem(ctx context.Context, arg db.UpdateItemParams
 		Status:   arg.Status.String,
 		Priority: arg.Priority.String,
 		Tags:     arg.Tags,
+		ParentID: m.updateItemParentID,
 	}, nil
 }
 
@@ -47,19 +55,21 @@ func (m *MockRepository) CreateItem(ctx context.Context, arg db.CreateItemParams
 	}, nil
 }
 
-func (m *MockRepository) GetItemsDynamic(ctx context.Context, filter db.GetIemsFilter) ([]db.Item, error) {
+func (m *MockRepository) GetItemsDynamic(ctx context.Context, filter db.GetIemsFilter) ([]db.ItemWithParent, error) {
 	m.capturedFilter = &filter
 	if m.simulateErr != nil {
 		return nil, m.simulateErr
 	}
 
-	return []db.Item{
+	return []db.ItemWithParent{
 		{
-			Guid:   "fake-guid",
-			Title:  "Fake Title",
-			Type:   "TASK",
-			Status: "TODO",
-			Tags:   sql.NullString{String: "tag1,tag2", Valid: true},
+			Item: db.Item{
+				Guid:   "fake-guid",
+				Title:  "Fake Title",
+				Type:   "TASK",
+				Status: "TODO",
+				Tags:   sql.NullString{String: "tag1,tag2", Valid: true},
+			},
 		},
 	}, nil
 }
@@ -69,6 +79,34 @@ func (m *MockRepository) GetTags(ctx context.Context) ([]string, error) {
 		return nil, m.simulateErr
 	}
 	return []string{"tag1", "tag2"}, nil
+}
+
+func (m *MockRepository) GetItemByGuid(ctx context.Context, guid string) (db.Item, error) {
+	if m.simulateErr != nil {
+		return db.Item{}, m.simulateErr
+	}
+	if m.getItemByGuidErr != nil {
+		return db.Item{}, m.getItemByGuidErr
+	}
+	if item, ok := m.itemsByGuid[guid]; ok {
+		return item, nil
+	}
+	return db.Item{}, sql.ErrNoRows
+}
+
+func (m *MockRepository) GetItem(ctx context.Context, id int64) (db.Item, error) {
+	m.getItemCalled = true
+	m.capturedGetItemID = &id
+	if m.simulateErr != nil {
+		return db.Item{}, m.simulateErr
+	}
+	if m.getItemErr != nil {
+		return db.Item{}, m.getItemErr
+	}
+	if item, ok := m.itemsByID[id]; ok {
+		return item, nil
+	}
+	return db.Item{}, sql.ErrNoRows
 }
 
 func TestService_CreateItem(t *testing.T) {
@@ -103,6 +141,91 @@ func TestService_CreateItem(t *testing.T) {
 	if len(resp.Tags) != 2 || resp.Tags[0] != "work" {
 		t.Errorf("expected tags array, got %v", resp.Tags)
 	}
+}
+
+func TestService_CreateItem_Parent(t *testing.T) {
+	t.Run("Success - parent guid resolves to a group and is attached", func(t *testing.T) {
+		mockRepo := &MockRepository{
+			itemsByGuid: map[string]db.Item{
+				"parent-guid": {ID: 42, Guid: "parent-guid", Type: string(models.Group)},
+			},
+		}
+		svc := service.NewService(mockRepo)
+
+		parentGuid := "parent-guid"
+		req := models.CreateItemRequest{
+			Title:    "child",
+			Type:     models.Task,
+			Status:   models.ToDo,
+			Priority: models.Normal,
+			ParentID: &parentGuid,
+		}
+
+		resp, err := svc.CreateItem(context.Background(), req)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if mockRepo.capturedCreateParams == nil {
+			t.Fatal("expected repo to be called")
+		}
+
+		if !mockRepo.capturedCreateParams.ParentID.Valid || mockRepo.capturedCreateParams.ParentID.Int64 != 42 {
+			t.Errorf("expected parent id 42, got %+v", mockRepo.capturedCreateParams.ParentID)
+		}
+
+		if resp.ParentID == nil || *resp.ParentID != parentGuid {
+			t.Errorf("expected response parent id %s, got %v", parentGuid, resp.ParentID)
+		}
+	})
+
+	t.Run("Error - parent guid does not exist", func(t *testing.T) {
+		mockRepo := &MockRepository{}
+		svc := service.NewService(mockRepo)
+
+		parentGuid := "does-not-exist"
+		req := models.CreateItemRequest{
+			Title:    "child",
+			Type:     models.Task,
+			Status:   models.ToDo,
+			Priority: models.Normal,
+			ParentID: &parentGuid,
+		}
+
+		if _, err := svc.CreateItem(context.Background(), req); err == nil {
+			t.Error("expected an error when the parent guid does not exist")
+		}
+
+		if mockRepo.capturedCreateParams != nil {
+			t.Error("expected CreateItem to not be called when the parent lookup fails")
+		}
+	})
+
+	t.Run("Error - parent exists but is not a Group", func(t *testing.T) {
+		mockRepo := &MockRepository{
+			itemsByGuid: map[string]db.Item{
+				"parent-guid": {ID: 42, Guid: "parent-guid", Type: string(models.Task)},
+			},
+		}
+		svc := service.NewService(mockRepo)
+
+		parentGuid := "parent-guid"
+		req := models.CreateItemRequest{
+			Title:    "child",
+			Type:     models.Task,
+			Status:   models.ToDo,
+			Priority: models.Normal,
+			ParentID: &parentGuid,
+		}
+
+		if _, err := svc.CreateItem(context.Background(), req); err == nil {
+			t.Error("expected an error when the parent is not of type Group")
+		}
+
+		if mockRepo.capturedCreateParams != nil {
+			t.Error("expected CreateItem to not be called when the parent is not a Group")
+		}
+	})
 }
 
 func TestService_GetItems(t *testing.T) {
@@ -190,6 +313,25 @@ func TestService_GetItems(t *testing.T) {
 	}
 }
 
+func TestService_GetItems_Parent(t *testing.T) {
+	mockRepo := &MockRepository{}
+	svc := service.NewService(mockRepo)
+
+	parentGuid := "parent-guid"
+	resp, err := svc.GetItems(context.Background(), models.GetItemRequest{ParentID: &parentGuid})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if mockRepo.capturedFilter == nil || mockRepo.capturedFilter.ParentID == nil || *mockRepo.capturedFilter.ParentID != parentGuid {
+		t.Errorf("expected filter parent id %q, got %v", parentGuid, mockRepo.capturedFilter.ParentID)
+	}
+
+	if resp[0].ParentID != nil {
+		t.Errorf("expected nil parent id when the item has none, got %v", *resp[0].ParentID)
+	}
+}
+
 func TestService_Errors(t *testing.T) {
 	mockRepo := &MockRepository{
 		simulateErr: errors.New("db is down"),
@@ -210,6 +352,61 @@ func TestService_Errors(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected UpdateItem to return an error when DB fails")
 	}
+}
+
+func TestService_UpdateItem_Parent(t *testing.T) {
+	t.Run("Item without a parent skips the parent lookup entirely", func(t *testing.T) {
+		mockRepo := &MockRepository{}
+		svc := service.NewService(mockRepo)
+
+		resp, err := svc.UpdateItem(context.Background(), models.UpdateItemRequest{GUID: "item-1"})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if mockRepo.getItemCalled {
+			t.Error("expected GetItem to not be called for an item without a parent")
+		}
+
+		if resp.ParentID != nil {
+			t.Errorf("expected nil parent id, got %v", *resp.ParentID)
+		}
+	})
+
+	t.Run("Item with a parent resolves its guid", func(t *testing.T) {
+		mockRepo := &MockRepository{
+			updateItemParentID: sql.NullInt64{Int64: 42, Valid: true},
+			itemsByID: map[int64]db.Item{
+				42: {ID: 42, Guid: "parent-guid"},
+			},
+		}
+		svc := service.NewService(mockRepo)
+
+		resp, err := svc.UpdateItem(context.Background(), models.UpdateItemRequest{GUID: "item-1"})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if mockRepo.capturedGetItemID == nil || *mockRepo.capturedGetItemID != 42 {
+			t.Errorf("expected GetItem to be called with id 42, got %v", mockRepo.capturedGetItemID)
+		}
+
+		if resp.ParentID == nil || *resp.ParentID != "parent-guid" {
+			t.Errorf("expected parent id %q, got %v", "parent-guid", resp.ParentID)
+		}
+	})
+
+	t.Run("Error - parent lookup fails", func(t *testing.T) {
+		mockRepo := &MockRepository{
+			updateItemParentID: sql.NullInt64{Int64: 42, Valid: true},
+			getItemErr:         errors.New("parent lookup failed"),
+		}
+		svc := service.NewService(mockRepo)
+
+		if _, err := svc.UpdateItem(context.Background(), models.UpdateItemRequest{GUID: "item-1"}); err == nil {
+			t.Error("expected UpdateItem to return an error when the parent lookup fails")
+		}
+	})
 }
 
 func assertNullString(t *testing.T, field string, got, want sql.NullString) {

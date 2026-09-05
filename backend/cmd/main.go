@@ -35,7 +35,7 @@ func run() error {
 		dbPath = "data/blink.db"
 	}
 
-	conn, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
+	conn, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
 	if err != nil {
 		return fmt.Errorf("could not connect to DB: %w", err)
 	}

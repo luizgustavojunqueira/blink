@@ -92,44 +92,28 @@ func (q *Queries) GetItem(ctx context.Context, id int64) (Item, error) {
 	return i, err
 }
 
-const getItemsByParent = `-- name: GetItemsByParent :many
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at FROM items WHERE parent_id = ? ORDER BY created_at DESC
+const getItemByGuid = `-- name: GetItemByGuid :one
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at FROM items WHERE guid = ?
 `
 
-func (q *Queries) GetItemsByParent(ctx context.Context, parentID sql.NullInt64) ([]Item, error) {
-	rows, err := q.db.QueryContext(ctx, getItemsByParent, parentID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Item
-	for rows.Next() {
-		var i Item
-		if err := rows.Scan(
-			&i.ID,
-			&i.Guid,
-			&i.Title,
-			&i.Description,
-			&i.Type,
-			&i.ParentID,
-			&i.Status,
-			&i.Priority,
-			&i.Tags,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.CompletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetItemByGuid(ctx context.Context, guid string) (Item, error) {
+	row := q.db.QueryRowContext(ctx, getItemByGuid, guid)
+	var i Item
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.Title,
+		&i.Description,
+		&i.Type,
+		&i.ParentID,
+		&i.Status,
+		&i.Priority,
+		&i.Tags,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CompletedAt,
+	)
+	return i, err
 }
 
 const getTags = `-- name: GetTags :many

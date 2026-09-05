@@ -42,6 +42,7 @@ const (
 )
 
 type CreateItemRequest struct {
+	ParentID    *string      `json:"parent_id"`
 	Title       string       `json:"title"`
 	Description *string      `json:"description"`
 	Type        ItemType     `json:"type"`
@@ -60,6 +61,7 @@ type UpdateItemRequest struct {
 }
 
 type GetItemRequest struct {
+	ParentID    *string        `json:"parent_id,omitempty"`
 	Title       *string        `json:"title"`
 	Description *string        `json:"description"`
 	Type        []ItemType     `json:"type,omitempty"`
@@ -75,6 +77,7 @@ type OrderBy struct {
 }
 
 type GetItemResponse struct {
+	ParentID    *string      `json:"parent_id"`
 	GUID        string       `json:"guid"`
 	Title       string       `json:"title"`
 	Description *string      `json:"description"`
@@ -140,6 +143,10 @@ func (req *UpdateItemRequest) Validate() error {
 func (req *CreateItemRequest) Validate() error {
 	if req.Title == "" {
 		return errors.New("title is required")
+	}
+
+	if req.ParentID != nil && *req.ParentID == "" {
+		return errors.New("parent id cannot be empty")
 	}
 
 	if req.Type != Task && req.Type != Group {

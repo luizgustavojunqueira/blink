@@ -16,6 +16,12 @@ type GetIemsFilter struct {
 	Description *string
 	Tags        []string
 	Order       []OrderBy
+	ParentID    *string
+}
+
+type ItemWithParent struct {
+	Item
+	ParentGuid sql.NullString
 }
 
 type OrderBy struct {
@@ -36,47 +42,71 @@ func NewRepository(dbConn *sql.DB) *SQLStore {
 }
 
 const (
-	statusRankExpr   = "CASE status WHEN 'TODO' THEN 0 WHEN 'IN_PROGRESS' THEN 1 WHEN 'DONE' THEN 2 WHEN 'CANCELED' THEN 3 WHEN 'ARCHIVED' THEN 4 ELSE 5 END"
-	priorityRankExpr = "CASE priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'NORMAL' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END"
-	orderTiebreaker  = "id DESC"
+	statusRankExpr   = "CASE i.status WHEN 'TODO' THEN 0 WHEN 'IN_PROGRESS' THEN 1 WHEN 'DONE' THEN 2 WHEN 'CANCELED' THEN 3 WHEN 'ARCHIVED' THEN 4 ELSE 5 END"
+	priorityRankExpr = "CASE i.priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'NORMAL' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END"
+	orderTiebreaker  = "i.id DESC"
 )
 
-var defaultOrder = []string{statusRankExpr + " ASC", "created_at DESC"}
+var defaultOrder = []string{statusRankExpr + " ASC", "i.created_at DESC"}
 
 var orderColumns = map[string]string{
-	"title":    "title",
-	"created":  "created_at",
-	"updated":  "updated_at",
+	"title":    "i.title",
+	"created":  "i.created_at",
+	"updated":  "i.updated_at",
 	"priority": priorityRankExpr,
 	"status":   statusRankExpr,
 }
 
-func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([]Item, error) {
-	query := squirrel.Select("*").From("items").PlaceholderFormat(squirrel.Question)
+func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([]ItemWithParent, error) {
+	query := squirrel.Select(
+		"i.id",
+		"i.guid",
+		"i.title",
+		"i.description",
+		"i.type",
+		"i.parent_id",
+		"i.status",
+		"i.priority",
+		"i.tags",
+		"i.created_at",
+		"i.updated_at",
+		"i.completed_at",
+		"p.guid AS parent_guid",
+	).
+		From("items i").
+		LeftJoin("items p ON p.id = i.parent_id").
+		PlaceholderFormat(squirrel.Question)
 
 	if len(filter.Status) > 0 {
-		query = query.Where(squirrel.Eq{"status": filter.Status})
+		query = query.Where(squirrel.Eq{"i.status": filter.Status})
 	}
 	if len(filter.Priority) > 0 {
-		query = query.Where(squirrel.Eq{"priority": filter.Priority})
+		query = query.Where(squirrel.Eq{"i.priority": filter.Priority})
 	}
 	if len(filter.Type) > 0 {
-		query = query.Where(squirrel.Eq{"type": filter.Type})
+		query = query.Where(squirrel.Eq{"i.type": filter.Type})
 	}
 
 	if filter.Title != nil {
-		query = query.Where(squirrel.Like{"title": "%" + *filter.Title + "%"})
+		query = query.Where(squirrel.Like{"i.title": "%" + *filter.Title + "%"})
 	}
 	if filter.Description != nil {
-		query = query.Where(squirrel.Like{"description": "%" + *filter.Description + "%"})
+		query = query.Where(squirrel.Like{"i.description": "%" + *filter.Description + "%"})
+	}
+
+	if filter.ParentID == nil {
+		query = query.Where(squirrel.Eq{"i.parent_id": nil})
+	} else {
+		sub := squirrel.Select("id").From("items").Where(squirrel.Eq{"guid": *filter.ParentID})
+		query = query.Where(squirrel.Expr("i.parent_id = (?)", sub))
 	}
 
 	for _, tag := range filter.Tags {
 		query = query.Where(squirrel.Or{
-			squirrel.Like{"tags": tag},
-			squirrel.Like{"tags": tag + ",%"},
-			squirrel.Like{"tags": "%," + tag},
-			squirrel.Like{"tags": "%," + tag + ",%"},
+			squirrel.Like{"i.tags": tag},
+			squirrel.Like{"i.tags": tag + ",%"},
+			squirrel.Like{"i.tags": "%," + tag},
+			squirrel.Like{"i.tags": "%," + tag + ",%"},
 		})
 	}
 
@@ -106,10 +136,10 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 		return nil, err
 	}
 
-	var items []Item
+	var items []ItemWithParent
 
 	for rows.Next() {
-		var i Item
+		var i ItemWithParent
 		if err := rows.Scan(
 			&i.ID,
 			&i.Guid,
@@ -123,6 +153,7 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.CompletedAt,
+			&i.ParentGuid,
 		); err != nil {
 			return nil, err
 		}

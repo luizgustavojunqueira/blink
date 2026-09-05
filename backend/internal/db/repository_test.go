@@ -14,7 +14,7 @@ import (
 func newTestStore(t *testing.T) *db.SQLStore {
 	t.Helper()
 
-	conn, err := sql.Open("sqlite", ":memory:")
+	conn, err := sql.Open("sqlite", ":memory:?_pragma=foreign_keys(1)")
 	if err != nil {
 		t.Fatalf("failed to open database: %v", err)
 	}
@@ -57,6 +57,155 @@ func newTestStore(t *testing.T) *db.SQLStore {
 	}
 
 	return db.NewRepository(conn)
+}
+
+func seedGroups(t *testing.T, store *db.SQLStore) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	group, err := store.CreateItem(ctx, db.CreateItemParams{
+		Guid: "group", Title: "with children", Type: "GROUP", Status: "TODO", Priority: "NORMAL",
+	})
+	if err != nil {
+		t.Fatalf("failed to insert the group: %v", err)
+	}
+
+	if _, err := store.CreateItem(ctx, db.CreateItemParams{
+		Guid: "empty", Title: "without children", Type: "GROUP", Status: "TODO", Priority: "NORMAL",
+	}); err != nil {
+		t.Fatalf("failed to insert the empty group: %v", err)
+	}
+
+	for _, child := range []struct{ guid, title string }{
+		{"child-a", "first child"},
+		{"child-b", "second child"},
+	} {
+		if _, err := store.CreateItem(ctx, db.CreateItemParams{
+			Guid:     child.guid,
+			Title:    child.title,
+			Type:     "TASK",
+			Status:   "TODO",
+			Priority: "NORMAL",
+			ParentID: sql.NullInt64{Int64: group.ID, Valid: true},
+		}); err != nil {
+			t.Fatalf("failed to insert %s: %v", child.guid, err)
+		}
+	}
+}
+
+func guidsOf(items []db.ItemWithParent) []string {
+	guids := make([]string, 0, len(items))
+	for _, i := range items {
+		guids = append(guids, i.Guid)
+	}
+	return guids
+}
+
+func TestGetItemsDynamic_Parent(t *testing.T) {
+	byTitle := []db.OrderBy{{Field: "title"}}
+
+	t.Run("No parent id lists the roots and leaves the children out", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{})
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		got := guidsOf(items)
+		for _, child := range []string{"child-a", "child-b"} {
+			if slices.Contains(got, child) {
+				t.Errorf("Expected %v to leave %s out", got, child)
+			}
+		}
+		for _, root := range []string{"a", "b", "c", "d", "group", "empty"} {
+			if !slices.Contains(got, root) {
+				t.Errorf("Expected %v to contain %s", got, root)
+			}
+		}
+	})
+
+	t.Run("A parent id lists only that group's children", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		parent := "group"
+		items, err := store.GetItemsDynamic(
+			context.Background(),
+			db.GetIemsFilter{ParentID: &parent, Order: byTitle},
+		)
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		expected := []string{"child-a", "child-b"}
+		if got := guidsOf(items); !slices.Equal(got, expected) {
+			t.Errorf("Expected %v but got %v", expected, got)
+		}
+	})
+
+	t.Run("A group without children lists nothing", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		parent := "empty"
+		items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{ParentID: &parent})
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		if len(items) != 0 {
+			t.Errorf("Expected no items but got %v", guidsOf(items))
+		}
+	})
+
+	t.Run("An unknown parent guid lists nothing instead of everything", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		parent := "does-not-exist"
+		items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{ParentID: &parent})
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		if len(items) != 0 {
+			t.Errorf("Expected no items but got %v", guidsOf(items))
+		}
+	})
+
+	t.Run("Children carry the parent guid, roots carry none", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		parent := "group"
+		children, err := store.GetItemsDynamic(
+			context.Background(),
+			db.GetIemsFilter{ParentID: &parent, Order: byTitle},
+		)
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		for _, child := range children {
+			if !child.ParentGuid.Valid || child.ParentGuid.String != "group" {
+				t.Errorf("Expected %s to point at group but got %+v", child.Guid, child.ParentGuid)
+			}
+		}
+
+		roots, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{})
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		for _, root := range roots {
+			if root.ParentGuid.Valid {
+				t.Errorf("Expected %s to have no parent but got %q", root.Guid, root.ParentGuid.String)
+			}
+		}
+	})
 }
 
 func TestGetItemsDynamic_Order(t *testing.T) {
@@ -111,12 +260,7 @@ func TestGetItemsDynamic_Order(t *testing.T) {
 				t.Fatalf("Didn't expect error but got: %v", err)
 			}
 
-			got := make([]string, 0, len(items))
-			for _, i := range items {
-				got = append(got, i.Guid)
-			}
-
-			if !slices.Equal(got, tt.expected) {
+			if got := guidsOf(items); !slices.Equal(got, tt.expected) {
 				t.Errorf("Expected %v but got %v", tt.expected, got)
 			}
 		})

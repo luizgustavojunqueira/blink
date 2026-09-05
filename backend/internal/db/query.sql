@@ -1,8 +1,8 @@
 -- name: GetItem :one
 SELECT * FROM items WHERE id = ?;
 
--- name: GetItemsByParent :many
-SELECT * FROM items WHERE parent_id = ? ORDER BY created_at DESC;
+-- name: GetItemByGuid :one
+SELECT * FROM items WHERE guid = ?;
 
 -- name: CreateItem :one
 INSERT INTO items (

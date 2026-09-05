@@ -26,7 +26,7 @@ function ItemComponent({ item, paneId }: IItem) {
   return (
     <li
       data-item-id={item.guid}
-      className={`group w-full px-4 py-1.5 flex items-center gap-3 transition-colors duration-75 ${
+      className={`group w-full px-4 py-1.5 flex items-center gap-3 transition-colors duration-75 [content-visibility:auto] [contain-intrinsic-size:auto_2rem] ${
         isSelected ? "bg-bg-lighter" : "hover:bg-bg-soft"
       }`}
       onClick={() => select(paneId, item.guid)}

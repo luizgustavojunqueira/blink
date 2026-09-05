@@ -10,6 +10,7 @@ import { TAG_MODIFIER } from "../../lib/modifiers/delimiters";
 import { tokenizeTags } from "../../lib/tags/tokenizeTags";
 import { extractDelimited } from "../../lib/modifiers/extract";
 import { normalizeTagText } from "../../lib/tags/normalizeTagText";
+import { useUiStore } from "../../stores/ui";
 
 interface IItemDetail {
   paneId: string;
@@ -25,6 +26,8 @@ export default function ItemDetail({ paneId }: IItemDetail) {
   const [itemDesc, setItemDesc] = useState<string>(item ? (item.description ?? "") : "");
   const tagInputRef = useRef<HTMLTextAreaElement>(null);
   const [itemTags, setItemTags] = useState<string>(item ? mapTagsToString(item.tags) : "");
+
+  const mode = useUiStore((s) => s.mode);
 
   const tagHelper = useTagAutocomplete(tagInputRef, setItemTags);
   if (!item) return null;
@@ -104,7 +107,7 @@ export default function ItemDetail({ paneId }: IItemDetail) {
                 value={itemTitle}
                 onChange={(v) => setItemTitle(v)}
                 onBlur={() => commitField("title", itemTitle, item.title)}
-                editing={t.isActive && app.ui.mode == "insert" && t.pane.selectedField === "title"}
+                editing={t.isActive && mode == "insert" && t.pane.selectedField === "title"}
               />
             );
             break;
@@ -118,9 +121,7 @@ export default function ItemDetail({ paneId }: IItemDetail) {
                 value={itemDesc}
                 onChange={(v) => setItemDesc(v)}
                 onBlur={() => commitField("description", itemDesc, item.description)}
-                editing={
-                  t.isActive && app.ui.mode == "insert" && t.pane.selectedField === "description"
-                }
+                editing={t.isActive && mode == "insert" && t.pane.selectedField === "description"}
               />
             );
             break;
@@ -143,7 +144,7 @@ export default function ItemDetail({ paneId }: IItemDetail) {
                   tagHelper.update();
                 }}
                 onBlur={() => commitField("tags", itemTags, mapTagsToString(item.tags))}
-                editing={t.isActive && app.ui.mode == "insert" && t.pane.selectedField === "tags"}
+                editing={t.isActive && mode == "insert" && t.pane.selectedField === "tags"}
                 tokenize={tokenizeTags}
               >
                 <Helper {...tagHelper} />

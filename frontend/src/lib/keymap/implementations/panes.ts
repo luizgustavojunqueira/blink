@@ -24,8 +24,8 @@ export const paneNavigation: KeyBinding[] = [
     scope: "global",
     description: "Pop pane",
     hint: { group: "nav" },
-    when: ({ app }) => {
-      return app.ui.panes.length > 1;
+    when: ({ ui }) => {
+      return ui.panes.length > 1;
     },
     run: ({ app }) => {
       app.ui.popPane();
@@ -38,9 +38,9 @@ export const paneNavigation: KeyBinding[] = [
     scope: "global",
     description: "Right pane",
     hint: { group: "nav" },
-    when: ({ app }) => {
-      const activePaneIdx = app.ui.panes.findIndex((p) => p.id == app.ui.activePaneId);
-      return app.ui.panes.length > 1 && activePaneIdx % 2 == 0;
+    when: ({ ui }) => {
+      const activePaneIdx = ui.panes.findIndex((p) => p.id == ui.activePaneId);
+      return ui.panes.length > 1 && activePaneIdx % 2 == 0;
     },
     run: ({ app }) => {
       app.ui.moveRight();
@@ -53,9 +53,9 @@ export const paneNavigation: KeyBinding[] = [
     scope: "global",
     description: "Left pane",
     hint: { group: "nav" },
-    when: ({ app }) => {
-      const activePaneIdx = app.ui.panes.findIndex((p) => p.id == app.ui.activePaneId);
-      return app.ui.panes.length > 1 && activePaneIdx % 2 == 1;
+    when: ({ ui }) => {
+      const activePaneIdx = ui.panes.findIndex((p) => p.id == ui.activePaneId);
+      return ui.panes.length > 1 && activePaneIdx % 2 == 1;
     },
     run: ({ app }) => {
       app.ui.moveLeft();

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { AppContext } from "../lib/types";
-import type { KeyContext } from "../lib/keymap/types";
+import type { KeyContext, KeyQueryContext } from "../lib/keymap/types";
 import { useUiStore } from "../stores/ui";
 import { isPrefix, resolve } from "../lib/keymap/registry";
 
@@ -16,8 +16,8 @@ export function useKeyMap(app: AppContext) {
       const pane = state.panes.find((p) => p.id === state.activePaneId);
       if (!pane) return;
 
-      const ctx: KeyContext = {
-        app: { ...appRef.current, ui: state },
+      const ctxQuery: KeyQueryContext = {
+        ui: state,
         pane,
       };
 
@@ -30,15 +30,19 @@ export function useKeyMap(app: AppContext) {
       const attempts = pending ? [`${pending} ${key}`, key] : [key];
 
       for (const seq of attempts) {
-        const binding = resolve(seq, ctx);
+        const binding = resolve(seq, ctxQuery);
 
         if (binding) {
-          if (binding.run(ctx, key) == false) return;
+          const ctxRun: KeyContext = {
+            app: { ...appRef.current, ui: state },
+            pane,
+          };
+          if (binding.run(ctxRun, key) == false) return;
           e.preventDefault();
           return;
         }
 
-        if (isPrefix(seq, ctx)) {
+        if (isPrefix(seq, ctxQuery)) {
           currentSeq.current = seq;
           e.preventDefault();
           return;

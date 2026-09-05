@@ -1,6 +1,33 @@
-import { Fragment } from "react";
-import { useAppContext } from "../../hooks/useAppContext";
-import { availableKeys } from "../../lib/keymap/registry";
+import { Fragment, memo, useMemo, useRef } from "react";
+import { availableKeys, type AvailableBinding } from "../../lib/keymap/registry";
+import { useUiStore, type UiState } from "../../stores/ui";
+
+const NO_HINTS: AvailableBinding[] = [];
+
+const selectHints = (s: UiState): AvailableBinding[] => {
+  if (!s.showHint) return NO_HINTS;
+  const pane = s.panes.find((p) => p.id === s.activePaneId);
+  if (!pane) return NO_HINTS;
+  return availableKeys({ ui: s, pane });
+};
+
+const sameHints = (a: AvailableBinding[], b: AvailableBinding[]) =>
+  a.length === b.length &&
+  a.every(
+    (x, i) =>
+      x.binding.id === b[i].binding.id &&
+      x.keys.length === b[i].keys.length &&
+      x.keys.every((k, j) => k === b[i].keys[j]),
+  );
+
+function useHintsSelector() {
+  const prev = useRef<AvailableBinding[]>(NO_HINTS);
+
+  return (s: UiState) => {
+    const next = selectHints(s);
+    return sameHints(prev.current, next) ? prev.current : (prev.current = next);
+  };
+}
 
 const replaceArrows = (t: string) => {
   if (t !== undefined && t != null)
@@ -28,12 +55,12 @@ function groupBy<T>(items: Array<T>, field: keyof T): Record<string, Array<T>> {
   return s;
 }
 
-export default function Hint() {
-  const app = useAppContext();
-  const pane = app.ui.panes.find((p) => p.id === app.ui.activePaneId);
-  const hintsGrouped = pane ? groupBy(availableKeys({ app, pane }), "group") : {};
+function HintComponent() {
+  const showHint = useUiStore((s) => s.showHint);
+  const hints = useUiStore(useHintsSelector());
+  const hintsGrouped = useMemo(() => groupBy(hints, "group"), [hints]);
 
-  if (!app.ui.showHint) return;
+  if (!showHint) return null;
 
   return (
     <div className="absolute bottom-0 right-2.5 flex flex-row items-end justify-end p-2">
@@ -63,3 +90,6 @@ export default function Hint() {
     </div>
   );
 }
+
+const Hint = memo(HintComponent);
+export default Hint;

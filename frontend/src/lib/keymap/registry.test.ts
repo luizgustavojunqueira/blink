@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { availableKeys, getKeyBinding, keyBindings, resolve } from "./registry";
-import type { KeyContext, Mode } from "./types";
+import type { KeyContext, KeyQueryContext, Mode } from "./types";
 import type { DetailField, ListPane } from "../pane/types";
 
-type CtxOptions = { panes?: number; activeIdx?: number; selectedId?: string | null };
+type CtxOptions = {
+  panes?: number;
+  activeIdx?: number;
+  selectedId?: string | null;
+};
 
 const listPane = (id: string, selectedId: string | null): ListPane => ({
   id,
@@ -18,10 +22,13 @@ const listPane = (id: string, selectedId: string | null): ListPane => ({
 const ctx = (mode: Mode, { panes = 1, activeIdx = 0, selectedId = "item-1" }: CtxOptions = {}) => {
   const list = Array.from({ length: panes }, (_, i) => listPane(`pane-${i}`, selectedId));
   const pane = list[activeIdx];
-  return { app: { ui: { mode, panes: list, activePaneId: pane.id } }, pane } as KeyContext;
+  return {
+    ui: { mode, panes: list, activePaneId: pane.id },
+    pane,
+  } as KeyQueryContext;
 };
 
-const detailCtx = (mode: Mode, selectedField: DetailField): KeyContext => {
+const detailCtx = (mode: Mode, selectedField: DetailField): KeyQueryContext => {
   const pane = {
     id: "detail-0",
     type: "detail" as const,
@@ -29,7 +36,10 @@ const detailCtx = (mode: Mode, selectedField: DetailField): KeyContext => {
     itemId: "item-1",
     selectedField,
   };
-  return { app: { ui: { mode, panes: [pane], activePaneId: pane.id } }, pane } as KeyContext;
+  return {
+    ui: { mode, panes: [pane], activePaneId: pane.id },
+    pane,
+  } as KeyQueryContext;
 };
 
 describe("keymap registry: resolve", () => {

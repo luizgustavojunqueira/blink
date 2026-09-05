@@ -1,6 +1,12 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useUiStore } from "../stores/ui";
-import type { Pane } from "../lib/pane/types";
+import type { ListPane, Pane, PaneType } from "../lib/pane/types";
+import type { GetItemRequest } from "../types/backend";
+
+const EMPTY_FILTER: GetItemRequest = {};
+
+const findListPane = (panes: Pane[], paneId: string) =>
+  panes.find((p): p is ListPane => p.id === paneId && p.type === "list");
 
 function usePaneCore<N extends Pane>(
   paneId: string,
@@ -35,4 +41,43 @@ export function useListPane(paneId: string) {
 
 export function useDetailPane(paneId: string) {
   return usePaneCore(paneId, (p) => (p?.type === "detail" ? p : undefined));
+}
+
+export function usePaneIsActive(paneId: string) {
+  return useUiStore(useCallback((s) => s.activePaneId === paneId, [paneId]));
+}
+
+export function useListPanePrompt(paneId: string) {
+  return useUiStore(useCallback((s) => findListPane(s.panes, paneId)?.prompt ?? "", [paneId]));
+}
+
+export function useListPaneFilter(paneId: string) {
+  return useUiStore(
+    useCallback((s) => findListPane(s.panes, paneId)?.filter ?? EMPTY_FILTER, [paneId]),
+  );
+}
+
+export function useListPaneSelectedId(paneId: string) {
+  return useUiStore(
+    useCallback((s) => findListPane(s.panes, paneId)?.selectedId ?? null, [paneId]),
+  );
+}
+
+export type VisiblePane = { id: string; type: PaneType };
+
+const sameVisiblePanes = (a: VisiblePane[], b: VisiblePane[]) =>
+  a.length === b.length && a.every((p, i) => p.id === b[i].id && p.type === b[i].type);
+
+export function useVisiblePanes(count: number) {
+  const prev = useRef<VisiblePane[]>([]);
+
+  return useUiStore(
+    useCallback(
+      (s) => {
+        const next = s.panes.slice(-count).map((p) => ({ id: p.id, type: p.type }));
+        return sameVisiblePanes(prev.current, next) ? prev.current : (prev.current = next);
+      },
+      [count],
+    ),
+  );
 }

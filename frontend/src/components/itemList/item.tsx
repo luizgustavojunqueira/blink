@@ -1,29 +1,40 @@
-import { usePane } from "../../hooks/usePane";
+import { memo, useCallback } from "react";
+import { useUiStore } from "../../stores/ui";
 import { createDetailPane } from "../../lib/pane/factories";
+import type { ListPane } from "../../lib/pane/types";
 import type { GetItemResponse } from "../../types/backend";
 import { priorityColor, priorityMapper, statusColor, statusMapper } from "../../utils/status";
 
 interface IItem {
   item: GetItemResponse;
-  isSelected: boolean;
   paneId: string;
 }
 
-export default function Item({ item, isSelected, paneId }: IItem) {
+function ItemComponent({ item, paneId }: IItem) {
   const isDone = item.status === "DONE" || item.status === "CANCELED";
-  const t = usePane(paneId);
 
-  const select = t.select;
-  const pushPane = t.pushPane;
+  const isSelected = useUiStore(
+    useCallback(
+      (s) => {
+        const pane = s.panes.find((p): p is ListPane => p.id === paneId && p.type === "list");
+        return pane?.selectedId === item.guid;
+      },
+      [paneId, item.guid],
+    ),
+  );
+
+  const select = useUiStore((s) => s.select);
+  const pushPane = useUiStore((s) => s.pushPane);
+
   return (
     <li
       data-item-id={item.guid}
       className={`group w-full px-4 py-1.5 flex items-center gap-3 transition-colors duration-75 ${
         isSelected ? "bg-bg-lighter" : "hover:bg-bg-soft"
       }`}
-      onClick={() => select(item.guid)}
+      onClick={() => select(paneId, item.guid)}
       onDoubleClick={() => {
-        select(item.guid);
+        select(paneId, item.guid);
 
         pushPane(createDetailPane(crypto.randomUUID(), item.guid, item.guid));
       }}
@@ -59,3 +70,6 @@ export default function Item({ item, isSelected, paneId }: IItem) {
     </li>
   );
 }
+
+const Item = memo(ItemComponent);
+export default Item;

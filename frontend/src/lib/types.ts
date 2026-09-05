@@ -1,4 +1,4 @@
-import type { UiActions, UiState } from "../stores/ui";
+import type { UiActions } from "../stores/ui";
 import type {
   CreateItemRequest,
   GetItemResponse,
@@ -8,7 +8,7 @@ import type {
 } from "../types/backend";
 
 export type AppContext = {
-  ui: UiState & UiActions;
+  ui: UiActions;
   setTheme: (theme: string) => void;
   items: {
     findItem: (guid: string) => GetItemResponse | undefined;

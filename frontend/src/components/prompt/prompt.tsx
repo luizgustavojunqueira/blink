@@ -7,7 +7,7 @@ import { usePromptHelper } from "../../hooks/promptHelper/usePromptHelper";
 import type { ExecuteResult } from "../../lib/commands/types";
 import { useUiStore } from "../../stores/ui";
 import { useAppContext } from "../../hooks/useAppContext";
-import { useListPane } from "../../hooks/usePane";
+import { useListPanePrompt, usePaneIsActive } from "../../hooks/usePane";
 import { tokenizePrompt } from "./promptTokenize";
 
 interface IPrompt {
@@ -19,10 +19,10 @@ export default function Prompt({ paneId }: IPrompt) {
   const [message, setMessage] = useState<string>("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const t = useListPane(paneId);
-  const prompt = t.pane.prompt;
+  const prompt = useListPanePrompt(paneId);
+  const isActive = usePaneIsActive(paneId);
   const mode = useUiStore((s) => s.mode);
-  const editing = t.isActive && mode === "insert";
+  const editing = isActive && mode === "insert";
 
   const helper = usePromptHelper(inputRef, (newPrompt: string) => {
     app.ui.setPrompt(newPrompt);
@@ -87,7 +87,7 @@ export default function Prompt({ paneId }: IPrompt) {
         }}
         editing={editing}
         onRequestEdit={() => {
-          app.ui.selectPane(t.pane.id, "insert");
+          app.ui.selectPane(paneId, "insert");
         }}
 
         onKeyDown={handleKeyDown}

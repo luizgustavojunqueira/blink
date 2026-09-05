@@ -9,7 +9,7 @@ import { prefixKeyBindings } from "./implementations/insertMode";
 import { listNavigationBindings } from "./implementations/listNavigation";
 import { paneNavigation } from "./implementations/panes";
 import { statusKeyBindings } from "./implementations/update";
-import type { KeyBinding, KeyContext } from "./types";
+import type { KeyBinding, KeyQueryContext } from "./types";
 
 export const keyBindings: KeyBinding[] = [
   ...prefixKeyBindings,
@@ -39,16 +39,16 @@ for (const b of Object.values(keyBindings)) {
   }
 }
 
-const matches = (b: KeyBinding, ctx: KeyContext) =>
-  b.modes.includes(ctx.app.ui.mode) &&
+const matches = (b: KeyBinding, ctx: KeyQueryContext) =>
+  b.modes.includes(ctx.ui.mode) &&
   (b.scope === "global" || b.scope === ctx.pane.type) &&
   (b.when?.(ctx) ?? true);
 
-export function isPrefix(seq: string, ctx: KeyContext) {
+export function isPrefix(seq: string, ctx: KeyQueryContext) {
   return prefixes.get(seq)?.some((b) => matches(b, ctx)) ?? false;
 }
 
-export function resolve(key: string, ctx: KeyContext) {
+export function resolve(key: string, ctx: KeyQueryContext) {
   return byKey.get(key)?.find((b) => matches(b, ctx));
 }
 
@@ -58,7 +58,7 @@ export type AvailableBinding = {
   group: string;
 };
 
-export function availableKeys(ctx: KeyContext): AvailableBinding[] {
+export function availableKeys(ctx: KeyQueryContext): AvailableBinding[] {
   const active = new Set(keyBindings.filter((b) => matches(b, ctx)));
   const winner = (key: string) => byKey.get(key)?.find((b) => active.has(b));
 

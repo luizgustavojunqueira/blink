@@ -13,7 +13,7 @@ import type {
 
 export function useAppContext(): AppContext {
   const queryClient = useQueryClient();
-  const ui = useUiStore();
+  const ui = useMemo(() => useUiStore.getState(), []);
 
   const { mutateAsync: create } = useMutation({
     mutationFn: createItem,

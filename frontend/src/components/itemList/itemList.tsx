@@ -2,39 +2,33 @@ import { useItems } from "../../hooks/useItems";
 import Loading from "../loading";
 import Prompt from "../prompt/prompt";
 import Item from "./item";
+import SelectionScroller from "./selectionScroller";
 import { useEffect, useRef } from "react";
-import { useListPane } from "../../hooks/usePane";
+import { useListPaneFilter, usePaneIsActive } from "../../hooks/usePane";
+import { useUiStore } from "../../stores/ui";
 
 interface IItemList {
   paneId: string;
 }
 
 export function ItemList({ paneId }: IItemList) {
-  const t = useListPane(paneId);
+  const filter = useListPaneFilter(paneId);
+  const isActive = usePaneIsActive(paneId);
+  const setRenderedIds = useUiStore((s) => s.setRenderedIds);
 
-  const { data: items = [], isFetching, isError } = useItems(t.pane.filter);
+  const { data: items = [], isFetching, isError } = useItems(filter);
 
   const idsString = items.map((item) => item.guid).join(",");
 
   useEffect(() => {
-    if (!t) return;
-    t.setRenderedIds(idsString ? idsString.split(",") : []);
-  }, [idsString, t]);
+    setRenderedIds(paneId, idsString ? idsString.split(",") : []);
+  }, [idsString, paneId, setRenderedIds]);
 
   const listRef = useRef<HTMLUListElement>(null);
 
-  useEffect(() => {
-    if (!t.pane.selectedId) return;
-    const element = listRef.current?.querySelector<HTMLElement>(
-      `[data-item-id="${t.pane.selectedId}"]`,
-    );
-
-    element?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [t.pane.selectedId]);
-
   return (
     <div
-      className={`w-full h-full flex flex-col border ${t.isActive ? "border-b-accent" : "border-bg"}`}
+      className={`w-full h-full flex flex-col border ${isActive ? "border-b-accent" : "border-bg"}`}
     >
       <Prompt paneId={paneId} />
 
@@ -45,14 +39,11 @@ export function ItemList({ paneId }: IItemList) {
 
         <ul ref={listRef} className="flex flex-col">
           {items.map((item) => (
-            <Item
-              key={item.guid}
-              item={item}
-              isSelected={item.guid === t.pane.selectedId}
-              paneId={paneId}
-            />
+            <Item key={item.guid} item={item} paneId={paneId} />
           ))}
         </ul>
+
+        <SelectionScroller paneId={paneId} listRef={listRef} />
 
         {!isFetching && items.length === 0 && (
           <div className="px-4 py-6 text-fg-muted text-sm">no items</div>

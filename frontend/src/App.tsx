@@ -5,6 +5,7 @@ import { getTheme, setTheme } from "./lib/theme";
 import { useAppContext } from "./hooks/useAppContext";
 import { useKeyMap } from "./hooks/useKeyMap";
 import { useUiStore } from "./stores/ui";
+import { useVisiblePanes } from "./hooks/usePane";
 import { paneRegistry } from "./lib/pane/registry";
 import Hint from "./components/hint/hint";
 
@@ -17,16 +18,17 @@ function Main() {
     setTheme(getTheme());
   }, []);
 
-  const { panes, activePaneId } = useUiStore();
+  const panes = useVisiblePanes(2);
+  const activePaneId = useUiStore((s) => s.activePaneId);
 
-  const colCount = panes.slice(-2).length;
+  const colCount = panes.length;
 
   return (
     <div
       className={`grid grid-rows-1 h-screen bg-bg text-fg font-mono overflow-hidden`}
       style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
     >
-      {panes.slice(-2).map((pane) => {
+      {panes.map((pane) => {
         const { Component } = paneRegistry[pane.type];
         return (
           <div

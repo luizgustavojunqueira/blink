@@ -1,3 +1,4 @@
+import type { UiState } from "../../stores/ui";
 import type { Pane, PaneType } from "../pane/types";
 import type { AppContext } from "../types";
 
@@ -8,6 +9,11 @@ export type KeyContext = {
   pane: Pane;
 };
 
+export type KeyQueryContext = {
+  ui: UiState;
+  pane: Pane;
+};
+
 export type KeyBinding = {
   id: string;
   keys: string[];
@@ -15,6 +21,6 @@ export type KeyBinding = {
   scope: PaneType | "global";
   description: string;
   hint?: { group: "nav" | "item" | "pane" | "prompt"; primary?: boolean };
-  when?: (ctx: KeyContext) => boolean;
+  when?: (ctx: KeyQueryContext) => boolean;
   run: (ctx: KeyContext, key?: string) => void | boolean;
 };

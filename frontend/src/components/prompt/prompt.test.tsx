@@ -21,8 +21,8 @@ const mockApp = vi.hoisted(() => ({
   value: undefined as unknown,
 }));
 
-vi.mock("../../hooks/useAppContext", () => ({
-  useAppContext: () => mockApp.value,
+vi.mock("../../lib/appContext", () => ({
+  getAppContext: () => mockApp.value,
 }));
 
 const mockHelper = vi.hoisted(() => ({ isOpen: false }));

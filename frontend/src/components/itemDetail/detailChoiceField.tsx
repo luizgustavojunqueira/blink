@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { useAppContext } from "../../hooks/useAppContext";
+import { getItemActions } from "../../lib/appContext";
 import DetailFieldRow from "./detailFieldRow";
 import type { DetailField } from "../../lib/pane/types";
 
@@ -20,7 +20,6 @@ function DetailChoiceFieldComponent({
   mapper,
   colors,
 }: IDetailChoiceField) {
-  const app = useAppContext();
 
   return (
     <DetailFieldRow paneId={paneId} field={field}>
@@ -33,7 +32,7 @@ function DetailChoiceFieldComponent({
               ? colors[k]
               : "border-border text-fg-dim hover:bg-bg-lighter hover:text-fg hover:border-fg-dim"
           }`}
-          onClick={() => app.items.setField(itemGuid, field, k)}
+          onClick={() => getItemActions().setField(itemGuid, field, k)}
         >
           {mapper[k]}
         </button>

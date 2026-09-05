@@ -16,16 +16,12 @@ vi.mock("../../hooks/useItems", () => ({
   useItem: (guid: string) => mockItems.findItem(guid),
 }));
 
-vi.mock("../../hooks/useAppContext", () => ({
-  useAppContext: () => ({
-    ui: useUiStore(),
-    setTheme: vi.fn(),
-    items: {
-      findItem: mockItems.findItem,
-      setField: mockItems.setField,
-      create: vi.fn(),
-      update: vi.fn(),
-    },
+vi.mock("../../lib/appContext", () => ({
+  getItemActions: () => ({
+    findItem: mockItems.findItem,
+    setField: mockItems.setField,
+    create: vi.fn(),
+    update: vi.fn(),
   }),
 }));
 

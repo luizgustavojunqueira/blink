@@ -9,14 +9,6 @@ vi.mock("../../lib/keymap/registry", () => ({
   availableKeys: vi.fn(() => []),
 }));
 
-vi.mock("../../hooks/useAppContext", () => ({
-  useAppContext: () => ({
-    ui: useUiStore(),
-    setTheme: vi.fn(),
-    items: { findItem: vi.fn(), setField: vi.fn(), create: vi.fn(), update: vi.fn() },
-  }),
-}));
-
 const mockedAvailableKeys = vi.mocked(availableKeys);
 
 function entry(id: string, keys: string[], group: string, description: string): AvailableBinding {

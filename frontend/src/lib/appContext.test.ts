@@ -1,9 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { QueryClient } from "@tanstack/react-query";
+import { waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createItem, updateItem } from "../api/items";
-import { useAppContext } from "./useAppContext";
+import { createAppContext, getAppContext, getItemActions } from "./appContext";
 import { Done, InProgress, Normal, Task, ToDo } from "../types/backend";
 import type { GetItemResponse, ItemStatus } from "../types/backend";
 
@@ -30,16 +29,10 @@ function renderAppContext(setFilter = vi.fn()) {
   });
   const invalidate = vi.spyOn(client, "invalidateQueries");
 
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-
-  const view = renderHook(() => useAppContext(), { wrapper });
-
-  return { ...view, client, setFilter, invalidate };
+  return { result: { current: createAppContext(client) }, client, setFilter, invalidate };
 }
 
-describe("useAppContext", () => {
+describe("appContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -90,17 +83,13 @@ describe("useAppContext", () => {
     await expect(result.current.items.create({} as never)).rejects.toThrow("title is required");
   });
 
-  it("keeps a stable identity across renders", () => {
-    const { result, rerender } = renderAppContext();
-    const first = result.current;
-
-    rerender();
-
-    expect(result.current).toBe(first);
+  it("hands out one stable instance for the whole app", () => {
+    expect(getAppContext()).toBe(getAppContext());
+    expect(getItemActions()).toBe(getAppContext().items);
   });
 });
 
-describe("useAppContext: setField with status", () => {
+describe("appContext: setField with status", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -153,7 +142,7 @@ describe("useAppContext: setField with status", () => {
   });
 });
 
-describe("useAppContext: update", () => {
+describe("appContext: update", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

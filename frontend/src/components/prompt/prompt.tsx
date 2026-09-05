@@ -5,7 +5,7 @@ import TextField from "../textField/textField";
 import Helper from "./helper";
 import { usePromptHelper } from "../../hooks/promptHelper/usePromptHelper";
 import type { ExecuteResult } from "../../lib/commands/types";
-import { useAppContext } from "../../hooks/useAppContext";
+import { getAppContext } from "../../lib/appContext";
 import { paneEditing, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { tokenizePrompt } from "./promptTokenize";
 
@@ -16,7 +16,7 @@ interface IPrompt {
 }
 
 function PromptComponent({ paneId }: IPrompt) {
-  const app = useAppContext();
+  const app = getAppContext();
   const [message, setMessage] = useState<string>("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 

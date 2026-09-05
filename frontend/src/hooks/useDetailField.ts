@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
-import { useAppContext } from "./useAppContext";
+import { getItemActions } from "../lib/appContext";
+import { useUiStore } from "../stores/ui";
 import { usePaneValue, type PaneSelector } from "./usePane";
 import type { DetailField } from "../lib/pane/types";
 
@@ -22,7 +23,9 @@ export function useDetailField({
   rejectEmpty = false,
   allowNewline = false,
 }: UseDetailFieldOptions) {
-  const app = useAppContext();
+  const selectPane = useUiStore((s) => s.selectPane);
+  const selectField = useUiStore((s) => s.selectField);
+  const setMode = useUiStore((s) => s.setMode);
   const selectEditing = useCallback<PaneSelector<boolean>>(
     (pane, ui) =>
       pane?.id === ui.activePaneId &&
@@ -46,14 +49,14 @@ export function useDetailField({
     }
     if (draft === value) return;
 
-    app.items.setField(itemGuid, field, parse ? parse(draft) : draft);
-  }, [app, draft, value, field, itemGuid, parse, rejectEmpty]);
+    getItemActions().setField(itemGuid, field, parse ? parse(draft) : draft);
+  }, [draft, value, field, itemGuid, parse, rejectEmpty]);
 
   const requestEdit = useCallback(() => {
     setDraft(value);
-    app.ui.selectPane(paneId, "insert");
-    app.ui.selectField(paneId, field);
-  }, [app, paneId, field, value]);
+    selectPane(paneId, "insert");
+    selectField(paneId, field);
+  }, [paneId, field, value, selectPane, selectField]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -73,9 +76,9 @@ export function useDetailField({
 
       e.preventDefault();
       commit();
-      app.ui.setMode("normal");
+      setMode("normal");
     },
-    [allowNewline, app, commit, draft, value],
+    [allowNewline, commit, draft, value, setMode],
   );
 
   return { draft, setDraft, editing, commit, requestEdit, onKeyDown };

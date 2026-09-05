@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { availableKeys, getKeyBinding, keyBindings, resolve } from "./registry";
-import type { KeyContext, KeyQueryContext, Mode } from "./types";
+import type { KeyQueryContext, Mode } from "./types";
 import type { DetailField, ListPane } from "../pane/types";
 
 type CtxOptions = {

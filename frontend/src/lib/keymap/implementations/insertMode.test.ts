@@ -19,7 +19,7 @@ function ctx(): KeyContext {
       update: vi.fn(),
     },
   };
-  return { app, pane: app.ui.panes[0] };
+  return { app, pane: useUiStore.getState().panes[0] };
 }
 
 beforeEach(() => {

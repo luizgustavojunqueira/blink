@@ -2,7 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { useEffect } from "react";
 import { getTheme, setTheme } from "./lib/theme";
-import { useAppContext } from "./hooks/useAppContext";
+import { getAppContext } from "./lib/appContext";
 import { useKeyMap } from "./hooks/useKeyMap";
 import { useUiStore } from "./stores/ui";
 import { useVisiblePanes } from "./hooks/usePane";
@@ -10,8 +10,7 @@ import { paneRegistry } from "./lib/pane/registry";
 import Hint from "./components/hint/hint";
 
 function Main() {
-  const app = useAppContext();
-  useKeyMap(app);
+  useKeyMap(getAppContext());
 
   useEffect(() => {
     if (typeof window === "undefined") return;

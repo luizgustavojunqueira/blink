@@ -1,7 +1,7 @@
 .PHONY: dev-api dev-ui build generate test test-back test-front
 
 dev-api:
-	sudo docker compose --profile dev up --build
+	cd backend && DB_PATH=../data/blink.db air
 
 dev-ui:
 	cd frontend && bun run dev

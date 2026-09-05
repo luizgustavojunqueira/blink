@@ -33,7 +33,7 @@ function ItemComponent({ item, paneId }: IItem) {
       onDoubleClick={() => {
         select(paneId, item.guid);
 
-        pushPane(createDetailPane(crypto.randomUUID(), item.guid, item.guid));
+        pushPane(createDetailPane(crypto.randomUUID(), item.guid));
       }}
     >
       <span className={`text-sm w-20 shrink-0 ${statusColor[item.status] ?? "text-fg-dim"}`}>

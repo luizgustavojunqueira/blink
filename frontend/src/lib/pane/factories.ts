@@ -12,13 +12,8 @@ export const createListPane = (id: string, parentId: string | null): ListPane =>
 
 export const createRootPane = (): ListPane => createListPane("root", null);
 
-export const createDetailPane = (
-  id: string,
-  parentId: string | null,
-  itemId: string,
-): DetailPane => ({
+export const createDetailPane = (id: string, itemId: string): DetailPane => ({
   id,
-  parentId,
   type: "detail",
   itemId,
   selectedField: "title",

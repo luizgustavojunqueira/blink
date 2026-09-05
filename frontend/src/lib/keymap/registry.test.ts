@@ -32,7 +32,6 @@ const detailCtx = (mode: Mode, selectedField: DetailField): KeyQueryContext => {
   const pane = {
     id: "detail-0",
     type: "detail" as const,
-    parentId: null,
     itemId: "item-1",
     selectedField,
   };

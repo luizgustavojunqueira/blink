@@ -46,7 +46,7 @@ function seed(
   item: GetItemResponse = makeItem(),
 ) {
   const root = createRootPane();
-  const detail = { ...createDetailPane(DETAIL_ID, root.id, item.guid), selectedField };
+  const detail = { ...createDetailPane(DETAIL_ID, item.guid), selectedField };
   useUiStore.setState({ mode, panes: [root, detail], activePaneId: DETAIL_ID });
   mockItems.findItem.mockReturnValue(item);
   return item;

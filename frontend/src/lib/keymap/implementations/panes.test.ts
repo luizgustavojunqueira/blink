@@ -43,7 +43,6 @@ describe("list:l", () => {
     expect(store.panes[1]).toMatchObject({
       type: "detail",
       itemId: "item-1",
-      parentId: "item-1",
     });
     expect(store.activePaneId).toBe(store.panes[1].id);
   });
@@ -64,7 +63,6 @@ describe("list:l", () => {
     const c = ctx();
     c.pane = {
       id: "d1",
-      parentId: null,
       type: "detail",
       itemId: "item-1",
       selectedField: "title",
@@ -94,7 +92,7 @@ describe("list:h", () => {
   it("closes a detail pane just the same, since popping does not care about pane type", () => {
     const root = createRootPane();
     useUiStore.setState({
-      panes: [root, createDetailPane("d1", root.id, "item-1")],
+      panes: [root, createDetailPane("d1", "item-1")],
       activePaneId: "d1",
     });
 

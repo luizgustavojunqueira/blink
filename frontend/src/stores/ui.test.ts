@@ -221,7 +221,7 @@ describe("ui store: escape", () => {
 
   it("pops the detail pane in normal mode, without leaving a stale copy behind", () => {
     const root = createRootPane();
-    const detail = createDetailPane("d1", root.id, "item-1");
+    const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: "d1" });
 
     state().escape();
@@ -232,7 +232,7 @@ describe("ui store: escape", () => {
 
   it("only leaves insert mode on the first escape, without popping the detail pane yet", () => {
     const root = createRootPane();
-    const detail = createDetailPane("d1", root.id, "item-1");
+    const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({ mode: "insert", panes: [root, detail], activePaneId: "d1" });
 
     state().escape();
@@ -243,7 +243,7 @@ describe("ui store: escape", () => {
   });
 
   it("does nothing when the detail pane is the only pane left", () => {
-    const detail = createDetailPane("d1", null, "item-1");
+    const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "d1" });
 
     state().escape();
@@ -280,7 +280,7 @@ describe("ui store: select", () => {
 
   it("does nothing on a detail pane", () => {
     const root = createRootPane();
-    const detail = createDetailPane("d1", root.id, "item-1");
+    const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: "d1" });
 
     state().select("d1", "x");
@@ -355,9 +355,34 @@ describe("ui store: openDetail", () => {
     expect(state().activePaneId).toBe(state().panes[1].id);
   });
 
+  it("only moves the focus when the child detail already shows the item", () => {
+    const root = createRootPane();
+    root.selectedId = "item-1";
+    const detail = createDetailPane("d1", "item-1");
+    useUiStore.setState({ panes: [root, detail], activePaneId: root.id });
+    const before = state().panes;
+
+    state().openDetail("item-1");
+
+    expect(state().panes).toBe(before);
+    expect(state().activePaneId).toBe("d1");
+  });
+
+  it("retargets the child detail instead of stacking a new pane", () => {
+    const root = createRootPane();
+    const detail = createDetailPane("d1", "old");
+    useUiStore.setState({ panes: [root, detail], activePaneId: root.id });
+
+    state().openDetail("item-1");
+
+    expect(state().panes).toHaveLength(2);
+    expect(state().panes[1]).toMatchObject({ id: "d1", itemId: "item-1" });
+    expect(state().activePaneId).toBe("d1");
+  });
+
   it("updates the item id when the active pane is already a detail", () => {
     const root = createRootPane();
-    const detail = createDetailPane("d1", root.id, "old");
+    const detail = createDetailPane("d1", "old");
     useUiStore.setState({ panes: [root, detail], activePaneId: "d1" });
 
     state().openDetail("new");
@@ -418,7 +443,7 @@ describe("ui store: moveLeft", () => {
 
 describe("ui store: moveField", () => {
   function seedDetail(selectedField: DetailPane["selectedField"] = "title") {
-    const detail = { ...createDetailPane("d1", null, "item-1"), selectedField };
+    const detail = { ...createDetailPane("d1", "item-1"), selectedField };
     useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "d1" });
     return () => useUiStore.getState().panes[0] as DetailPane;
   }
@@ -475,7 +500,7 @@ describe("ui store: moveField", () => {
 describe("ui store: selectField", () => {
   it("selects the field and activates the pane", () => {
     const root = createRootPane();
-    const detail = createDetailPane("d1", root.id, "item-1");
+    const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: root.id });
 
     state().selectField("d1", "status");
@@ -485,7 +510,7 @@ describe("ui store: selectField", () => {
   });
 
   it("does nothing when the field is already selected", () => {
-    const detail = { ...createDetailPane("d1", null, "item-1"), selectedField: "status" as const };
+    const detail = { ...createDetailPane("d1", "item-1"), selectedField: "status" as const };
     useUiStore.setState({ mode: "normal", panes: [detail], activePaneId: "root" });
 
     state().selectField("d1", "status");
@@ -506,7 +531,7 @@ describe("ui store: selectField", () => {
 describe("ui store: selectPane", () => {
   it("activates the pane and sets the given mode", () => {
     const root = createRootPane();
-    const detail = createDetailPane("d1", root.id, "item-1");
+    const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({ mode: "normal", panes: [root, detail], activePaneId: root.id });
 
     state().selectPane("d1", "insert");

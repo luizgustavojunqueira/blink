@@ -15,7 +15,6 @@ export type ListPane = {
 export type DetailPane = {
   id: string;
   type: "detail";
-  parentId: string | null;
   itemId: string;
   selectedField: DetailField | null;
 };

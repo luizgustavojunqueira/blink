@@ -1,28 +1,25 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { memo, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
 import TextField from "../textField/textField";
 import Helper from "./helper";
 import { usePromptHelper } from "../../hooks/promptHelper/usePromptHelper";
 import type { ExecuteResult } from "../../lib/commands/types";
-import { useUiStore } from "../../stores/ui";
 import { useAppContext } from "../../hooks/useAppContext";
-import { useListPanePrompt, usePaneIsActive } from "../../hooks/usePane";
+import { useListPanePrompt, usePaneEditing } from "../../hooks/usePane";
 import { tokenizePrompt } from "./promptTokenize";
 
 interface IPrompt {
   paneId: string;
 }
 
-export default function Prompt({ paneId }: IPrompt) {
+function PromptComponent({ paneId }: IPrompt) {
   const app = useAppContext();
   const [message, setMessage] = useState<string>("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const prompt = useListPanePrompt(paneId);
-  const isActive = usePaneIsActive(paneId);
-  const mode = useUiStore((s) => s.mode);
-  const editing = isActive && mode === "insert";
+  const editing = usePaneEditing(paneId);
 
   const helper = usePromptHelper(inputRef, (newPrompt: string) => {
     app.ui.setPrompt(newPrompt);
@@ -102,3 +99,6 @@ export default function Prompt({ paneId }: IPrompt) {
     </div>
   );
 }
+
+const Prompt = memo(PromptComponent);
+export default Prompt;

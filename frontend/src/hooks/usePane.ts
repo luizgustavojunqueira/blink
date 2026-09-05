@@ -1,12 +1,15 @@
 import { useCallback, useMemo, useRef } from "react";
 import { useUiStore } from "../stores/ui";
-import type { ListPane, Pane, PaneType } from "../lib/pane/types";
+import type { DetailField, DetailPane, ListPane, Pane, PaneType } from "../lib/pane/types";
 import type { GetItemRequest } from "../types/backend";
 
 const EMPTY_FILTER: GetItemRequest = {};
 
 const findListPane = (panes: Pane[], paneId: string) =>
   panes.find((p): p is ListPane => p.id === paneId && p.type === "list");
+
+const findDetailPane = (panes: Pane[], paneId: string) =>
+  panes.find((p): p is DetailPane => p.id === paneId && p.type === "detail");
 
 function usePaneCore<N extends Pane>(
   paneId: string,
@@ -79,5 +82,36 @@ export function useVisiblePanes(count: number) {
       },
       [count],
     ),
+  );
+}
+
+export function useDetailPaneItemId(paneId: string) {
+  return useUiStore(useCallback((s) => findDetailPane(s.panes, paneId)?.itemId ?? "", [paneId]));
+}
+
+export function useDetailFieldSelected(paneId: string, field: DetailField) {
+  return useUiStore(
+    useCallback(
+      (s) => findDetailPane(s.panes, paneId)?.selectedField === field,
+      [paneId, field],
+    ),
+  );
+}
+
+export function useDetailFieldEditing(paneId: string, field: DetailField) {
+  return useUiStore(
+    useCallback(
+      (s) =>
+        s.activePaneId === paneId &&
+        s.mode === "insert" &&
+        findDetailPane(s.panes, paneId)?.selectedField === field,
+      [paneId, field],
+    ),
+  );
+}
+
+export function usePaneEditing(paneId: string) {
+  return useUiStore(
+    useCallback((s) => s.activePaneId === paneId && s.mode === "insert", [paneId]),
   );
 }

@@ -11,13 +11,15 @@ function isSingleSpaceAway(text: string, wordStart: number): boolean {
   return wordStart === 1 || text[wordStart - 2] !== " ";
 }
 
+const EMPTY_TAGS: string[] = [];
+
 export function usePromptHelper(
   inputRef: React.RefObject<HTMLTextAreaElement | null>,
   setPrompt: (prompt: string) => void,
 ) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [options, setOptions] = useState<PromptOption[]>([]);
-  const { data: tags = [] } = useTags();
+  const { data: tags = EMPTY_TAGS } = useTags();
 
   const isOpen = options.length > 0;
 

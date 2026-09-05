@@ -13,6 +13,7 @@ const mockItems = vi.hoisted(() => ({
 
 vi.mock("../../hooks/useItems", () => ({
   useTags: () => ({ data: [] }),
+  useItem: (guid: string) => mockItems.findItem(guid),
 }));
 
 vi.mock("../../hooks/useAppContext", () => ({

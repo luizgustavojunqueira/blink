@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useSyncExternalStore } from "react";
 import type { GetItemRequest, GetItemResponse } from "../types/backend";
 import { getItems, getTags } from "../api/items";
 import { generateMockItems } from "../utils/mockItems";
@@ -34,4 +35,22 @@ export function useTags() {
       return res.tags ?? [];
     },
   });
+}
+
+export function useItem(guid: string) {
+  const queryClient = useQueryClient();
+
+  const subscribe = useCallback(
+    (onChange: () => void) => queryClient.getQueryCache().subscribe(onChange),
+    [queryClient],
+  );
+
+  const getSnapshot = useCallback(() => {
+    for (const [, list] of queryClient.getQueriesData<GetItemResponse[]>({ queryKey: ["items"] })) {
+      const hit = list?.find((i) => i.guid === guid);
+      if (hit) return hit;
+    }
+  }, [queryClient, guid]);
+
+  return useSyncExternalStore(subscribe, getSnapshot);
 }

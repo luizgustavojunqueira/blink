@@ -4,16 +4,22 @@ import Prompt from "../prompt/prompt";
 import Item from "./item";
 import SelectionScroller from "./selectionScroller";
 import { useEffect, useRef } from "react";
-import { useListPaneFilter, usePaneIsActive } from "../../hooks/usePane";
+import { paneIsActive, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useUiStore } from "../../stores/ui";
+import type { GetItemRequest } from "../../types/backend";
+
+const EMPTY_FILTER: GetItemRequest = {};
+
+const selectFilter: PaneSelector<GetItemRequest> = (pane) =>
+  pane?.type === "list" ? pane.filter : EMPTY_FILTER;
 
 interface IItemList {
   paneId: string;
 }
 
 export function ItemList({ paneId }: IItemList) {
-  const filter = useListPaneFilter(paneId);
-  const isActive = usePaneIsActive(paneId);
+  const filter = usePaneValue(paneId, selectFilter);
+  const isActive = usePaneValue(paneId, paneIsActive);
   const setRenderedIds = useUiStore((s) => s.setRenderedIds);
 
   const { data: items = [], isFetching, isError } = useItems(filter);

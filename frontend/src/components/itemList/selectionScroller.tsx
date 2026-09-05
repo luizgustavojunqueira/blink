@@ -1,5 +1,8 @@
 import { useEffect, type RefObject } from "react";
-import { useListPaneSelectedId } from "../../hooks/usePane";
+import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
+
+const selectSelectedId: PaneSelector<string | null> = (pane) =>
+  pane?.type === "list" ? pane.selectedId : null;
 
 interface ISelectionScroller {
   paneId: string;
@@ -7,7 +10,7 @@ interface ISelectionScroller {
 }
 
 export default function SelectionScroller({ paneId, listRef }: ISelectionScroller) {
-  const selectedId = useListPaneSelectedId(paneId);
+  const selectedId = usePaneValue(paneId, selectSelectedId);
 
   useEffect(() => {
     if (!selectedId) return;

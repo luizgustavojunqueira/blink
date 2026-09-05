@@ -1,6 +1,7 @@
-import { Fragment, memo, useMemo, useRef } from "react";
+import { Fragment, memo, useMemo } from "react";
 import { availableKeys, type AvailableBinding } from "../../lib/keymap/registry";
 import { useUiStore, type UiState } from "../../stores/ui";
+import { useCachedSelector } from "../../hooks/usePane";
 
 const NO_HINTS: AvailableBinding[] = [];
 
@@ -19,15 +20,6 @@ const sameHints = (a: AvailableBinding[], b: AvailableBinding[]) =>
       x.keys.length === b[i].keys.length &&
       x.keys.every((k, j) => k === b[i].keys[j]),
   );
-
-function useHintsSelector() {
-  const prev = useRef<AvailableBinding[]>(NO_HINTS);
-
-  return (s: UiState) => {
-    const next = selectHints(s);
-    return sameHints(prev.current, next) ? prev.current : (prev.current = next);
-  };
-}
 
 const replaceArrows = (t: string) => {
   if (t !== undefined && t != null)
@@ -57,7 +49,7 @@ function groupBy<T>(items: Array<T>, field: keyof T): Record<string, Array<T>> {
 
 function HintComponent() {
   const showHint = useUiStore((s) => s.showHint);
-  const hints = useUiStore(useHintsSelector());
+  const hints = useCachedSelector(selectHints, sameHints, NO_HINTS);
   const hintsGrouped = useMemo(() => groupBy(hints, "group"), [hints]);
 
   if (!showHint) return null;

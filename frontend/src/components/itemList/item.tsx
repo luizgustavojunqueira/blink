@@ -1,7 +1,7 @@
 import { memo, useCallback } from "react";
 import { useUiStore } from "../../stores/ui";
+import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { createDetailPane } from "../../lib/pane/factories";
-import type { ListPane } from "../../lib/pane/types";
 import type { GetItemResponse } from "../../types/backend";
 import { priorityColor, priorityMapper, statusColor, statusMapper } from "../../utils/status";
 
@@ -13,15 +13,12 @@ interface IItem {
 function ItemComponent({ item, paneId }: IItem) {
   const isDone = item.status === "DONE" || item.status === "CANCELED";
 
-  const isSelected = useUiStore(
-    useCallback(
-      (s) => {
-        const pane = s.panes.find((p): p is ListPane => p.id === paneId && p.type === "list");
-        return pane?.selectedId === item.guid;
-      },
-      [paneId, item.guid],
-    ),
+  const selectIsSelected = useCallback<PaneSelector<boolean>>(
+    (pane) => pane?.type === "list" && pane.selectedId === item.guid,
+    [item.guid],
   );
+
+  const isSelected = usePaneValue(paneId, selectIsSelected);
 
   const select = useUiStore((s) => s.select);
   const pushPane = useUiStore((s) => s.pushPane);

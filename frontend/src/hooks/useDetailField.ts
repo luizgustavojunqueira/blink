@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
 import { useAppContext } from "./useAppContext";
-import { useDetailFieldEditing } from "./usePane";
+import { usePaneValue, type PaneSelector } from "./usePane";
 import type { DetailField } from "../lib/pane/types";
 
 interface UseDetailFieldOptions {
@@ -23,7 +23,16 @@ export function useDetailField({
   allowNewline = false,
 }: UseDetailFieldOptions) {
   const app = useAppContext();
-  const editing = useDetailFieldEditing(paneId, field);
+  const selectEditing = useCallback<PaneSelector<boolean>>(
+    (pane, ui) =>
+      pane?.id === ui.activePaneId &&
+      ui.mode === "insert" &&
+      pane.type === "detail" &&
+      pane.selectedField === field,
+    [field],
+  );
+
+  const editing = usePaneValue(paneId, selectEditing);
   const [draft, setDraft] = useState(value);
 
   useEffect(() => {

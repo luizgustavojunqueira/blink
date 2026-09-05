@@ -6,8 +6,10 @@ import Helper from "./helper";
 import { usePromptHelper } from "../../hooks/promptHelper/usePromptHelper";
 import type { ExecuteResult } from "../../lib/commands/types";
 import { useAppContext } from "../../hooks/useAppContext";
-import { useListPanePrompt, usePaneEditing } from "../../hooks/usePane";
+import { paneEditing, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { tokenizePrompt } from "./promptTokenize";
+
+const selectPrompt: PaneSelector<string> = (pane) => (pane?.type === "list" ? pane.prompt : "");
 
 interface IPrompt {
   paneId: string;
@@ -18,8 +20,8 @@ function PromptComponent({ paneId }: IPrompt) {
   const [message, setMessage] = useState<string>("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const prompt = useListPanePrompt(paneId);
-  const editing = usePaneEditing(paneId);
+  const prompt = usePaneValue(paneId, selectPrompt);
+  const editing = usePaneValue(paneId, paneEditing);
 
   const helper = usePromptHelper(inputRef, (newPrompt: string) => {
     app.ui.setPrompt(newPrompt);

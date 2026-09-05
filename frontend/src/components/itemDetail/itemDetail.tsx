@@ -1,11 +1,13 @@
 import { useItem } from "../../hooks/useItems";
-import { useDetailPaneItemId, usePaneIsActive } from "../../hooks/usePane";
+import { paneIsActive, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { DETAIL_FIELDS } from "../../lib/pane/types";
 import { priorityColorBg, priorityMapper, statusColorBg, statusMapper } from "../../utils/status";
 import { TAG_MODIFIER } from "../../lib/modifiers/delimiters";
 import DetailChoiceField from "./detailChoiceField";
 import DetailTagsField from "./detailTagsField";
 import DetailTextField from "./detailTextField";
+
+const selectItemId: PaneSelector<string> = (pane) => (pane?.type === "detail" ? pane.itemId : "");
 
 interface IItemDetail {
   paneId: string;
@@ -14,8 +16,8 @@ interface IItemDetail {
 const mapTagsToString = (tags: string[]) => tags.map((tag) => `${TAG_MODIFIER}${tag}`).join(" ");
 
 export default function ItemDetail({ paneId }: IItemDetail) {
-  const itemId = useDetailPaneItemId(paneId);
-  const isActive = usePaneIsActive(paneId);
+  const itemId = usePaneValue(paneId, selectItemId);
+  const isActive = usePaneValue(paneId, paneIsActive);
   const item = useItem(itemId);
 
   if (!item) return null;

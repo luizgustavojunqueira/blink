@@ -1,5 +1,5 @@
-import { memo, type ReactNode } from "react";
-import { useDetailFieldSelected } from "../../hooks/usePane";
+import { memo, useCallback, type ReactNode } from "react";
+import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import type { DetailField } from "../../lib/pane/types";
 
 interface IDetailFieldRow {
@@ -9,7 +9,12 @@ interface IDetailFieldRow {
 }
 
 function DetailFieldRowComponent({ paneId, field, children }: IDetailFieldRow) {
-  const isSelected = useDetailFieldSelected(paneId, field);
+  const select = useCallback<PaneSelector<boolean>>(
+    (pane) => pane?.type === "detail" && pane.selectedField === field,
+    [field],
+  );
+
+  const isSelected = usePaneValue(paneId, select);
 
   return (
     <div className="flex flex-col p-2">

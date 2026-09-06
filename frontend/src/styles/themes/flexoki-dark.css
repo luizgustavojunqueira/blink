@@ -1,0 +1,21 @@
+.theme-flexoki-dark {
+  --bg: #100f0f;
+  --bg-soft: #1c1b1a;
+  --bg-lighter: #282726;
+  --fg: #cecdc3;
+  --fg-dim: #b7b5ac;
+  --fg-muted: #878580;
+  --accent: #4385be;
+  --urgent: #d14d41;
+  --high: #da702c;
+  --normal: #d0a215;
+  --low: #879a39;
+  --done: #879a39;
+  --tag: #8b7ec8;
+  --group: #d0a215;
+  --task: #b7b5ac;
+  --status: #3aa99f;
+  --border: #403e3c;
+  --cursor: #cecdc3;
+  --danger: #d14d41;
+}

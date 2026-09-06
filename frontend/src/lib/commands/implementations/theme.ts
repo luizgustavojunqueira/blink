@@ -2,7 +2,7 @@ import { currentArgToken } from "../argToken";
 import { toPromptOption } from "../../promptOptions";
 import type { CommandDefinition } from "../types";
 
-const THEMES = ["gruvbox", "catppuccin", "nord"];
+export const THEMES = ["gruvbox", "catppuccin-mocha", "nord", "flexoki-light", "flexoki-dark"];
 
 export const themeCommand: CommandDefinition = {
   id: "theme",

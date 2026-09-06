@@ -2,10 +2,13 @@ import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { usePromptHelper } from "./usePromptHelper";
 import { COMMAND_PREFIX } from "../../lib/commands/registry";
+import { THEMES } from "../../lib/commands/implementations/theme";
 
 vi.mock("../useItems", () => ({
   useTags: vi.fn(() => ({ data: [] })),
 }));
+
+const A_THEME = THEMES[0];
 
 function cmd(rest: string) {
   return `${COMMAND_PREFIX}${rest}`;
@@ -177,7 +180,7 @@ describe("usePromptHelper", () => {
 
   it("opens COMMAND_ARG options when typing <prefix>theme <partial>", () => {
     const setPrompt = vi.fn();
-    const inputRef = createInputRef(cmd("theme c"));
+    const inputRef = createInputRef(cmd(`theme ${A_THEME.slice(0, 3)}`));
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
 
@@ -185,7 +188,7 @@ describe("usePromptHelper", () => {
 
     expect(result.current.isOpen).toBe(true);
     expect(result.current.options.every((o) => o.kind === "COMMAND_ARG")).toBe(true);
-    expect(result.current.options.some((o) => o.value === "catppuccin")).toBe(true);
+    expect(result.current.options.some((o) => o.value === A_THEME)).toBe(true);
   });
 
   it("opens COMMAND_ARG options right after a single space with nothing typed yet", () => {
@@ -197,12 +200,12 @@ describe("usePromptHelper", () => {
     act(() => result.current.update());
 
     expect(result.current.isOpen).toBe(true);
-    expect(result.current.options).toHaveLength(3);
+    expect(result.current.options).toHaveLength(THEMES.length);
   });
 
   it("does not open COMMAND_ARG options when more than one space separates from the previous token", () => {
     const setPrompt = vi.fn();
-    const value = cmd("theme gruv") + " ".repeat(10);
+    const value = cmd(`theme ${A_THEME.slice(0, 4)}`) + " ".repeat(10);
     const inputRef = createInputRef(value);
 
     const { result } = renderHook(() => usePromptHelper(inputRef, setPrompt));
@@ -257,7 +260,7 @@ describe("usePromptHelper", () => {
   });
 
   it("selects a COMMAND_ARG option by replacing the whole word, not prefixing it", () => {
-    const inputRef = createInputRef(cmd("theme c"));
+    const inputRef = createInputRef(cmd(`theme ${A_THEME.slice(0, 3)}`));
     const setPrompt = vi.fn((next: string) => {
       inputRef.current!.value = next;
     });
@@ -266,15 +269,15 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.update());
 
-    const catppuccinIndex = result.current.options.findIndex((o) => o.value === "catppuccin");
+    const themeIndex = result.current.options.findIndex((o) => o.value === A_THEME);
 
-    act(() => result.current.onSelect(catppuccinIndex));
+    act(() => result.current.onSelect(themeIndex));
 
-    expect(setPrompt).toHaveBeenCalledWith(cmd("theme catppuccin"));
+    expect(setPrompt).toHaveBeenCalledWith(cmd(`theme ${A_THEME}`));
   });
 
   it("selecting a COMMAND_ARG option replaces the whole argument, even with a stray space in the middle", () => {
-    const inputRef = createInputRef(cmd("theme gr u"));
+    const inputRef = createInputRef(cmd(`theme ${A_THEME.slice(0, 2)} ${A_THEME.slice(2, 3)}`));
     const setPrompt = vi.fn((next: string) => {
       inputRef.current!.value = next;
     });
@@ -283,16 +286,19 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.update());
 
-    const gruvboxIndex = result.current.options.findIndex((o) => o.value === "gruvbox");
-    expect(gruvboxIndex).toBeGreaterThanOrEqual(0);
+    const themeIndex = result.current.options.findIndex((o) => o.value === A_THEME);
+    expect(themeIndex).toBeGreaterThanOrEqual(0);
 
-    act(() => result.current.onSelect(gruvboxIndex));
+    act(() => result.current.onSelect(themeIndex));
 
-    expect(setPrompt).toHaveBeenCalledWith(cmd("theme gruvbox"));
+    expect(setPrompt).toHaveBeenCalledWith(cmd(`theme ${A_THEME}`));
   });
 
   it("selecting mid-word replaces the entire word instead of splicing into it", () => {
-    const inputRef = createInputRef(cmd("theme catppuccin"), cmd("theme catp").length);
+    const inputRef = createInputRef(
+      cmd(`theme ${A_THEME}`),
+      cmd(`theme ${A_THEME.slice(0, 4)}`).length,
+    );
     const setPrompt = vi.fn((next: string) => {
       inputRef.current!.value = next;
     });
@@ -301,11 +307,11 @@ describe("usePromptHelper", () => {
 
     act(() => result.current.update());
 
-    const catppuccinIndex = result.current.options.findIndex((o) => o.value === "catppuccin");
+    const themeIndex = result.current.options.findIndex((o) => o.value === A_THEME);
 
-    act(() => result.current.onSelect(catppuccinIndex));
+    act(() => result.current.onSelect(themeIndex));
 
-    expect(setPrompt).toHaveBeenCalledWith(cmd("theme catppuccin"));
+    expect(setPrompt).toHaveBeenCalledWith(cmd(`theme ${A_THEME}`));
   });
 
   it("selects a MODIFIER and reopens its options", () => {

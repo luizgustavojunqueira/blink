@@ -1,10 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { createItem, updateItem } from "../api/items";
+import { bulkUpdateItem, createItem, updateItem } from "../api/items";
 import { useUiStore } from "../stores/ui";
 import { queryClient } from "./queryClient";
 import { setTheme } from "./theme";
 import type { AppContext } from "./types";
 import type {
+  BulkUpdateItemRequest,
   CreateItemRequest,
   GetItemResponse,
   ItemPriority,
@@ -19,6 +20,14 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     })) {
       const hit = list?.find((i) => i.guid === guid);
       if (hit) return hit;
+    }
+  };
+
+  const findItems = (guids: string[]) => {
+    for (const [, list] of client.getQueriesData<GetItemResponse[]>({
+      queryKey: ["items"],
+    })) {
+      return list?.filter((i) => guids.includes(i.guid));
     }
   };
 
@@ -43,6 +52,13 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     return updated;
   };
 
+  const bulkUpdate = async (req: BulkUpdateItemRequest) => {
+    const updated = await bulkUpdateItem(req);
+    client.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
+      old?.map((oldItem) => updated.find((u) => u.guid === oldItem.guid) ?? oldItem),
+    );
+  };
+
   const setField = (
     guid: string,
     key: keyof UpdateItemRequest,
@@ -53,7 +69,19 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     return update({ guid, [key]: value });
   };
 
-  return { findItem, setField, create, update };
+  const bulkSetField = (
+    guids: string[],
+    key: keyof UpdateItemRequest,
+    value: string | string[] | ItemStatus | ItemPriority,
+  ) => {
+    const updateableGuids = findItems(guids)
+      ?.filter((i) => i[key] != value)
+      .map((i) => i.guid);
+    if (updateableGuids === undefined || updateableGuids.length === 0) return;
+    return bulkUpdate({ guids: updateableGuids, [key]: value });
+  };
+
+  return { findItem, setField, create, update, bulkSetField };
 }
 
 export function createAppContext(client: QueryClient): AppContext {

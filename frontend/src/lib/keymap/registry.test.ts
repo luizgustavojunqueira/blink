@@ -9,24 +9,39 @@ type CtxOptions = {
   panes?: number;
   activeIdx?: number;
   selectedId?: string | null;
+  markedIds?: Set<string> | null;
   itemType?: ItemType;
 };
 
-const listPane = (id: string, selectedId: string | null): ListPane => ({
+const listPane = (
+  id: string,
+  selectedId: string | null,
+  markedIds: Set<string> = new Set(),
+): ListPane => ({
   id,
   type: "list",
   prompt: "",
   parentId: null,
   selectedId,
   renderedIds: selectedId ? [selectedId] : [],
+  markedIds,
+  renderedTypes: {},
   filter: {},
 });
 
 const ctx = (
   mode: Mode,
-  { panes = 1, activeIdx = 0, selectedId = "item-1", itemType = Task }: CtxOptions = {},
+  {
+    panes = 1,
+    activeIdx = 0,
+    selectedId = "item-1",
+    markedIds = null,
+    itemType = Task,
+  }: CtxOptions = {},
 ) => {
-  const list = Array.from({ length: panes }, (_, i) => listPane(`pane-${i}`, selectedId));
+  const list = Array.from({ length: panes }, (_, i) =>
+    listPane(`pane-${i}`, selectedId, markedIds ?? new Set()),
+  );
   const pane = list[activeIdx];
   return {
     ui: { mode, panes: list, activePaneId: pane.id },
@@ -76,7 +91,8 @@ describe("keymap registry: resolve", () => {
       ctx("normal"),
       ctx("normal", { itemType: Group }),
       ctx("insert"),
-      ctx("normal", { selectedId: null }),
+      ctx("normal", { selectedId: null, markedIds: new Set() }),
+      ctx("normal", { markedIds: new Set(["item-1"]) }),
       ctx("normal", { panes: 2, activeIdx: 0 }),
       ctx("normal", { panes: 2, activeIdx: 1 }),
       detailCtx("normal", "status"),

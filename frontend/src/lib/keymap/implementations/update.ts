@@ -27,7 +27,12 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
     group: "item",
   },
   when: ({ pane }) => {
-    return pane.type === "list" && pane.selectedId !== null && pane.selectedId !== undefined;
+    return (
+      pane.type === "list" &&
+      pane.markedIds.size === 0 &&
+      pane.selectedId !== null &&
+      pane.selectedId !== undefined
+    );
   },
   run: ({ app, pane }) => {
     if (pane.type !== "list") return;
@@ -35,6 +40,28 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
   },
 });
 
+const bulkUpdateStatusBinds = (status: ItemStatus): KeyBinding => ({
+  id: `bulkUpdateTo:${status}`,
+  keys: [`${statusToKey[status]}`],
+  modes: ["normal"],
+  scope: "list",
+  description: `Bulk ${statusMapper[status]}`,
+  hint: {
+    group: "item",
+  },
+  when: ({ pane }) => {
+    return pane.type === "list" && pane.markedIds.size > 0;
+  },
+  run: ({ app, pane }) => {
+    if (pane.type !== "list") return;
+    if (pane.markedIds.size > 0) app.items.bulkSetField([...pane.markedIds], "status", status);
+  },
+});
+
 export const statusKeyBindings: KeyBinding[] = Object.keys(statusToKey).map((s) =>
   updateStatusBinds(s),
+);
+
+export const bulkUpdateStatusBindings: KeyBinding[] = Object.keys(statusToKey).map((s) =>
+  bulkUpdateStatusBinds(s),
 );

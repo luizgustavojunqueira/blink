@@ -9,7 +9,7 @@ import { prefixKeyBindings } from "./implementations/insertMode";
 import { listNavigationBindings } from "./implementations/listNavigation";
 import { markBindings } from "./implementations/mark";
 import { paneNavigation } from "./implementations/panes";
-import { statusKeyBindings } from "./implementations/update";
+import { bulkUpdateStatusBindings, statusKeyBindings } from "./implementations/update";
 import type { KeyBinding, KeyQueryContext } from "./types";
 
 export const keyBindings: KeyBinding[] = [
@@ -23,6 +23,7 @@ export const keyBindings: KeyBinding[] = [
   ...detailPriorityKeyBindings,
   toggleHintBind,
   ...markBindings,
+  ...bulkUpdateStatusBindings,
 ];
 
 export type KeyMapId = keyof typeof keyBindings;

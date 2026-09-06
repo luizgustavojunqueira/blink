@@ -346,6 +346,15 @@ export const useUiStore = create<UiStore>(
               }),
             };
           }
+
+          if (pane.markedIds.size !== 0) {
+            return {
+              panes: mapActivePane(s.panes, s.activePaneId, {
+                ...pane,
+                markedIds: new Set(),
+              }),
+            };
+          }
           if (pane.selectedId !== null) {
             return {
               panes: mapActivePane(s.panes, s.activePaneId, {

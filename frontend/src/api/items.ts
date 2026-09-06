@@ -1,4 +1,5 @@
 import type {
+  BulkUpdateItemRequest,
   CreateItemRequest,
   GetItemRequest,
   GetItemResponse,
@@ -41,4 +42,11 @@ export function updateItem(req: UpdateItemRequest) {
 
 export function getTags() {
   return api<GetTagsResponse>("/tags");
+}
+
+export function bulkUpdateItem(req: BulkUpdateItemRequest) {
+  return api<GetItemResponse[]>("/items/bulk", {
+    method: "POST",
+    body: JSON.stringify(req),
+  });
 }

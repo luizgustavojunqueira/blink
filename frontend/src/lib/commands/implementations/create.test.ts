@@ -11,6 +11,7 @@ function fakeApp(create = vi.fn().mockResolvedValue({})): AppContext {
     items: {
       findItem: vi.fn(),
       setField: vi.fn(),
+      bulkSetField: vi.fn(),
       create,
       update: vi.fn(),
     },
@@ -133,11 +134,14 @@ describe("createCommand", () => {
   it("creates inside the group the active pane is showing", async () => {
     const create = vi.fn().mockResolvedValue({});
     const child = createListPane("child", "group-1");
-    useUiStore.setState({ panes: [createRootPane(), child], activePaneId: child.id });
+    useUiStore.setState({
+      panes: [createRootPane(), child],
+      activePaneId: child.id,
+    });
 
     await createCommand.execute!({ rawArgs: "buy milk", app: fakeApp(create) });
 
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ parent_id: "group-1" }));
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ parent_guid: "group-1" }));
   });
 
   it("creates at the root when the active pane has no parent", async () => {
@@ -147,7 +151,7 @@ describe("createCommand", () => {
 
     await createCommand.execute!({ rawArgs: "buy milk", app: fakeApp(create) });
 
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ parent_id: undefined }));
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ parent_guid: undefined }));
   });
 
   it("reports a parse error without calling the API", async () => {

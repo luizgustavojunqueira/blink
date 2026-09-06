@@ -12,6 +12,11 @@ export type AppContext = {
   setTheme: (theme: string) => void;
   items: {
     findItem: (guid: string) => GetItemResponse | undefined;
+    bulkSetField: (
+      guids: string[],
+      key: keyof UpdateItemRequest,
+      value: string | string[] | ItemStatus | ItemPriority,
+    ) => void;
     setField: (
       guid: string,
       key: keyof UpdateItemRequest,

@@ -28,7 +28,7 @@ export const createCommand: CommandDefinition = {
       return { message: result.error };
     }
 
-    result.req.parent_id = pane.parentId ?? undefined;
+    result.req.parent_guid = pane.parentId ?? undefined;
 
     try {
       await app.items.create(result.req);

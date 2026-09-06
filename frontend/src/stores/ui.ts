@@ -16,6 +16,7 @@ export type UiState = {
   panes: Pane[];
   activePaneId: string;
   showHint: boolean;
+  currentKeySeq: string;
 };
 
 export type UiActions = {
@@ -41,6 +42,7 @@ export type UiActions = {
   selectField: (paneId: string, selectedField: DetailField) => void;
   selectPane: (paneId: string, mode: Mode) => void;
   toggleHint: () => void;
+  setCurrentKeySeq: (keySeq: string) => void;
 };
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
@@ -134,6 +136,9 @@ export const useUiStore = create<UiStore>(
     panes: [rootPane],
     activePaneId: rootPane.id,
     showHint: true,
+    currentKeySeq: "",
+
+    setCurrentKeySeq: (keySeq: string) => set({ currentKeySeq: keySeq }),
 
     toggleHint: () =>
       set((s) => {

@@ -9,8 +9,6 @@ export function useKeyMap(app: AppContext) {
   const appRef = useRef(app);
   appRef.current = app;
 
-  const currentSeq = useRef<string>("");
-
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const state = useUiStore.getState();
@@ -22,8 +20,10 @@ export function useKeyMap(app: AppContext) {
       const key = eventToKey(e);
       if (!key) return;
 
-      const pending = currentSeq.current;
-      currentSeq.current = "";
+      const pending = state.currentKeySeq;
+      if (pending !== "") {
+        state.setCurrentKeySeq("");
+      }
 
       const attempts = pending ? [`${pending} ${key}`, key] : [key];
 
@@ -42,7 +42,7 @@ export function useKeyMap(app: AppContext) {
         }
 
         if (isPrefix(seq, ctxQuery)) {
-          currentSeq.current = seq;
+          state.setCurrentKeySeq(seq);
           e.preventDefault();
           return;
         }

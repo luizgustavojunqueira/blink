@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import Hint from "./hint";
 import { useUiStore } from "../../stores/ui";
@@ -20,11 +20,21 @@ function show(...entries: AvailableBinding[]) {
   return render(<Hint />);
 }
 
+function keysContainer(description: string) {
+  return screen.getByText(description).previousElementSibling as HTMLElement;
+}
+
 describe("Hint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     const pane = createRootPane();
-    useUiStore.setState({ mode: "normal", panes: [pane], activePaneId: pane.id, showHint: true });
+    useUiStore.setState({
+      mode: "normal",
+      panes: [pane],
+      activePaneId: pane.id,
+      showHint: true,
+      currentKeySeq: "",
+    });
   });
 
   it("heads each group with its name", () => {
@@ -44,21 +54,21 @@ describe("Hint", () => {
   it("joins the alternative keys of one binding with a slash", () => {
     show(entry("a", ["j", "n"], "nav", "Move down"));
 
-    expect(screen.getByText("j/n")).toBeInTheDocument();
+    expect(keysContainer("Move down").textContent).toBe("j/n");
   });
 
   it("renders arrow keys as symbols instead of their event names", () => {
     show(entry("a", ["arrowup", "arrowdown"], "nav", "Move"));
-    expect(screen.getByText("↑/↓")).toBeInTheDocument();
+    expect(keysContainer("Move").textContent).toBe("↑/↓");
 
     show(entry("b", ["arrowleft", "arrowright"], "nav", "Pane"));
-    expect(screen.getByText("←/→")).toBeInTheDocument();
+    expect(keysContainer("Pane").textContent).toBe("←/→");
   });
 
   it("collapses a multi-key sequence into one label, apart from the alternatives", () => {
     show(entry("a", ["g g", "home"], "nav", "Move to top"));
 
-    expect(screen.getByText("gg/home")).toBeInTheDocument();
+    expect(keysContainer("Move to top").textContent).toBe("gg/home");
   });
 
   it("keeps bindings of the same group together under a single header", () => {
@@ -84,5 +94,41 @@ describe("Hint", () => {
 
     expect(mockedAvailableKeys).not.toHaveBeenCalled();
     expect(screen.queryByText("nav")).not.toBeInTheDocument();
+  });
+
+  it("keeps every binding when no key sequence is pending", () => {
+    useUiStore.setState({ currentKeySeq: "" });
+
+    show(entry("a", ["g g"], "nav", "Go to top"), entry("b", ["j"], "nav", "Move down"));
+
+    expect(screen.getByText("Go to top")).toBeInTheDocument();
+    expect(screen.getByText("Move down")).toBeInTheDocument();
+  });
+
+  it("filters out bindings that don't continue the pending sequence", () => {
+    useUiStore.setState({ currentKeySeq: "g" });
+
+    show(entry("a", ["g g"], "nav", "Go to top"), entry("b", ["j"], "nav", "Move down"));
+
+    expect(screen.getByText("Go to top")).toBeInTheDocument();
+    expect(screen.queryByText("Move down")).not.toBeInTheDocument();
+  });
+
+  it("does not match a pending key against a token it is a text-prefix of", () => {
+    useUiStore.setState({ currentKeySeq: "e" });
+
+    show(entry("a", ["escape"], "misc", "Escape"));
+
+    expect(screen.queryByText("Escape")).not.toBeInTheDocument();
+  });
+
+  it("highlights only the token that matches the typed position, not every token", () => {
+    useUiStore.setState({ currentKeySeq: "g" });
+
+    show(entry("a", ["g g"], "nav", "Go to top"));
+
+    const [first, second] = within(keysContainer("Go to top")).getAllByText("g");
+    expect(first).toHaveClass("text-accent");
+    expect(second).not.toHaveClass("text-accent");
   });
 });

@@ -6,6 +6,7 @@ import { TAG_MODIFIER } from "../../lib/modifiers/delimiters";
 import DetailChoiceField from "./detailChoiceField";
 import DetailTagsField from "./detailTagsField";
 import DetailTextField from "./detailTextField";
+import Breadcrumb from "../breadcrumb/breadcrumb";
 
 const selectItemId: PaneSelector<string> = (pane) => (pane?.type === "detail" ? pane.itemId : "");
 
@@ -28,6 +29,7 @@ export default function ItemDetail({ paneId }: IItemDetail) {
         isActive ? "border-b-accent" : "border-bg"
       }`}
     >
+      <Breadcrumb paneId={paneId} />
       <span className="font-medium text-fg-dim p-1">{item.type}</span>
       {DETAIL_FIELDS.map((field) => {
         switch (field) {

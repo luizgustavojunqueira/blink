@@ -8,6 +8,7 @@ import { createRootPane } from "../../lib/pane/factories";
 
 vi.mock("../../hooks/useItems", () => ({
   useItems: vi.fn(),
+  useItem: vi.fn(),
 }));
 
 vi.mock("../prompt/prompt", () => ({

@@ -1,5 +1,5 @@
 import { create, type StateCreator } from "zustand";
-import { Group, Task, type GetItemRequest, type ItemType } from "../types/backend";
+import { Group, type GetItemRequest, type ItemType } from "../types/backend";
 import {
   DETAIL_FIELDS,
   type DetailField,

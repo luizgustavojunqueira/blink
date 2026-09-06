@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
 import { paneIsActive, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useUiStore } from "../../stores/ui";
 import type { GetItemRequest, ItemType } from "../../types/backend";
+import Breadcrumb from "../breadcrumb/breadcrumb";
 
 const EMPTY_FILTER: GetItemRequest = {};
 
@@ -47,6 +48,9 @@ export function ItemList({ paneId }: IItemList) {
       className={`w-full h-full flex flex-col border ${isActive ? "border-b-accent" : "border-bg"}`}
     >
       <Prompt paneId={paneId} />
+      <div className="px-5">
+        <Breadcrumb paneId={paneId} />
+      </div>
 
       <div className="flex-1 overflow-y-auto">
         {isFetching && <Loading />}

@@ -265,3 +265,78 @@ func TestParseOrders(t *testing.T) {
 		})
 	}
 }
+
+func TestBulkUpdateItemRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name        string
+		req         models.BulkUpdateItemRequest
+		expectError bool
+	}{
+		{
+			name: "Success - guids only, nothing to change",
+			req: models.BulkUpdateItemRequest{
+				GUIDS: []string{"item-1", "item-2"},
+			},
+			expectError: false,
+		},
+		{
+			name: "Success - every field populated",
+			req: models.BulkUpdateItemRequest{
+				GUIDS:       []string{"item-1", "item-2"},
+				Title:       new("Test bulk update"),
+				Description: new("with tests"),
+				Status:      new(models.InProgress),
+				Priority:    new(models.High),
+				Tags:        new([]string{"work"}),
+				ParentGUID:  new("parent-guid"),
+			},
+			expectError: false,
+		},
+		{
+			name: "Error - Missing GUIDS",
+			req: models.BulkUpdateItemRequest{
+				Status: new(models.Done),
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Empty GUIDS slice",
+			req: models.BulkUpdateItemRequest{
+				GUIDS:  []string{},
+				Status: new(models.Done),
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Invalid Status",
+			req: models.BulkUpdateItemRequest{
+				GUIDS:  []string{"item-1"},
+				Status: new(models.ItemStatus("SLEEPING")),
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Invalid Priority",
+			req: models.BulkUpdateItemRequest{
+				GUIDS:    []string{"item-1"},
+				Priority: new(models.ItemPriority("WHENEVER")),
+			},
+			expectError: true,
+		},
+		{
+			name: "Error - Empty Status is not the same as absent",
+			req: models.BulkUpdateItemRequest{
+				GUIDS:  []string{"item-1"},
+				Status: new(models.ItemStatus("")),
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.req.Validate()
+			parseError(t, err, tt.expectError)
+		})
+	}
+}

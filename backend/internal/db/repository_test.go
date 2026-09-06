@@ -266,3 +266,109 @@ func TestGetItemsDynamic_Order(t *testing.T) {
 		})
 	}
 }
+
+func itemsByGuid(items []db.ItemWithParent) map[string]db.ItemWithParent {
+	byGuid := make(map[string]db.ItemWithParent, len(items))
+	for _, i := range items {
+		byGuid[i.Guid] = i
+	}
+	return byGuid
+}
+
+func TestBulkUpdateItems(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Only the given columns and the given guids are touched", func(t *testing.T) {
+		store := newTestStore(t)
+
+		updated, err := store.BulkUpdateItems(ctx, db.BulkUpdateItemsParams{
+			Guids:  []string{"a", "b"},
+			Status: new("DONE"),
+		})
+		if err != nil {
+			t.Fatalf("failed to bulk update: %v", err)
+		}
+
+		if len(updated) != 2 {
+			t.Fatalf("expected 2 updated items, got %d", len(updated))
+		}
+
+		byGuid := itemsByGuid(updated)
+
+		if got := byGuid["b"]; got.Status != "DONE" || got.Title != "bravo" || got.Priority != "LOW" {
+			t.Errorf("expected only the status to change, got %+v", got.Item)
+		}
+
+		untouched, err := store.GetItemByGuid(ctx, "c")
+		if err != nil {
+			t.Fatalf("failed to read the untouched item: %v", err)
+		}
+
+		if untouched.Status != "TODO" {
+			t.Errorf("expected item c to keep its status, got %q", untouched.Status)
+		}
+	})
+
+	t.Run("An empty guid list updates nothing", func(t *testing.T) {
+		store := newTestStore(t)
+
+		updated, err := store.BulkUpdateItems(ctx, db.BulkUpdateItemsParams{
+			Guids:  []string{},
+			Status: new("DONE"),
+		})
+		if err != nil {
+			t.Fatalf("failed to bulk update: %v", err)
+		}
+
+		if len(updated) != 0 {
+			t.Fatalf("expected no updated items, got %d", len(updated))
+		}
+	})
+
+	t.Run("The returned parent guid is the one set by the update", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		group, err := store.GetItemByGuid(ctx, "group")
+		if err != nil {
+			t.Fatalf("failed to read the group: %v", err)
+		}
+
+		updated, err := store.BulkUpdateItems(ctx, db.BulkUpdateItemsParams{
+			Guids:    []string{"a", "b"},
+			ParentID: &group.ID,
+		})
+		if err != nil {
+			t.Fatalf("failed to bulk update: %v", err)
+		}
+
+		for guid, item := range itemsByGuid(updated) {
+			if !item.ParentGuid.Valid || item.ParentGuid.String != "group" {
+				t.Errorf("expected item %s to come back under the group, got %+v", guid, item.ParentGuid)
+			}
+		}
+	})
+
+	t.Run("An untouched parent still comes back in the response", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		updated, err := store.BulkUpdateItems(ctx, db.BulkUpdateItemsParams{
+			Guids:  []string{"child-a", "a"},
+			Status: new("DONE"),
+		})
+		if err != nil {
+			t.Fatalf("failed to bulk update: %v", err)
+		}
+
+		byGuid := itemsByGuid(updated)
+
+		if got := byGuid["child-a"]; !got.ParentGuid.Valid || got.ParentGuid.String != "group" {
+			t.Errorf("expected the existing parent guid, got %+v", got.ParentGuid)
+		}
+
+		if got := byGuid["a"]; got.ParentGuid.Valid {
+			t.Errorf("expected no parent guid for a root item, got %+v", got.ParentGuid)
+		}
+	})
+}

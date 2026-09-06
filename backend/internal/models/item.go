@@ -42,7 +42,7 @@ const (
 )
 
 type CreateItemRequest struct {
-	ParentID    *string      `json:"parent_id"`
+	ParentGUID  *string      `json:"parent_guid"`
 	Title       string       `json:"title"`
 	Description *string      `json:"description"`
 	Type        ItemType     `json:"type"`
@@ -58,6 +58,16 @@ type UpdateItemRequest struct {
 	Status      *ItemStatus   `json:"status"`
 	Priority    *ItemPriority `json:"priority"`
 	Tags        *[]string     `json:"tags,omitempty"`
+}
+
+type BulkUpdateItemRequest struct {
+	GUIDS       []string      `json:"guids"`
+	Title       *string       `json:"title"`
+	Description *string       `json:"description"`
+	Status      *ItemStatus   `json:"status"`
+	Priority    *ItemPriority `json:"priority"`
+	Tags        *[]string     `json:"tags,omitempty"`
+	ParentGUID  *string       `json:"parent_guid"`
 }
 
 type GetItemRequest struct {
@@ -77,7 +87,7 @@ type OrderBy struct {
 }
 
 type GetItemResponse struct {
-	ParentID    *string      `json:"parent_id"`
+	ParentGUID  *string      `json:"parent_guid"`
 	GUID        string       `json:"guid"`
 	Title       string       `json:"title"`
 	Description *string      `json:"description"`
@@ -121,6 +131,26 @@ func (req *GetItemRequest) Validate() error {
 	return nil
 }
 
+func (req *BulkUpdateItemRequest) Validate() error {
+	if len(req.GUIDS) == 0 {
+		return errors.New("guid is required")
+	}
+
+	if req.Status != nil {
+		if err := validStatus(*req.Status); err != nil {
+			return err
+		}
+	}
+
+	if req.Priority != nil {
+		if err := validPriority(*req.Priority); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (req *UpdateItemRequest) Validate() error {
 	if req.GUID == "" {
 		return errors.New("guid is required")
@@ -145,7 +175,7 @@ func (req *CreateItemRequest) Validate() error {
 		return errors.New("title is required")
 	}
 
-	if req.ParentID != nil && *req.ParentID == "" {
+	if req.ParentGUID != nil && *req.ParentGUID == "" {
 		return errors.New("parent id cannot be empty")
 	}
 

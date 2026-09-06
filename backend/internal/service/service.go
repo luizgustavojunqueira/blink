@@ -17,6 +17,7 @@ type Repository interface {
 	GetTags(ctx context.Context) ([]string, error)
 	GetItemByGuid(ctx context.Context, guid string) (db.Item, error)
 	GetItem(ctx context.Context, id int64) (db.Item, error)
+	BulkUpdateItems(ctx context.Context, arg db.BulkUpdateItemsParams) ([]db.ItemWithParent, error)
 }
 
 type Service struct {
@@ -39,6 +40,14 @@ func pointerToNullString[T ~string](s *T) sql.NullString {
 		return sql.NullString{String: string(*s), Valid: true}
 	}
 	return sql.NullString{}
+}
+
+func pointerToString[T ~string](s *T) *string {
+	if s == nil {
+		return nil
+	}
+	str := string(*s)
+	return &str
 }
 
 func toStringSlice[T ~string](items []T) []string {

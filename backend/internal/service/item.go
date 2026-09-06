@@ -49,7 +49,7 @@ func (s *Service) UpdateItem(ctx context.Context, req models.UpdateItemRequest) 
 		Status:      models.ItemStatus(item.Status),
 		Priority:    models.ItemPriority(item.Priority),
 		Tags:        tags,
-		ParentID:    parentGuid,
+		ParentGUID:  parentGuid,
 	}, nil
 }
 
@@ -62,8 +62,8 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 
 	parentId := sql.NullInt64{Valid: false}
 
-	if req.ParentID != nil {
-		parentItem, err := s.repo.GetItemByGuid(ctx, *req.ParentID)
+	if req.ParentGUID != nil {
+		parentItem, err := s.repo.GetItemByGuid(ctx, *req.ParentGUID)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +100,7 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		Status:      models.ItemStatus(item.Status),
 		Priority:    models.ItemPriority(item.Priority),
 		Tags:        tags,
-		ParentID:    req.ParentID,
+		ParentGUID:  req.ParentGUID,
 	}, nil
 }
 
@@ -151,7 +151,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 			Status:      models.ItemStatus(item.Status),
 			Priority:    models.ItemPriority(item.Priority),
 			Tags:        tags,
-			ParentID:    nullStringToPointer(item.ParentGuid),
+			ParentGUID:  nullStringToPointer(item.ParentGuid),
 		}
 
 		itemsResponse = append(itemsResponse, itemResp)
@@ -171,4 +171,62 @@ func (s *Service) GetTags(ctx context.Context) (*models.GetTagsResponse, error) 
 	}
 
 	return result, nil
+}
+
+func (s *Service) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemRequest) ([]models.GetItemResponse, error) {
+	var tagsStr *string
+	if req.Tags != nil {
+		joined := strings.Join(*req.Tags, ",")
+		tagsStr = &joined
+	}
+
+	var parentId *int64
+
+	if req.ParentGUID != nil {
+		parentItem, err := s.repo.GetItemByGuid(ctx, *req.ParentGUID)
+		if err != nil {
+			return nil, err
+		}
+
+		if parentItem.Type != string(models.Group) {
+			return nil, errors.New("parent is not of type Group")
+		}
+
+		parentId = &parentItem.ID
+	}
+
+	updateItems, err := s.repo.BulkUpdateItems(ctx, db.BulkUpdateItemsParams{
+		Guids:       req.GUIDS,
+		Title:       req.Title,
+		Description: req.Description,
+		Status:      pointerToString(req.Status),
+		Priority:    pointerToString(req.Priority),
+		Tags:        tagsStr,
+		ParentID:    parentId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	itemsResponse := make([]models.GetItemResponse, 0)
+
+	for _, item := range updateItems {
+
+		tags := tagsToStringSlice(item.Tags)
+
+		itemResp := models.GetItemResponse{
+			GUID:        item.Guid,
+			Title:       item.Title,
+			Description: nullStringToPointer(item.Description),
+			Type:        models.ItemType(item.Type),
+			Status:      models.ItemStatus(item.Status),
+			Priority:    models.ItemPriority(item.Priority),
+			Tags:        tags,
+			ParentGUID:  nullStringToPointer(item.ParentGuid),
+		}
+
+		itemsResponse = append(itemsResponse, itemResp)
+	}
+
+	return itemsResponse, nil
 }

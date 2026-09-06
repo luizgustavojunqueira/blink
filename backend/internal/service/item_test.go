@@ -12,17 +12,19 @@ import (
 )
 
 type MockRepository struct {
-	simulateErr          error
-	getItemByGuidErr     error
-	getItemErr           error
-	itemsByGuid          map[string]db.Item
-	itemsByID            map[int64]db.Item
-	updateItemParentID   sql.NullInt64
-	getItemCalled        bool
-	capturedGetItemID    *int64
-	capturedFilter       *db.GetIemsFilter
-	capturedCreateParams *db.CreateItemParams
-	capturedUpdateParams *db.UpdateItemParams
+	simulateErr              error
+	getItemByGuidErr         error
+	getItemErr               error
+	itemsByGuid              map[string]db.Item
+	itemsByID                map[int64]db.Item
+	updateItemParentID       sql.NullInt64
+	bulkUpdateParentGuid     sql.NullString
+	getItemCalled            bool
+	capturedGetItemID        *int64
+	capturedFilter           *db.GetIemsFilter
+	capturedCreateParams     *db.CreateItemParams
+	capturedUpdateParams     *db.UpdateItemParams
+	capturedBulkUpdateParams *db.BulkUpdateItemsParams
 }
 
 func (m *MockRepository) UpdateItem(ctx context.Context, arg db.UpdateItemParams) (db.Item, error) {
@@ -109,6 +111,59 @@ func (m *MockRepository) GetItem(ctx context.Context, id int64) (db.Item, error)
 	return db.Item{}, sql.ErrNoRows
 }
 
+func (m *MockRepository) BulkUpdateItems(ctx context.Context, arg db.BulkUpdateItemsParams) ([]db.ItemWithParent, error) {
+	m.capturedBulkUpdateParams = &arg
+	if m.simulateErr != nil {
+		return []db.ItemWithParent{}, m.simulateErr
+	}
+	items := make([]db.ItemWithParent, 0, len(arg.Guids))
+
+	for _, guid := range arg.Guids {
+		items = append(items, db.ItemWithParent{
+			Item: db.Item{
+				Guid:     guid,
+				Title:    stringOrEmpty(arg.Title),
+				Status:   stringOrEmpty(arg.Status),
+				Priority: stringOrEmpty(arg.Priority),
+				Tags:     pointerToNullString(arg.Tags),
+				ParentID: m.updateItemParentID,
+			},
+			ParentGuid: m.bulkUpdateParentGuid,
+		})
+	}
+
+	return items, nil
+}
+
+func stringOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func pointerToNullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *s, Valid: true}
+}
+
+func assertStringPointer(t *testing.T, field string, got, want *string) {
+	t.Helper()
+
+	if want == nil {
+		if got != nil {
+			t.Errorf("%s: expected nil, got %q", field, *got)
+		}
+		return
+	}
+
+	if got == nil || *got != *want {
+		t.Errorf("%s: expected %q, got %v", field, *want, got)
+	}
+}
+
 func TestService_CreateItem(t *testing.T) {
 	mockRepo := &MockRepository{}
 	svc := service.NewService(mockRepo)
@@ -154,11 +209,11 @@ func TestService_CreateItem_Parent(t *testing.T) {
 
 		parentGuid := "parent-guid"
 		req := models.CreateItemRequest{
-			Title:    "child",
-			Type:     models.Task,
-			Status:   models.ToDo,
-			Priority: models.Normal,
-			ParentID: &parentGuid,
+			Title:      "child",
+			Type:       models.Task,
+			Status:     models.ToDo,
+			Priority:   models.Normal,
+			ParentGUID: &parentGuid,
 		}
 
 		resp, err := svc.CreateItem(context.Background(), req)
@@ -174,8 +229,8 @@ func TestService_CreateItem_Parent(t *testing.T) {
 			t.Errorf("expected parent id 42, got %+v", mockRepo.capturedCreateParams.ParentID)
 		}
 
-		if resp.ParentID == nil || *resp.ParentID != parentGuid {
-			t.Errorf("expected response parent id %s, got %v", parentGuid, resp.ParentID)
+		if resp.ParentGUID == nil || *resp.ParentGUID != parentGuid {
+			t.Errorf("expected response parent id %s, got %v", parentGuid, resp.ParentGUID)
 		}
 	})
 
@@ -185,11 +240,11 @@ func TestService_CreateItem_Parent(t *testing.T) {
 
 		parentGuid := "does-not-exist"
 		req := models.CreateItemRequest{
-			Title:    "child",
-			Type:     models.Task,
-			Status:   models.ToDo,
-			Priority: models.Normal,
-			ParentID: &parentGuid,
+			Title:      "child",
+			Type:       models.Task,
+			Status:     models.ToDo,
+			Priority:   models.Normal,
+			ParentGUID: &parentGuid,
 		}
 
 		if _, err := svc.CreateItem(context.Background(), req); err == nil {
@@ -211,11 +266,11 @@ func TestService_CreateItem_Parent(t *testing.T) {
 
 		parentGuid := "parent-guid"
 		req := models.CreateItemRequest{
-			Title:    "child",
-			Type:     models.Task,
-			Status:   models.ToDo,
-			Priority: models.Normal,
-			ParentID: &parentGuid,
+			Title:      "child",
+			Type:       models.Task,
+			Status:     models.ToDo,
+			Priority:   models.Normal,
+			ParentGUID: &parentGuid,
 		}
 
 		if _, err := svc.CreateItem(context.Background(), req); err == nil {
@@ -327,8 +382,8 @@ func TestService_GetItems_Parent(t *testing.T) {
 		t.Errorf("expected filter parent id %q, got %v", parentGuid, mockRepo.capturedFilter.ParentID)
 	}
 
-	if resp[0].ParentID != nil {
-		t.Errorf("expected nil parent id when the item has none, got %v", *resp[0].ParentID)
+	if resp[0].ParentGUID != nil {
+		t.Errorf("expected nil parent id when the item has none, got %v", *resp[0].ParentGUID)
 	}
 }
 
@@ -352,6 +407,11 @@ func TestService_Errors(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected UpdateItem to return an error when DB fails")
 	}
+
+	_, err = svc.BulkUpdateItem(context.Background(), models.BulkUpdateItemRequest{GUIDS: []string{"item-1"}})
+	if err == nil {
+		t.Errorf("Expected BulkUpdateItem to return an error when DB fails")
+	}
 }
 
 func TestService_UpdateItem_Parent(t *testing.T) {
@@ -368,8 +428,8 @@ func TestService_UpdateItem_Parent(t *testing.T) {
 			t.Error("expected GetItem to not be called for an item without a parent")
 		}
 
-		if resp.ParentID != nil {
-			t.Errorf("expected nil parent id, got %v", *resp.ParentID)
+		if resp.ParentGUID != nil {
+			t.Errorf("expected nil parent id, got %v", *resp.ParentGUID)
 		}
 	})
 
@@ -391,8 +451,8 @@ func TestService_UpdateItem_Parent(t *testing.T) {
 			t.Errorf("expected GetItem to be called with id 42, got %v", mockRepo.capturedGetItemID)
 		}
 
-		if resp.ParentID == nil || *resp.ParentID != "parent-guid" {
-			t.Errorf("expected parent id %q, got %v", "parent-guid", resp.ParentID)
+		if resp.ParentGUID == nil || *resp.ParentGUID != "parent-guid" {
+			t.Errorf("expected parent id %q, got %v", "parent-guid", resp.ParentGUID)
 		}
 	})
 
@@ -508,4 +568,205 @@ func TestService_UpdateItem(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestService_BulkUpdateItem(t *testing.T) {
+	tests := []struct {
+		name         string
+		request      models.BulkUpdateItemRequest
+		wantTitle    *string
+		wantDesc     *string
+		wantStatus   *string
+		wantPriority *string
+		wantTags     *string
+		wantRespTags []string
+	}{
+		{
+			name:         "Success - status only leaves the other columns out of the SET",
+			request:      models.BulkUpdateItemRequest{GUIDS: []string{"item-1", "item-2"}, Status: new(models.Done)},
+			wantStatus:   new("DONE"),
+			wantRespTags: []string{},
+		},
+		{
+			name: "Success - every field at once, tags joined into CSV",
+			request: models.BulkUpdateItemRequest{
+				GUIDS:       []string{"item-1", "item-2"},
+				Title:       new("Build blink"),
+				Description: new("with tests"),
+				Status:      new(models.InProgress),
+				Priority:    new(models.High),
+				Tags:        new([]string{"work", "urgent"}),
+			},
+			wantTitle:    new("Build blink"),
+			wantDesc:     new("with tests"),
+			wantStatus:   new("IN_PROGRESS"),
+			wantPriority: new("HIGH"),
+			wantTags:     new("work,urgent"),
+			wantRespTags: []string{"work", "urgent"},
+		},
+		{
+			name:         "Success - empty tags slice clears the column",
+			request:      models.BulkUpdateItemRequest{GUIDS: []string{"item-1", "item-2"}, Tags: new([]string{})},
+			wantTags:     new(""),
+			wantRespTags: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := &MockRepository{}
+			svc := service.NewService(mockRepo)
+
+			resp, err := svc.BulkUpdateItem(context.Background(), tt.request)
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+
+			if mockRepo.capturedBulkUpdateParams == nil {
+				t.Fatal("expected repo to be called")
+			}
+
+			if len(mockRepo.capturedBulkUpdateParams.Guids) != len(tt.request.GUIDS) {
+				t.Fatalf("expected guids %v, got %v", tt.request.GUIDS, mockRepo.capturedBulkUpdateParams.Guids)
+			}
+
+			for i, guid := range tt.request.GUIDS {
+				if mockRepo.capturedBulkUpdateParams.Guids[i] != guid {
+					t.Errorf("expected guid %s, got %s", guid, mockRepo.capturedBulkUpdateParams.Guids[i])
+				}
+			}
+
+			if mockRepo.capturedBulkUpdateParams.ParentID != nil {
+				t.Errorf("expected no parent id, got %d", *mockRepo.capturedBulkUpdateParams.ParentID)
+			}
+
+			assertStringPointer(t, "title", mockRepo.capturedBulkUpdateParams.Title, tt.wantTitle)
+			assertStringPointer(t, "description", mockRepo.capturedBulkUpdateParams.Description, tt.wantDesc)
+			assertStringPointer(t, "status", mockRepo.capturedBulkUpdateParams.Status, tt.wantStatus)
+			assertStringPointer(t, "priority", mockRepo.capturedBulkUpdateParams.Priority, tt.wantPriority)
+			assertStringPointer(t, "tags", mockRepo.capturedBulkUpdateParams.Tags, tt.wantTags)
+
+			if len(resp) != len(tt.request.GUIDS) {
+				t.Fatalf("expected %d items, got %d", len(tt.request.GUIDS), len(resp))
+			}
+
+			for i, guid := range tt.request.GUIDS {
+				if resp[i].GUID != guid {
+					t.Errorf("expected response guid %s, got %s", guid, resp[i].GUID)
+				}
+
+				if tt.wantStatus != nil && string(resp[i].Status) != *tt.wantStatus {
+					t.Errorf("expected response status %q, got %q", *tt.wantStatus, resp[i].Status)
+				}
+
+				if len(resp[i].Tags) != len(tt.wantRespTags) {
+					t.Fatalf("expected tags %v, got %v", tt.wantRespTags, resp[i].Tags)
+				}
+
+				for j, tag := range tt.wantRespTags {
+					if resp[i].Tags[j] != tag {
+						t.Errorf("expected tag %v, got %v", tag, resp[i].Tags[j])
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestService_BulkUpdateItem_Parent(t *testing.T) {
+	t.Run("Success - parent guid resolves to a group and is attached", func(t *testing.T) {
+		mockRepo := &MockRepository{
+			itemsByGuid: map[string]db.Item{
+				"parent-guid": {ID: 42, Guid: "parent-guid", Type: string(models.Group)},
+			},
+			bulkUpdateParentGuid: sql.NullString{String: "parent-guid", Valid: true},
+		}
+		svc := service.NewService(mockRepo)
+
+		parentGuid := "parent-guid"
+		resp, err := svc.BulkUpdateItem(context.Background(), models.BulkUpdateItemRequest{
+			GUIDS:      []string{"item-1", "item-2"},
+			ParentGUID: &parentGuid,
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if mockRepo.capturedBulkUpdateParams == nil {
+			t.Fatal("expected repo to be called")
+		}
+
+		if mockRepo.capturedBulkUpdateParams.ParentID == nil || *mockRepo.capturedBulkUpdateParams.ParentID != 42 {
+			t.Errorf("expected parent id 42, got %v", mockRepo.capturedBulkUpdateParams.ParentID)
+		}
+
+		for _, item := range resp {
+			if item.ParentGUID == nil || *item.ParentGUID != parentGuid {
+				t.Errorf("expected response parent guid %s, got %v", parentGuid, item.ParentGUID)
+			}
+		}
+	})
+
+	t.Run("The parent guid of an untouched parent comes from the updated row", func(t *testing.T) {
+		mockRepo := &MockRepository{
+			bulkUpdateParentGuid: sql.NullString{String: "existing-parent", Valid: true},
+		}
+		svc := service.NewService(mockRepo)
+
+		resp, err := svc.BulkUpdateItem(context.Background(), models.BulkUpdateItemRequest{
+			GUIDS:  []string{"item-1"},
+			Status: new(models.Done),
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if mockRepo.capturedBulkUpdateParams.ParentID != nil {
+			t.Errorf("expected parent id to stay out of the SET, got %d", *mockRepo.capturedBulkUpdateParams.ParentID)
+		}
+
+		if resp[0].ParentGUID == nil || *resp[0].ParentGUID != "existing-parent" {
+			t.Errorf("expected parent guid %q, got %v", "existing-parent", resp[0].ParentGUID)
+		}
+	})
+
+	t.Run("Error - parent guid does not exist", func(t *testing.T) {
+		mockRepo := &MockRepository{}
+		svc := service.NewService(mockRepo)
+
+		parentGuid := "does-not-exist"
+		_, err := svc.BulkUpdateItem(context.Background(), models.BulkUpdateItemRequest{
+			GUIDS:      []string{"item-1"},
+			ParentGUID: &parentGuid,
+		})
+		if err == nil {
+			t.Error("expected an error when the parent guid does not exist")
+		}
+
+		if mockRepo.capturedBulkUpdateParams != nil {
+			t.Error("expected BulkUpdateItems to not be called when the parent lookup fails")
+		}
+	})
+
+	t.Run("Error - parent exists but is not a Group", func(t *testing.T) {
+		mockRepo := &MockRepository{
+			itemsByGuid: map[string]db.Item{
+				"parent-guid": {ID: 42, Guid: "parent-guid", Type: string(models.Task)},
+			},
+		}
+		svc := service.NewService(mockRepo)
+
+		parentGuid := "parent-guid"
+		_, err := svc.BulkUpdateItem(context.Background(), models.BulkUpdateItemRequest{
+			GUIDS:      []string{"item-1"},
+			ParentGUID: &parentGuid,
+		})
+		if err == nil {
+			t.Error("expected an error when the parent is not of type Group")
+		}
+
+		if mockRepo.capturedBulkUpdateParams != nil {
+			t.Error("expected BulkUpdateItems to not be called when the parent is not a Group")
+		}
+	})
 }

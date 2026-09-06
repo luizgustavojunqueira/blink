@@ -22,6 +22,34 @@ func (a *API) GetTags(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (a *API) BulkUpdateItem(w http.ResponseWriter, r *http.Request) {
+	var bulkUpdItemReq models.BulkUpdateItemRequest
+	err := json.NewDecoder(r.Body).Decode(&bulkUpdItemReq)
+	if err != nil {
+
+		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		return
+	}
+
+	if err = bulkUpdItemReq.Validate(); err != nil {
+
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	bulkUpdResponse, err := a.itemService.BulkUpdateItem(r.Context(), bulkUpdItemReq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(bulkUpdResponse); err != nil {
+		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (a *API) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	var updateItemReq models.UpdateItemRequest
 	err := json.NewDecoder(r.Body).Decode(&updateItemReq)

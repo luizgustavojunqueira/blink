@@ -24,6 +24,16 @@ type ItemWithParent struct {
 	ParentGuid sql.NullString
 }
 
+type BulkUpdateItemsParams struct {
+	Guids       []string
+	Title       *string
+	Description *string
+	Status      *string
+	Priority    *string
+	Tags        *string
+	ParentID    *int64
+}
+
 type OrderBy struct {
 	Field string
 	Desc  bool
@@ -48,6 +58,8 @@ const (
 )
 
 var defaultOrder = []string{statusRankExpr + " ASC", "i.created_at DESC"}
+
+const bulkUpdateReturning = `RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, (SELECT p.guid FROM items p WHERE p.id = items.parent_id) AS parent_guid`
 
 var orderColumns = map[string]string{
 	"title":    "i.title",
@@ -136,6 +148,50 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 		return nil, err
 	}
 
+	return scanItemsWithParent(rows)
+}
+
+func (s *SQLStore) BulkUpdateItems(ctx context.Context, arg BulkUpdateItemsParams) ([]ItemWithParent, error) {
+	query := squirrel.Update("items").
+		Where(squirrel.Eq{"guid": arg.Guids}).
+		Suffix(bulkUpdateReturning).
+		PlaceholderFormat(squirrel.Question)
+
+	if arg.Title != nil {
+		query = query.Set("title", *arg.Title)
+	}
+	if arg.Description != nil {
+		query = query.Set("description", *arg.Description)
+	}
+	if arg.Status != nil {
+		query = query.Set("status", *arg.Status)
+	}
+	if arg.Priority != nil {
+		query = query.Set("priority", *arg.Priority)
+	}
+	if arg.Tags != nil {
+		query = query.Set("tags", *arg.Tags)
+	}
+	if arg.ParentID != nil {
+		query = query.Set("parent_id", *arg.ParentID)
+	}
+
+	query = query.Set("updated_at", squirrel.Expr("CURRENT_TIMESTAMP"))
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := s.db.QueryContext(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return scanItemsWithParent(rows)
+}
+
+func scanItemsWithParent(rows *sql.Rows) ([]ItemWithParent, error) {
 	var items []ItemWithParent
 
 	for rows.Next() {

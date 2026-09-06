@@ -713,3 +713,61 @@ describe("ui store: selectPane", () => {
     expect(state().mode).toBe("normal");
   });
 });
+
+describe("ui store: toggleMarked", () => {
+  it("marks the given item", () => {
+    seedRoot(["a", "b"], "a");
+
+    state().toggleMarked("root", "a");
+
+    expect([...firstPane().markedIds]).toEqual(["a"]);
+  });
+
+  it("unmarks the item on the second toggle", () => {
+    seedRoot(["a", "b"], "a");
+
+    state().toggleMarked("root", "a");
+    state().toggleMarked("root", "a");
+
+    expect(firstPane().markedIds.size).toBe(0);
+  });
+
+  it("keeps the other marks when toggling one off", () => {
+    seedRoot(["a", "b"], "a");
+
+    state().toggleMarked("root", "a");
+    state().toggleMarked("root", "b");
+    state().toggleMarked("root", "a");
+
+    expect([...firstPane().markedIds]).toEqual(["b"]);
+  });
+
+  it("replaces the set instead of mutating the one already published", () => {
+    seedRoot(["a", "b"], "a");
+    state().toggleMarked("root", "a");
+    const before = firstPane().markedIds;
+
+    state().toggleMarked("root", "b");
+
+    expect(firstPane().markedIds).not.toBe(before);
+    expect([...before]).toEqual(["a"]);
+  });
+
+  it("stays in normal mode, so every other binding keeps resolving", () => {
+    seedRoot(["a"], "a");
+
+    state().toggleMarked("root", "a");
+
+    expect(state().mode).toBe("normal");
+  });
+
+  it("does nothing on a detail pane", () => {
+    const detail = createDetailPane("detail-1", "a");
+    useUiStore.setState({ panes: [detail], activePaneId: detail.id });
+    const panes = state().panes;
+
+    state().toggleMarked("detail-1", "a");
+
+    expect(state().panes).toBe(panes);
+  });
+});

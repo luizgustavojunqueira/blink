@@ -34,11 +34,13 @@ body,
 #root {
   height: 100%;
 }
-html * {
-  transition:
-    background-color 300ms ease,
-    color 300ms ease,
-    border-color 300ms ease;
+@layer base {
+  html * {
+    transition:
+      background-color 300ms ease,
+      color 300ms ease,
+      border-color 300ms ease;
+  }
 }
 
 body {

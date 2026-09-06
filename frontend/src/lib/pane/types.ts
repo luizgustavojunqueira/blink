@@ -9,6 +9,7 @@ export type ListPane = {
   parentId: string | null;
   selectedId: string | null;
   renderedIds: string[];
+  markedIds: Set<string>;
   renderedTypes: Record<string, ItemType>;
   filter: GetItemRequest;
 };

@@ -3,7 +3,7 @@ import type { ItemType } from "../../types/backend";
 import type { Pane, PaneType } from "../pane/types";
 import type { AppContext } from "../types";
 
-export type Mode = "insert" | "normal";
+export type Mode = "insert" | "normal" | "visual";
 
 export type KeyContext = {
   app: AppContext;

@@ -8,8 +8,7 @@ import {
   type PaneType,
 } from "../lib/pane/types";
 import { createDetailPane, createListPane, createRootPane } from "../lib/pane/factories";
-
-type Mode = "insert" | "normal";
+import type { Mode } from "../lib/keymap/types";
 
 export type UiState = {
   mode: Mode;
@@ -43,6 +42,7 @@ export type UiActions = {
   selectPane: (paneId: string, mode: Mode) => void;
   toggleHint: () => void;
   setCurrentKeySeq: (keySeq: string) => void;
+  toggleMarked: (paneId: string, itemId: string) => void;
 };
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
@@ -272,6 +272,25 @@ export const useUiStore = create<UiStore>(
           activePaneId: paneId,
           mode: "normal",
           panes: mapActivePane(s.panes, paneId, { ...pane, selectedId }),
+        };
+      }),
+
+    toggleMarked: (paneId, itemId) =>
+      set((s) => {
+        const pane = findPane(s.panes, paneId);
+        if (!pane || pane.type !== "list") return {};
+
+        const newSet = new Set(pane.markedIds);
+        if (newSet.has(itemId)) newSet.delete(itemId);
+        else newSet.add(itemId);
+
+        return {
+          activePaneId: paneId,
+          mode: "normal",
+          panes: mapActivePane(s.panes, paneId, {
+            ...pane,
+            markedIds: newSet,
+          }),
         };
       }),
 

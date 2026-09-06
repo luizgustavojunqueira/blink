@@ -7,6 +7,7 @@ import { escapeBind } from "./implementations/escape";
 import { toggleHintBind } from "./implementations/hint";
 import { prefixKeyBindings } from "./implementations/insertMode";
 import { listNavigationBindings } from "./implementations/listNavigation";
+import { markBindings } from "./implementations/mark";
 import { paneNavigation } from "./implementations/panes";
 import { statusKeyBindings } from "./implementations/update";
 import type { KeyBinding, KeyQueryContext } from "./types";
@@ -21,6 +22,7 @@ export const keyBindings: KeyBinding[] = [
   ...detailStatusKeyBindings,
   ...detailPriorityKeyBindings,
   toggleHintBind,
+  ...markBindings,
 ];
 
 export type KeyMapId = keyof typeof keyBindings;

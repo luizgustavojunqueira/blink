@@ -8,6 +8,7 @@ export const createListPane = (id: string, parentId: string | null): ListPane =>
   filter: { parent_id: parentId ?? undefined },
   selectedId: null,
   renderedIds: [],
+  markedIds: new Set(),
   renderedTypes: {},
 });
 

@@ -24,11 +24,13 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
   };
 
   const findItems = (guids: string[]) => {
+    const allItems: GetItemResponse[] = [];
     for (const [, list] of client.getQueriesData<GetItemResponse[]>({
       queryKey: ["items"],
     })) {
-      return list?.filter((i) => guids.includes(i.guid));
+      if (list) allItems.push(...list);
     }
+    return allItems.filter((i) => guids.includes(i.guid));
   };
 
   const create = async (req: CreateItemRequest) => {
@@ -71,7 +73,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
 
   const bulkSetField = (
     guids: string[],
-    key: keyof UpdateItemRequest,
+    key: keyof Omit<BulkUpdateItemRequest, "guids">,
     value: string | string[] | ItemStatus | ItemPriority,
   ) => {
     const updateableGuids = findItems(guids)

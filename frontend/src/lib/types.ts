@@ -1,5 +1,6 @@
 import type { UiActions } from "../stores/ui";
 import type {
+  BulkUpdateItemRequest,
   CreateItemRequest,
   GetItemResponse,
   ItemPriority,
@@ -14,9 +15,9 @@ export type AppContext = {
     findItem: (guid: string) => GetItemResponse | undefined;
     bulkSetField: (
       guids: string[],
-      key: keyof UpdateItemRequest,
+      key: keyof Omit<BulkUpdateItemRequest, "guids">,
       value: string | string[] | ItemStatus | ItemPriority,
-    ) => void;
+    ) => Promise<void> | undefined;
     setField: (
       guid: string,
       key: keyof UpdateItemRequest,

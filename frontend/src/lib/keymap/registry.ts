@@ -10,6 +10,7 @@ import { listNavigationBindings } from "./implementations/listNavigation";
 import { markBindings } from "./implementations/mark";
 import { paneNavigation } from "./implementations/panes";
 import { bulkUpdateStatusBindings, statusKeyBindings } from "./implementations/update";
+import { visualMode } from "./implementations/visualMode";
 import type { KeyBinding, KeyQueryContext } from "./types";
 
 export const keyBindings: KeyBinding[] = [
@@ -24,6 +25,7 @@ export const keyBindings: KeyBinding[] = [
   toggleHintBind,
   ...markBindings,
   ...bulkUpdateStatusBindings,
+  ...visualMode,
 ];
 
 export type KeyMapId = keyof typeof keyBindings;

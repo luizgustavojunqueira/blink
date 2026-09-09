@@ -43,6 +43,7 @@ export type UiActions = {
   toggleHint: () => void;
   setCurrentKeySeq: (keySeq: string) => void;
   toggleMarked: (paneId: string, itemId: string) => void;
+  toggleVisual: (anchorGuid: string) => void;
 };
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
@@ -52,6 +53,20 @@ const hasUserFilter = (pane: ListPane) =>
 
 const mapActivePane = (panes: Pane[], activePaneId: string, nextPane: Pane): Pane[] =>
   panes.map((p) => (p.id === activePaneId ? nextPane : p));
+
+const commitVisualSelection = (pane: ListPane, fallbackAnchor?: string | null) => {
+  const anchor = pane.anchorGuid ?? fallbackAnchor ?? pane.selectedId;
+  const markedIds = new Set(pane.markedIds);
+  if (anchor && pane.selectedId) {
+    const a = pane.renderedIds.indexOf(anchor);
+    const b = pane.renderedIds.indexOf(pane.selectedId);
+    if (a !== -1 && b !== -1) {
+      const [start, end] = a <= b ? [a, b] : [b, a];
+      for (let i = start; i <= end; i++) markedIds.add(pane.renderedIds[i]);
+    }
+  }
+  return { anchorGuid: null, markedIds };
+};
 
 const syncChild = (parent: Pane, child: Pane): Pane => {
   if (parent.type !== "list") return child;
@@ -268,9 +283,11 @@ export const useUiStore = create<UiStore>(
         const pane = findPane(s.panes, paneId);
         if (!pane || pane.type !== "list" || pane.selectedId === selectedId) return {};
 
+        const isVisualInActivePane = s.mode === "visual" && s.activePaneId === paneId;
+
         return {
           activePaneId: paneId,
-          mode: "normal",
+          mode: isVisualInActivePane ? "visual" : "normal",
           panes: mapActivePane(s.panes, paneId, { ...pane, selectedId }),
         };
       }),
@@ -289,6 +306,7 @@ export const useUiStore = create<UiStore>(
           mode: "normal",
           panes: mapActivePane(s.panes, paneId, {
             ...pane,
+            anchorGuid: null,
             markedIds: newSet,
           }),
         };
@@ -317,6 +335,24 @@ export const useUiStore = create<UiStore>(
 
     setMode: (mode: Mode) => set({ mode }),
 
+    toggleVisual: (anchorGuid) =>
+      set((s) => {
+        const pane = findPane(s.panes, s.activePaneId);
+        if (!pane || pane.type !== "list") return {};
+
+        const anchor = anchorGuid ?? pane.selectedId;
+        if (!anchor) return {};
+
+        const isEntering = s.mode === "normal";
+        return {
+          mode: isEntering ? "visual" : "normal",
+          panes: mapActivePane(s.panes, s.activePaneId, {
+            ...pane,
+            ...(isEntering ? { anchorGuid: anchor } : commitVisualSelection(pane, anchor)),
+          }),
+        };
+      }),
+
     enterInsert: (seed) =>
       set((s) => {
         const pane = findPane(s.panes, s.activePaneId);
@@ -332,6 +368,19 @@ export const useUiStore = create<UiStore>(
     escape: () =>
       set((s) => {
         if (s.mode === "insert") return { mode: "normal" };
+
+        if (s.mode === "visual") {
+          const pane = findPane(s.panes, s.activePaneId);
+          if (!pane || pane.type !== "list") return { mode: "normal" };
+
+          return {
+            mode: "normal",
+            panes: mapActivePane(s.panes, s.activePaneId, {
+              ...pane,
+              ...commitVisualSelection(pane),
+            }),
+          };
+        }
 
         const pane = findPane(s.panes, s.activePaneId);
         if (!pane) return {};

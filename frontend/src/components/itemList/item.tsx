@@ -5,8 +5,13 @@ import { createDetailPane } from "../../lib/pane/factories";
 import type { GetItemResponse } from "../../types/backend";
 import { priorityColor, priorityMapper, statusColor, statusMapper } from "../../utils/status";
 
-const markedBoxState = (isMarked: boolean, isSelected: boolean) => {
+const markedBoxState = (
+  isMarked: boolean,
+  isSelected: boolean,
+  isInVisualRange: boolean,
+) => {
   if (isMarked) return "border-accent opacity-100";
+  if (isInVisualRange) return "border-accent/60 opacity-100";
   if (isSelected) return "border-border opacity-100";
   return "border-border opacity-0 group-hover:opacity-100";
 };
@@ -29,8 +34,22 @@ function ItemComponent({ item, paneId }: IItem) {
     [item.guid],
   );
 
+  const selectIsInVisualRange = useCallback<PaneSelector<boolean>>(
+    (pane, ui) => {
+      if (ui.mode !== "visual" || pane?.type !== "list" || !pane.anchorGuid || !pane.selectedId) {
+        return false;
+      }
+      const a = pane.renderedIds.indexOf(pane.anchorGuid);
+      const b = pane.renderedIds.indexOf(pane.selectedId);
+      const i = pane.renderedIds.indexOf(item.guid);
+      return a !== -1 && b !== -1 && i >= Math.min(a, b) && i <= Math.max(a, b);
+    },
+    [item.guid],
+  );
+
   const isSelected = usePaneValue(paneId, selectIsSelected);
   const isMarked = usePaneValue(paneId, selectIsMarked);
+  const isInVisualRange = usePaneValue(paneId, selectIsInVisualRange);
 
   const select = useUiStore((s) => s.select);
   const pushPane = useUiStore((s) => s.pushPane);
@@ -42,7 +61,11 @@ function ItemComponent({ item, paneId }: IItem) {
       className={[
         "group flex w-full flex-row items-center gap-1",
         "transition-colors duration-75",
-        isSelected ? "bg-bg-lighter" : "hover:bg-bg-soft",
+        isSelected
+          ? "bg-bg-lighter"
+          : isInVisualRange
+            ? "bg-accent/10"
+            : "hover:bg-bg-soft",
         "[content-visibility:auto] [contain-intrinsic-size:auto_2rem]",
       ].join(" ")}
     >
@@ -56,7 +79,7 @@ function ItemComponent({ item, paneId }: IItem) {
           "ml-2 flex size-4 shrink-0 items-center justify-center",
           "rounded-[3px] border bg-transparent",
           "transition-[opacity,border-color] duration-150 ease-out",
-          markedBoxState(isMarked, isSelected),
+          markedBoxState(isMarked, isSelected, isInVisualRange),
         ].join(" ")}
       >
         <svg viewBox="0 0 12 12" className="size-3.5" fill="none" aria-hidden="true">
@@ -68,8 +91,12 @@ function ItemComponent({ item, paneId }: IItem) {
             pathLength="1"
             className={[
               "stroke-accent [stroke-dasharray:1]",
-              "transition-[stroke-dashoffset] duration-200 ease-out",
-              isMarked ? "[stroke-dashoffset:0]" : "[stroke-dashoffset:1]",
+              "transition-[stroke-dashoffset,opacity] duration-200 ease-out",
+              isMarked
+                ? "[stroke-dashoffset:0] opacity-100"
+                : isInVisualRange
+                  ? "[stroke-dashoffset:0] opacity-40"
+                  : "[stroke-dashoffset:1] opacity-0",
             ].join(" ")}
           />
         </svg>

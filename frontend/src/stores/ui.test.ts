@@ -771,3 +771,42 @@ describe("ui store: toggleMarked", () => {
     expect(state().panes).toBe(panes);
   });
 });
+
+describe("ui store: visual mode", () => {
+  it("enters and navigates via keyboard or mouse without altering markedIds", () => {
+    seedRoot(["a", "b", "c", "d"], "a");
+
+    state().toggleVisual("a");
+    expect(state().mode).toBe("visual");
+    expect(firstPane().anchorGuid).toBe("a");
+
+    state().moveDown();
+    state().select("root", "c");
+    expect(state().mode).toBe("visual");
+    expect(firstPane().selectedId).toBe("c");
+    expect(firstPane().markedIds.size).toBe(0);
+  });
+
+  it("commits union into markedIds on toggleVisual or escape", () => {
+    seedRoot(["a", "b", "c", "d"], "b");
+    firstPane().markedIds = new Set(["d"]);
+
+    // Forward toggleVisual exit
+    state().toggleVisual("b");
+    state().moveDown();
+    state().toggleVisual("c");
+    expect(state().mode).toBe("normal");
+    expect(firstPane().anchorGuid).toBeNull();
+    expect([...firstPane().markedIds].sort()).toEqual(["b", "c", "d"]);
+
+    // Backward escape exit
+    state().moveDown(); // to d
+    state().toggleVisual("d");
+    state().moveUp(2); // to b
+    state().escape();
+    expect(state().mode).toBe("normal");
+    expect(firstPane().anchorGuid).toBeNull();
+    expect([...firstPane().markedIds].sort()).toEqual(["b", "c", "d"]);
+  });
+});
+

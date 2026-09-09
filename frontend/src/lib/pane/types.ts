@@ -10,6 +10,7 @@ export type ListPane = {
   selectedId: string | null;
   renderedIds: string[];
   markedIds: Set<string>;
+  anchorGuid: string | null;
   renderedTypes: Record<string, ItemType>;
   filter: GetItemRequest;
 };

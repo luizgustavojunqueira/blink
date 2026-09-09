@@ -25,6 +25,7 @@ const listPane = (
   selectedId,
   renderedIds: selectedId ? [selectedId] : [],
   markedIds,
+  anchorGuid: null,
   renderedTypes: {},
   filter: {},
 });
@@ -69,9 +70,10 @@ describe("keymap registry: resolve", () => {
     expect(resolve("l", ctx("normal", { selectedId: null }))).toBeUndefined();
   });
 
-  it("resolves escape in both modes", () => {
+  it("resolves escape in all modes", () => {
     expect(resolve("escape", ctx("normal"))?.id).toBe("escape");
     expect(resolve("escape", ctx("insert"))?.id).toBe("escape");
+    expect(resolve("escape", ctx("visual"))?.id).toBe("escape");
   });
 
   it("ignores normal mode keys while typing in insert mode", () => {

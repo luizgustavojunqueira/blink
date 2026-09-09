@@ -3,6 +3,7 @@ import { useUiStore } from "../../../stores/ui";
 import { createListPane, createRootPane } from "../../pane/factories";
 import type { AppContext } from "../../types";
 import { groupCommand } from "./group";
+import type { ListPane } from "../../pane/types";
 
 function fakeApp(
   create = vi.fn().mockResolvedValue({ guid: "new-group-id" }),
@@ -49,7 +50,9 @@ describe("groupCommand", () => {
       app: fakeApp(create),
     });
 
-    expect(result).toMatchObject({ message: expect.stringMatching(/title is required/i) });
+    expect(result).toMatchObject({
+      message: expect.stringMatching(/title is required/i),
+    });
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -81,7 +84,7 @@ describe("groupCommand", () => {
       "group-123",
     );
 
-    const updatedPane = useUiStore.getState().panes.find((p) => p.id === "p1");
+    const updatedPane = useUiStore.getState().panes.find((p) => p.id === "p1") as ListPane;
     expect(updatedPane?.markedIds.size).toBe(0);
     expect(updatedPane?.selectedId).toBe("group-123");
 

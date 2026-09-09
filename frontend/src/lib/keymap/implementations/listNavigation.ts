@@ -4,7 +4,7 @@ export const listNavigationBindings: KeyBinding[] = [
   {
     id: "list:top",
     keys: ["g g"],
-    modes: ["normal"],
+    modes: ["normal", "visual"],
     scope: "list",
     description: "Move to top",
     hint: { group: "nav" },
@@ -16,7 +16,7 @@ export const listNavigationBindings: KeyBinding[] = [
   {
     id: "list:bottom",
     keys: ["G"],
-    modes: ["normal"],
+    modes: ["normal", "visual"],
     scope: "list",
     description: "Move to bottom",
     hint: { group: "nav" },
@@ -28,7 +28,7 @@ export const listNavigationBindings: KeyBinding[] = [
   {
     id: "list:down",
     keys: ["j", "arrowdown"],
-    modes: ["normal"],
+    modes: ["normal", "visual"],
     scope: "list",
     description: "Move down",
     hint: { group: "nav" },
@@ -40,7 +40,7 @@ export const listNavigationBindings: KeyBinding[] = [
   {
     id: "list:up",
     keys: ["k", "arrowup"],
-    modes: ["normal"],
+    modes: ["normal", "visual"],
     scope: "list",
     description: "Move up",
     hint: { group: "nav" },
@@ -52,7 +52,7 @@ export const listNavigationBindings: KeyBinding[] = [
   {
     id: "list:ctrldown",
     keys: ["ctrl+d", "ctrl+arrowdown"],
-    modes: ["normal"],
+    modes: ["normal", "visual"],
     scope: "list",
     description: "Move 5 down",
     hint: { group: "nav" },
@@ -64,7 +64,7 @@ export const listNavigationBindings: KeyBinding[] = [
   {
     id: "list:ctrlup",
     keys: ["ctrl+u", "ctrl+arrowup"],
-    modes: ["normal"],
+    modes: ["normal", "visual"],
     scope: "list",
     description: "Move 5 up",
     hint: { group: "nav" },

@@ -9,6 +9,7 @@ export const createListPane = (id: string, parentId: string | null): ListPane =>
   selectedId: null,
   renderedIds: [],
   markedIds: new Set(),
+  anchorGuid: null,
   renderedTypes: {},
 });
 

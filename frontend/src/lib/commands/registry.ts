@@ -1,4 +1,5 @@
 import { createCommand } from "./implementations/create";
+import { editCommand } from "./implementations/edit";
 import { filterCommand } from "./implementations/filter";
 import { groupCommand } from "./implementations/group";
 import { themeCommand } from "./implementations/theme";
@@ -10,6 +11,7 @@ export const commands = {
   theme: themeCommand,
   filter: filterCommand,
   create: createCommand,
+  edit: editCommand,
   group: groupCommand,
 } as const satisfies Record<string, CommandDefinition>;
 

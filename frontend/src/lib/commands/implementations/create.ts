@@ -10,6 +10,7 @@ import {
 import { modifierOptions } from "../../modifiers/options";
 import { parseModifiers } from "../../modifiers/parse";
 import type { CommandDefinition } from "../types";
+import { only } from "./utils";
 
 export const createCommand: CommandDefinition = {
   id: "create",
@@ -30,36 +31,13 @@ export const createCommand: CommandDefinition = {
 
     result.req.parent_guid = pane.parentId ?? undefined;
 
-    try {
-      await app.items.create(result.req);
-    } catch (e) {
-      return {
-        message: e instanceof Error ? e.message : "Failed to create item",
-      };
-    }
+    await app.items.create(result.req);
 
     return { shouldClearPrompt: true };
   },
 };
 
 type ParseCreateResult = { ok: true; req: CreateItemRequest } | { ok: false; error: string };
-
-function only(
-  values: string[],
-  invalid: string[],
-  label: string,
-  fallback: string,
-): { ok: true; value: string } | { ok: false; error: string } {
-  if (invalid.length > 0) {
-    return { ok: false, error: `Invalid ${label} "${invalid[0]}"` };
-  }
-
-  if (values.length > 1) {
-    return { ok: false, error: `An item can only have one ${label}` };
-  }
-
-  return { ok: true, value: (values[0] ?? fallback).toUpperCase() };
-}
 
 export function parseCreate(raw: string): ParseCreateResult {
   const { text, values, invalid } = parseModifiers(raw);
@@ -68,13 +46,13 @@ export function parseCreate(raw: string): ParseCreateResult {
     return { ok: false, error: "Title is required" };
   }
 
-  const status = only(values[STATUS_MODIFIER], invalid[STATUS_MODIFIER], "status", ToDo);
+  const status = only(values[STATUS_MODIFIER], invalid[STATUS_MODIFIER], "status");
   if (!status.ok) return status;
 
-  const priority = only(values[PRIORITY_MODIFIER], invalid[PRIORITY_MODIFIER], "priority", Normal);
+  const priority = only(values[PRIORITY_MODIFIER], invalid[PRIORITY_MODIFIER], "priority");
   if (!priority.ok) return priority;
 
-  const type = only(values[TYPE_MODIFIER], invalid[TYPE_MODIFIER], "type", Task);
+  const type = only(values[TYPE_MODIFIER], invalid[TYPE_MODIFIER], "type");
   if (!type.ok) return type;
 
   return {
@@ -83,9 +61,9 @@ export function parseCreate(raw: string): ParseCreateResult {
       title: text,
       description: values[DESCRIPTION_MODIFIER][0],
       tags: values[TAG_MODIFIER],
-      status: status.value,
-      priority: priority.value,
-      type: type.value,
+      status: status.value ?? ToDo,
+      priority: priority.value ?? Normal,
+      type: type.value ?? Task,
     },
   };
 }

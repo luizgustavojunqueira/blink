@@ -3,15 +3,19 @@ import { bulkUpdateItem, createItem, updateItem } from "../api/items";
 import { useUiStore } from "../stores/ui";
 import { queryClient } from "./queryClient";
 import { setTheme } from "./theme";
-import type { AppContext } from "./types";
-import type {
-  BulkUpdateItemRequest,
-  CreateItemRequest,
-  GetItemResponse,
-  ItemPriority,
-  ItemStatus,
-  UpdateItemRequest,
-} from "../types/backend";
+import type { AppContext, ItemPatch } from "./types";
+import type { CreateItemRequest, GetItemResponse, UpdateItemRequest } from "../types/backend";
+
+function sameValue(current: unknown, next: unknown): boolean {
+  if (Array.isArray(current) && Array.isArray(next)) {
+    if (current.length !== next.length) return false;
+    const a = [...current].sort();
+    const b = [...next].sort();
+    return a.every((value, i) => value === b[i]);
+  }
+
+  return current === next;
+}
 
 export function createItemActions(client: QueryClient): AppContext["items"] {
   const findItem = (guid: string) => {
@@ -54,36 +58,40 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     return updated;
   };
 
-  const bulkUpdate = async (req: BulkUpdateItemRequest) => {
-    const updated = await bulkUpdateItem(req);
+  const bulkUpdate = async (guids: string[], patch: ItemPatch) => {
+    const updated = await bulkUpdateItem({ guids, ...patch });
+
     client.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
       old?.map((oldItem) => updated.find((u) => u.guid === oldItem.guid) ?? oldItem),
     );
+
+    client.invalidateQueries({ queryKey: ["tags"] });
+
+    return guids;
   };
 
-  const setField = (
-    guid: string,
-    key: keyof UpdateItemRequest,
-    value: string | string[] | ItemStatus | ItemPriority,
-  ) => {
+  const setField = (guid: string, key: keyof UpdateItemRequest, value: string | string[]) => {
     const current = findItem(guid);
-    if (current && current[key] === value) return;
+    if (current && sameValue(current[key], value)) return;
     return update({ guid, [key]: value });
   };
 
-  const bulkSetField = (
-    guids: string[],
-    key: keyof Omit<BulkUpdateItemRequest, "guids">,
-    value: string | string[] | ItemStatus | ItemPriority,
-  ) => {
+  const bulkSetFields = async (guids: string[], patch: ItemPatch) => {
+    const entries = Object.entries(patch).filter(([, value]) => value !== undefined);
+    if (entries.length === 0) return [];
+
     const updateableGuids = findItems(guids)
-      ?.filter((i) => i[key] != value)
+      .filter((item) =>
+        entries.some(([key, value]) => !sameValue(item[key as keyof GetItemResponse], value)),
+      )
       .map((i) => i.guid);
-    if (updateableGuids === undefined || updateableGuids.length === 0) return;
-    return bulkUpdate({ guids: updateableGuids, [key]: value });
+
+    if (updateableGuids.length === 0) return [];
+
+    return bulkUpdate(updateableGuids, patch);
   };
 
-  return { findItem, setField, create, update, bulkSetField };
+  return { findItem, setField, create, update, bulkSetFields };
 }
 
 export function createAppContext(client: QueryClient): AppContext {

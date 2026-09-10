@@ -165,6 +165,19 @@ describe("Prompt", () => {
     expect(await screen.findByText("network is down")).toBeInTheDocument();
   });
 
+  it("keeps the typed text when a command throws, so nothing is lost", async () => {
+    vi.mocked(execute).mockRejectedValue(new Error("network is down"));
+
+    render(<Prompt paneId={ROOT_ID} />);
+    const input = screen.getByTestId("prompt");
+    type("buy milk");
+
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await screen.findByText("network is down");
+    expect(input).toHaveValue("buy milk");
+  });
+
   it("clears a stale message once a later command succeeds", async () => {
     vi.mocked(execute).mockResolvedValueOnce({ message: "Invalid theme" });
 

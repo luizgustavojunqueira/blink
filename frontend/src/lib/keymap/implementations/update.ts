@@ -54,7 +54,7 @@ const bulkUpdateStatusBinds = (status: ItemStatus): KeyBinding => ({
   },
   run: ({ app, pane }) => {
     if (pane.type !== "list") return;
-    if (pane.markedIds.size > 0) app.items.bulkSetField([...pane.markedIds], "status", status);
+    if (pane.markedIds.size > 0) app.items.bulkSetFields([...pane.markedIds], { status });
   },
 });
 

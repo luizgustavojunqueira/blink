@@ -30,24 +30,19 @@ export const groupCommand: CommandDefinition = {
       type: Group,
     };
 
-    try {
-      const newParent = await app.items.create(request);
-      if (!newParent) {
-        return { message: "Failed to group items" };
-      }
-      await app.items.bulkSetField([...pane.markedIds], "parent_guid", newParent.guid);
-      await queryClient.invalidateQueries({ queryKey: ["items"] });
-
-      useUiStore.setState((s) => ({
-        panes: s.panes.map((p) =>
-          p.id === pane.id ? { ...p, markedIds: new Set(), selectedId: newParent.guid } : p,
-        ),
-      }));
-    } catch (e) {
-      return {
-        message: e instanceof Error ? e.message : "Failed to create item",
-      };
+    const newParent = await app.items.create(request);
+    if (!newParent) {
+      return { message: "Failed to group items" };
     }
+
+    await app.items.bulkSetFields([...pane.markedIds], { parent_guid: newParent.guid });
+    await queryClient.invalidateQueries({ queryKey: ["items"] });
+
+    useUiStore.setState((s) => ({
+      panes: s.panes.map((p) =>
+        p.id === pane.id ? { ...p, markedIds: new Set(), selectedId: newParent.guid } : p,
+      ),
+    }));
 
     return { shouldClearPrompt: true };
   },

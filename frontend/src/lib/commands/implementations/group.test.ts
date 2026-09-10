@@ -7,7 +7,7 @@ import type { ListPane } from "../../pane/types";
 
 function fakeApp(
   create = vi.fn().mockResolvedValue({ guid: "new-group-id" }),
-  bulkSetField = vi.fn().mockResolvedValue(undefined),
+  bulkSetFields = vi.fn().mockResolvedValue(undefined),
 ): AppContext {
   return {
     ui: useUiStore.getState(),
@@ -15,7 +15,7 @@ function fakeApp(
     items: {
       findItem: vi.fn(),
       setField: vi.fn(),
-      bulkSetField,
+      bulkSetFields,
       create,
       update: vi.fn(),
     },
@@ -25,18 +25,18 @@ function fakeApp(
 describe("groupCommand", () => {
   it("rejects when no items are marked", async () => {
     const create = vi.fn();
-    const bulkSetField = vi.fn();
+    const bulkSetFields = vi.fn();
     const root = createRootPane();
     useUiStore.setState({ panes: [root], activePaneId: root.id });
 
     const result = await groupCommand.execute!({
       rawArgs: "My Group",
-      app: fakeApp(create, bulkSetField),
+      app: fakeApp(create, bulkSetFields),
     });
 
     expect(result).toEqual({ message: "Mark at least one item" });
     expect(create).not.toHaveBeenCalled();
-    expect(bulkSetField).not.toHaveBeenCalled();
+    expect(bulkSetFields).not.toHaveBeenCalled();
   });
 
   it("rejects when title is missing", async () => {
@@ -59,7 +59,7 @@ describe("groupCommand", () => {
   it("creates a group and bulk-reparents marked items", async () => {
     const createdGroup = { guid: "group-123", title: "Squad" };
     const create = vi.fn().mockResolvedValue(createdGroup);
-    const bulkSetField = vi.fn().mockResolvedValue(undefined);
+    const bulkSetFields = vi.fn().mockResolvedValue(undefined);
 
     const pane = createListPane("p1", "parent-folder");
     pane.markedIds = new Set(["item-1", "item-2"]);
@@ -67,7 +67,7 @@ describe("groupCommand", () => {
 
     const result = await groupCommand.execute!({
       rawArgs: "Squad",
-      app: fakeApp(create, bulkSetField),
+      app: fakeApp(create, bulkSetFields),
     });
 
     expect(create).toHaveBeenCalledWith(
@@ -78,11 +78,9 @@ describe("groupCommand", () => {
       }),
     );
 
-    expect(bulkSetField).toHaveBeenCalledWith(
-      expect.arrayContaining(["item-1", "item-2"]),
-      "parent_guid",
-      "group-123",
-    );
+    expect(bulkSetFields).toHaveBeenCalledWith(expect.arrayContaining(["item-1", "item-2"]), {
+      parent_guid: "group-123",
+    });
 
     const updatedPane = useUiStore.getState().panes.find((p) => p.id === "p1") as ListPane;
     expect(updatedPane?.markedIds.size).toBe(0);

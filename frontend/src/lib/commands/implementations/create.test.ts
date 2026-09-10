@@ -11,7 +11,7 @@ function fakeApp(create = vi.fn().mockResolvedValue({})): AppContext {
     items: {
       findItem: vi.fn(),
       setField: vi.fn(),
-      bulkSetField: vi.fn(),
+      bulkSetFields: vi.fn(),
       create,
       update: vi.fn(),
     },
@@ -166,25 +166,11 @@ describe("createCommand", () => {
     expect(result?.shouldClearPrompt).toBeFalsy();
   });
 
-  it("surfaces an API failure as a message instead of rejecting", async () => {
+  it("lets an API failure escape for the prompt to surface", async () => {
     const create = vi.fn().mockRejectedValue(new Error("title is required"));
 
-    const result = await createCommand.execute!({
-      rawArgs: "buy milk",
-      app: fakeApp(create),
-    });
-
-    expect(result).toEqual({ message: "title is required" });
-  });
-
-  it("keeps the typed text when the API fails, so nothing is lost", async () => {
-    const create = vi.fn().mockRejectedValue(new Error("boom"));
-
-    const result = await createCommand.execute!({
-      rawArgs: "buy milk",
-      app: fakeApp(create),
-    });
-
-    expect(result?.shouldClearPrompt).toBeFalsy();
+    await expect(
+      createCommand.execute!({ rawArgs: "buy milk", app: fakeApp(create) }),
+    ).rejects.toThrow("title is required");
   });
 });

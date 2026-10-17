@@ -9,7 +9,7 @@ export default function Helper({
 }: PromptHelper) {
   if (!isOpen) return;
   return (
-    <div className="absolute top-full mt-2 z-50 w-[99%] bg-bg border border-border flex flex-col gap-1 shadow-lg">
+    <div className="absolute top-full mt-2 z-50 w-[99%] bg-bg border border-border flex flex-col gap-1 shadow-lg animate-fade-in">
       {options.map((opt, idx) => (
         <div
           key={opt.value}

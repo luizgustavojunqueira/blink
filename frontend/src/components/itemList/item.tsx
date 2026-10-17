@@ -60,12 +60,12 @@ function ItemComponent({ item, paneId }: IItem) {
       data-item-id={item.guid}
       className={[
         "group flex w-full flex-row items-center gap-1",
-        "transition-colors duration-75",
+        "transition-colors",
         isSelected
-          ? "bg-bg-lighter"
+          ? "bg-bg-lighter duration-0"
           : isInVisualRange
-            ? "bg-accent/10"
-            : "hover:bg-bg-soft",
+            ? "bg-accent/10 duration-200"
+            : "hover:bg-bg-soft duration-200",
         "[content-visibility:auto] [contain-intrinsic-size:auto_2rem]",
       ].join(" ")}
     >

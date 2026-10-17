@@ -25,7 +25,7 @@ export default function ItemDetail({ paneId }: IItemDetail) {
 
   return (
     <div
-      className={`w-full h-full flex flex-col border p-4 gap-1 text-sm ${
+      className={`w-full h-full flex flex-col border p-4 gap-1 text-sm animate-fade-in transition-colors duration-75 ${
         isActive ? "border-b-accent" : "border-bg"
       }`}
     >

@@ -66,7 +66,7 @@ function HintComponent() {
   if (!showHint) return null;
 
   return (
-    <div className="absolute bottom-0 right-2.5 flex flex-row items-end justify-end p-2">
+    <div className="absolute bottom-0 right-2.5 flex flex-row items-end justify-end p-2 animate-fade-in">
       <div className="flex flex-col w-fit bg-bg-soft/90 px-2 rounded-md border border-accent/20">
         <KeySequenceIndicator />
         {Object.keys(hintsGrouped).map((g) => (

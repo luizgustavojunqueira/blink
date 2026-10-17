@@ -45,7 +45,7 @@ export function ItemList({ paneId }: IItemList) {
 
   return (
     <div
-      className={`w-full h-full flex flex-col border ${isActive ? "border-b-accent" : "border-bg"}`}
+      className={`w-full h-full flex flex-col border transition-colors duration-75 ${isActive ? "border-b-accent" : "border-bg"}`}
     >
       <Prompt paneId={paneId} />
       <div className="px-5">

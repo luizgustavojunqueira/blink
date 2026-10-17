@@ -810,3 +810,37 @@ describe("ui store: visual mode", () => {
   });
 });
 
+describe("ui store: setFieldState", () => {
+  beforeEach(() => {
+    useUiStore.setState({ fieldStates: {} });
+  });
+
+  it("records a saving state for a field", () => {
+    state().setFieldState("item-1:status", { status: "saving" });
+
+    expect(state().fieldStates["item-1:status"]).toEqual({ status: "saving" });
+  });
+
+  it("replaces the state with an error", () => {
+    state().setFieldState("item-1:status", { status: "saving" });
+    state().setFieldState("item-1:status", { status: "error", message: "boom" });
+
+    expect(state().fieldStates["item-1:status"]).toEqual({ status: "error", message: "boom" });
+  });
+
+  it("keeps other fields when one is set or cleared", () => {
+    state().setFieldState("item-1:status", { status: "saving" });
+    state().setFieldState("item-1:title", { status: "saving" });
+    state().setFieldState("item-1:status", null);
+
+    expect(Object.keys(state().fieldStates)).toEqual(["item-1:title"]);
+  });
+
+  it("leaves the state untouched when clearing a field that is not set", () => {
+    const before = state().fieldStates;
+
+    state().setFieldState("item-1:status", null);
+
+    expect(state().fieldStates).toBe(before);
+  });
+});

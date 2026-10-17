@@ -227,3 +227,90 @@ describe("ItemDetail", () => {
     expect(mockItems.setField).toHaveBeenCalledWith(item.guid, "title", "Buy oat milk");
   });
 });
+
+describe("ItemDetail: save state", () => {
+  const valueRow = (label: string) => screen.getByText(label).parentElement!.nextElementSibling;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useUiStore.setState({ fieldStates: {} });
+  });
+
+  it("sends the same draft only once when Enter is followed by a blur", () => {
+    seed("title", "insert");
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    const input = screen.getByDisplayValue("Buy milk");
+    fireEvent.change(input, { target: { value: "Buy oat milk" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.blur(input);
+
+    expect(mockItems.setField).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends again when the draft changes after a save", () => {
+    const item = seed("title", "insert");
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    const input = screen.getByDisplayValue("Buy milk");
+    fireEvent.change(input, { target: { value: "Buy oat milk" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.click(input);
+    fireEvent.change(input, { target: { value: "Buy soy milk" } });
+    fireEvent.blur(input);
+
+    expect(mockItems.setField).toHaveBeenCalledTimes(2);
+    expect(mockItems.setField).toHaveBeenLastCalledWith(item.guid, "title", "Buy soy milk");
+  });
+
+  it("lets the same draft be sent again after re-entering the field", () => {
+    seed("title", "insert");
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    const input = screen.getByDisplayValue("Buy milk");
+    fireEvent.change(input, { target: { value: "Buy oat milk" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.click(input);
+    fireEvent.change(input, { target: { value: "Buy oat milk" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(mockItems.setField).toHaveBeenCalledTimes(2);
+  });
+
+  it("labels a field as unsaved while its draft differs from the saved value", () => {
+    seed("title", "insert");
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    const input = screen.getByDisplayValue("Buy milk");
+    expect(screen.queryByText("● unsaved")).not.toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "Buy oat milk" } });
+
+    expect(screen.getByText("● unsaved")).toBeInTheDocument();
+    expect(valueRow("● unsaved")).toHaveClass("outline-accent");
+
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    expect(screen.queryByText("● unsaved")).not.toBeInTheDocument();
+  });
+
+  it("labels a field as saving and glows its border while the request is in flight", () => {
+    useUiStore.setState({ fieldStates: { "item-1:status": { status: "saving" } } });
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    expect(screen.getAllByText("● saving")).toHaveLength(1);
+    expect(valueRow("● saving")).toHaveClass("outline-accent", "shadow-[0_0_8px_var(--accent)]");
+  });
+
+  it("shows the error message and a danger border when the save failed", () => {
+    useUiStore.setState({
+      fieldStates: { "item-1:priority": { status: "error", message: "boom" } },
+    });
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    expect(screen.getByText("● failed: boom")).toBeInTheDocument();
+    expect(valueRow("● failed: boom")).toHaveClass("outline-danger");
+    expect(screen.queryByText("● saving")).not.toBeInTheDocument();
+  });
+});
+

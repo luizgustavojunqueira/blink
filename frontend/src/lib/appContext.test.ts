@@ -3,6 +3,7 @@ import { waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { bulkUpdateItem, createItem, updateItem } from "../api/items";
 import { createAppContext, getAppContext, getItemActions } from "./appContext";
+import { useUiStore } from "../stores/ui";
 import { Done, High, InProgress, Normal, Task, ToDo } from "../types/backend";
 import type { GetItemResponse } from "../types/backend";
 
@@ -24,6 +25,18 @@ function item(guid: string, overrides: Partial<GetItemResponse> = {}): GetItemRe
     ...overrides,
   };
 }
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+const fieldState = (key: string) => useUiStore.getState().fieldStates[key];
 
 function renderAppContext(setFilter = vi.fn()) {
   const client = new QueryClient({
@@ -299,5 +312,189 @@ describe("appContext: update", () => {
     await result.current.items.update({ guid: "item-1", status: Done });
 
     expect(client.getQueryData(["items", { status: [InProgress] }])).toEqual(others);
+  });
+
+  it("writes back only the fields the request sent", async () => {
+    vi.mocked(updateItem).mockResolvedValue(item("item-1", { status: Done, priority: High }));
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo, priority: Normal })]);
+
+    await result.current.items.update({ guid: "item-1", status: Done });
+
+    expect(client.getQueryData(["items", {}])).toEqual([
+      item("item-1", { status: Done, priority: Normal }),
+    ]);
+  });
+
+  it("invalidates tags only when the request changes them", async () => {
+    vi.mocked(updateItem).mockResolvedValue(item("item-1", { tags: ["home"] }));
+
+    const { result, invalidate } = renderAppContext();
+
+    await result.current.items.update({ guid: "item-1", tags: ["home"] });
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["tags"] });
+  });
+
+  it("hands the abort signal to the API", async () => {
+    vi.mocked(updateItem).mockResolvedValue(item("item-1", { status: Done }));
+
+    const { result } = renderAppContext();
+    const controller = new AbortController();
+
+    await result.current.items.update({ guid: "item-1", status: Done }, controller.signal);
+
+    expect(vi.mocked(updateItem).mock.calls[0][1]).toBe(controller.signal);
+  });
+});
+
+describe("appContext: setField optimistic", () => {
+  const cachedStatus = (client: QueryClient) =>
+    client.getQueryData<GetItemResponse[]>(["items", {}])?.[0].status;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useUiStore.setState({ fieldStates: {} });
+  });
+
+  it("shows the new value in the cache while the request is in flight", async () => {
+    const request = deferred<GetItemResponse>();
+    vi.mocked(updateItem).mockReturnValue(request.promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo })]);
+
+    result.current.items.setField("item-1", "status", Done);
+
+    expect(cachedStatus(client)).toBe(Done);
+
+    request.resolve(item("item-1", { status: Done }));
+    await waitFor(() => expect(fieldState("item-1:status")).toBeUndefined());
+    expect(cachedStatus(client)).toBe(Done);
+  });
+
+  it("marks the field as saving until the request settles", async () => {
+    const request = deferred<GetItemResponse>();
+    vi.mocked(updateItem).mockReturnValue(request.promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo })]);
+
+    result.current.items.setField("item-1", "status", Done);
+
+    expect(fieldState("item-1:status")).toEqual({ status: "saving" });
+
+    request.resolve(item("item-1", { status: Done }));
+    await waitFor(() => expect(fieldState("item-1:status")).toBeUndefined());
+  });
+
+  it("restores the previous value and records the error when the request fails", async () => {
+    const request = deferred<GetItemResponse>();
+    vi.mocked(updateItem).mockReturnValue(request.promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo })]);
+
+    result.current.items.setField("item-1", "status", Done);
+    request.reject(new Error("boom"));
+
+    await waitFor(() =>
+      expect(fieldState("item-1:status")).toEqual({ status: "error", message: "boom" }),
+    );
+    expect(cachedStatus(client)).toBe(ToDo);
+  });
+
+  it("aborts the previous request for the same field", () => {
+    vi.mocked(updateItem).mockReturnValue(deferred<GetItemResponse>().promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo })]);
+
+    result.current.items.setField("item-1", "status", InProgress);
+    result.current.items.setField("item-1", "status", Done);
+
+    const [first, second] = vi.mocked(updateItem).mock.calls.map((call) => call[1]);
+    expect(first?.aborted).toBe(true);
+    expect(second?.aborted).toBe(false);
+  });
+
+  it("does not abort requests for other fields or items", () => {
+    vi.mocked(updateItem).mockReturnValue(deferred<GetItemResponse>().promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(
+      ["items", {}],
+      [item("item-1", { status: ToDo }), item("item-2", { status: ToDo })],
+    );
+
+    result.current.items.setField("item-1", "status", Done);
+    result.current.items.setField("item-1", "priority", High);
+    result.current.items.setField("item-2", "status", Done);
+
+    for (const [, signal] of vi.mocked(updateItem).mock.calls) {
+      expect(signal?.aborted).toBe(false);
+    }
+  });
+
+  it("ignores the result of an aborted request", async () => {
+    const first = deferred<GetItemResponse>();
+    const second = deferred<GetItemResponse>();
+    vi.mocked(updateItem).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo })]);
+
+    result.current.items.setField("item-1", "status", InProgress);
+    result.current.items.setField("item-1", "status", Done);
+
+    first.reject(new DOMException("aborted", "AbortError"));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(fieldState("item-1:status")).toEqual({ status: "saving" });
+    expect(cachedStatus(client)).toBe(Done);
+
+    second.resolve(item("item-1", { status: Done }));
+    await waitFor(() => expect(fieldState("item-1:status")).toBeUndefined());
+    expect(cachedStatus(client)).toBe(Done);
+  });
+
+  it("falls back to the value from before the first click when the last request fails", async () => {
+    const first = deferred<GetItemResponse>();
+    const second = deferred<GetItemResponse>();
+    vi.mocked(updateItem).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo })]);
+
+    result.current.items.setField("item-1", "status", InProgress);
+    result.current.items.setField("item-1", "status", Done);
+
+    first.reject(new DOMException("aborted", "AbortError"));
+    second.reject(new Error("boom"));
+
+    await waitFor(() => expect(fieldState("item-1:status")?.status).toBe("error"));
+    expect(cachedStatus(client)).toBe(ToDo);
+  });
+
+  it("clears a previous error when the field is saved again", async () => {
+    const failing = deferred<GetItemResponse>();
+    const retry = deferred<GetItemResponse>();
+    vi.mocked(updateItem).mockReturnValueOnce(failing.promise).mockReturnValueOnce(retry.promise);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1", { status: ToDo })]);
+
+    result.current.items.setField("item-1", "status", Done);
+    failing.reject(new Error("boom"));
+    await waitFor(() => expect(fieldState("item-1:status")?.status).toBe("error"));
+
+    result.current.items.setField("item-1", "status", Done);
+
+    expect(fieldState("item-1:status")).toEqual({ status: "saving" });
+
+    retry.resolve(item("item-1", { status: Done }));
+    await waitFor(() => expect(fieldState("item-1:status")).toBeUndefined());
   });
 });

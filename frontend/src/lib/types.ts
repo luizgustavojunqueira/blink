@@ -16,6 +16,6 @@ export type AppContext = {
     bulkSetFields: (guids: string[], patch: ItemPatch) => Promise<string[]>;
     setField: (guid: string, key: keyof UpdateItemRequest, value: string | string[]) => void;
     create: (req: CreateItemRequest) => Promise<GetItemResponse>;
-    update: (req: UpdateItemRequest) => Promise<GetItemResponse>;
+    update: (req: UpdateItemRequest, signal?: AbortSignal) => Promise<GetItemResponse>;
   };
 };

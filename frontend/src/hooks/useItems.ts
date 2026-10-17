@@ -17,14 +17,16 @@ function applyMockFilter(items: GetItemResponse[], filter: GetItemRequest) {
   });
 }
 
+export const itemsQuery = (filter: GetItemRequest) => ({
+  queryKey: ["items", filter] as const,
+  queryFn: async () => {
+    if (USE_MOCK_ITEMS) return applyMockFilter(generateMockItems(), filter);
+    return getItems(filter);
+  },
+});
+
 export function useItems(filter: GetItemRequest = {}) {
-  return useQuery({
-    queryKey: ["items", filter],
-    queryFn: async () => {
-      if (USE_MOCK_ITEMS) return applyMockFilter(generateMockItems(), filter);
-      return getItems(filter);
-    },
-  });
+  return useQuery(itemsQuery(filter));
 }
 
 export function useTags() {

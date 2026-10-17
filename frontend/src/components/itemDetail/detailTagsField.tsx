@@ -46,7 +46,7 @@ function DetailTagsFieldComponent({
   );
 
   return (
-    <DetailFieldRow paneId={paneId} field="tags">
+    <DetailFieldRow paneId={paneId} itemGuid={itemGuid} field="tags" dirty={draft !== value}>
       <TextField
         ref={inputRef}
         singleLine

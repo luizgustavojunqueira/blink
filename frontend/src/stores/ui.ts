@@ -10,12 +10,15 @@ import {
 import { createDetailPane, createListPane, createRootPane } from "../lib/pane/factories";
 import type { Mode } from "../lib/keymap/types";
 
+export type FieldState = { status: "saving" } | { status: "error"; message: string };
+
 export type UiState = {
   mode: Mode;
   panes: Pane[];
   activePaneId: string;
   showHint: boolean;
   currentKeySeq: string;
+  fieldStates: Record<string, FieldState>;
 };
 
 export type UiActions = {
@@ -42,6 +45,7 @@ export type UiActions = {
   selectPane: (paneId: string, mode: Mode) => void;
   toggleHint: () => void;
   setCurrentKeySeq: (keySeq: string) => void;
+  setFieldState: (key: string, state: FieldState | null) => void;
   toggleMarked: (paneId: string, itemId: string) => void;
   toggleVisual: (anchorGuid: string) => void;
 };
@@ -152,8 +156,19 @@ export const useUiStore = create<UiStore>(
     activePaneId: rootPane.id,
     showHint: true,
     currentKeySeq: "",
+    fieldStates: {},
 
     setCurrentKeySeq: (keySeq: string) => set({ currentKeySeq: keySeq }),
+
+    setFieldState: (key, state) =>
+      set((s) => {
+        if (!state) {
+          if (!(key in s.fieldStates)) return {};
+          const { [key]: _, ...rest } = s.fieldStates;
+          return { fieldStates: rest };
+        }
+        return { fieldStates: { ...s.fieldStates, [key]: state } };
+      }),
 
     toggleHint: () =>
       set((s) => {

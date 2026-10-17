@@ -34,7 +34,7 @@ function DetailTextFieldComponent({
     });
 
   return (
-    <DetailFieldRow paneId={paneId} field={field}>
+    <DetailFieldRow paneId={paneId} itemGuid={itemGuid} field={field} dirty={draft !== value}>
       <TextField
         singleLine={singleLine}
         value={draft}

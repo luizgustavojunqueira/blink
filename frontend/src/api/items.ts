@@ -33,10 +33,11 @@ export function createItem(req: CreateItemRequest) {
   });
 }
 
-export function updateItem(req: UpdateItemRequest) {
+export function updateItem(req: UpdateItemRequest, signal?: AbortSignal) {
   return api<GetItemResponse>("/items", {
     method: "PATCH",
     body: JSON.stringify(req),
+    signal,
   });
 }
 

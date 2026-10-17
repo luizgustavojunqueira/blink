@@ -22,7 +22,7 @@ function DetailChoiceFieldComponent({
 }: IDetailChoiceField) {
 
   return (
-    <DetailFieldRow paneId={paneId} field={field}>
+    <DetailFieldRow paneId={paneId} itemGuid={itemGuid} field={field}>
       {Object.keys(mapper).map((k) => (
         <button
           key={k}

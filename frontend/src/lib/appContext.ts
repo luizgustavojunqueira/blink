@@ -17,7 +17,11 @@ function sameValue(current: unknown, next: unknown): boolean {
   return current === next;
 }
 
+type Flight = { controller: AbortController; original: unknown };
+
 export function createItemActions(client: QueryClient): AppContext["items"] {
+  const flights = new Map<string, Flight>();
+
   const findItem = (guid: string) => {
     for (const [, list] of client.getQueriesData<GetItemResponse[]>({
       queryKey: ["items"],
@@ -37,6 +41,11 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     return allItems.filter((i) => guids.includes(i.guid));
   };
 
+  const patchItem = (guid: string, patch: Partial<GetItemResponse>) =>
+    client.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
+      old?.map((i) => (i.guid === guid ? { ...i, ...patch } : i)),
+    );
+
   const create = async (req: CreateItemRequest) => {
     const created = await createItem(req);
 
@@ -46,14 +55,17 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     return created;
   };
 
-  const update = async (req: UpdateItemRequest) => {
-    const updated = await updateItem(req);
+  const update = async (req: UpdateItemRequest, signal?: AbortSignal) => {
+    const updated = await updateItem(req, signal);
+
+    const fields = Object.keys(req).filter((k) => k !== "guid") as (keyof GetItemResponse)[];
+    const changed = Object.fromEntries(fields.map((k) => [k, updated[k]]));
 
     client.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
-      old?.map((i) => (i.guid === updated.guid ? updated : i)),
+      old?.map((i) => (i.guid === updated.guid ? { ...i, ...changed } : i)),
     );
 
-    client.invalidateQueries({ queryKey: ["tags"] });
+    if (req.tags !== undefined) client.invalidateQueries({ queryKey: ["tags"] });
 
     return updated;
   };
@@ -73,7 +85,35 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
   const setField = (guid: string, key: keyof UpdateItemRequest, value: string | string[]) => {
     const current = findItem(guid);
     if (current && sameValue(current[key], value)) return;
-    return update({ guid, [key]: value });
+    const stateKey = `${guid}:${key}`;
+    const previous = flights.get(stateKey);
+    previous?.controller.abort();
+
+    const flight: Flight = {
+      controller: new AbortController(),
+      original: previous ? previous.original : current?.[key as keyof GetItemResponse],
+    };
+    flights.set(stateKey, flight);
+
+    patchItem(guid, { [key]: value } as Partial<GetItemResponse>);
+    useUiStore.getState().setFieldState(stateKey, { status: "saving" });
+
+    return update({ guid, [key]: value }, flight.controller.signal).then(
+      () => {
+        if (flights.get(stateKey) !== flight) return;
+        flights.delete(stateKey);
+        useUiStore.getState().setFieldState(stateKey, null);
+      },
+      (err: unknown) => {
+        if (flights.get(stateKey) !== flight) return;
+        flights.delete(stateKey);
+        patchItem(guid, { [key]: flight.original } as Partial<GetItemResponse>);
+        useUiStore.getState().setFieldState(stateKey, {
+          status: "error",
+          message: err instanceof Error ? err.message : "save failed",
+        });
+      },
+    );
   };
 
   const bulkSetFields = async (guids: string[], patch: ItemPatch) => {

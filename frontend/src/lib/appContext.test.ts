@@ -286,7 +286,7 @@ describe("appContext: update", () => {
     ]);
     expect(client.getQueryData(["items", { status: [ToDo] }])).toEqual([updated]);
     expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["items"] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["tags"] });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["tags"] });
   });
 
   it("leaves untouched lists alone", async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { getItemActions } from "../lib/appContext";
 import { useUiStore } from "../stores/ui";
 import { usePaneValue, type PaneSelector } from "./usePane";
@@ -37,18 +37,28 @@ export function useDetailField({
 
   const editing = usePaneValue(paneId, selectEditing);
   const [draft, setDraft] = useState(value);
+  const sentDraft = useRef<string | null>(null);
 
   useEffect(() => {
     if (!editing) setDraft(value);
   }, [value, editing]);
+
+  useEffect(() => {
+    sentDraft.current = null;
+  }, [value]);
+
+  useEffect(() => {
+    if (editing) sentDraft.current = null;
+  }, [editing]);
 
   const commit = useCallback(() => {
     if (rejectEmpty && draft.trim() === "") {
       setDraft(value);
       return;
     }
-    if (draft === value) return;
+    if (draft === value || sentDraft.current === draft) return;
 
+    sentDraft.current = draft;
     getItemActions().setField(itemGuid, field, parse ? parse(draft) : draft);
   }, [draft, value, field, itemGuid, parse, rejectEmpty]);
 

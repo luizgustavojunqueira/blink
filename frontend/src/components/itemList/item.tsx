@@ -1,3 +1,4 @@
+import { newId } from "../../lib/id";
 import { memo, useCallback } from "react";
 import { useUiStore } from "../../stores/ui";
 import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
@@ -106,7 +107,7 @@ function ItemComponent({ item, paneId }: IItem) {
         onClick={() => select(paneId, item.guid)}
         onDoubleClick={() => {
           select(paneId, item.guid);
-          pushPane(createDetailPane(crypto.randomUUID(), item.guid));
+          pushPane(createDetailPane(newId(), item.guid));
         }}
         className="flex min-w-0 flex-1 items-center gap-3 px-4 py-1.5"
       >

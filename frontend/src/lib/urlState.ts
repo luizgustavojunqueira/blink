@@ -1,3 +1,4 @@
+import { newId } from "./id";
 import type { QueryClient } from "@tanstack/react-query";
 import { itemsQuery } from "../hooks/useItems";
 import { useUiStore } from "../stores/ui";
@@ -155,7 +156,7 @@ export async function hydrateFromUrl(client: QueryClient) {
     if (entry.t === "d") {
       if (!from) break;
       panes.push({
-        ...createDetailPane(crypto.randomUUID(), from.id),
+        ...createDetailPane(newId(), from.id),
         selectedField: entry.k,
       });
       break;
@@ -164,7 +165,7 @@ export async function hydrateFromUrl(client: QueryClient) {
     if (from && from.type !== Group) break;
 
     const base = createListPane(
-      i === 0 ? "root" : crypto.randomUUID(),
+      i === 0 ? "root" : newId(),
       from?.id ?? null,
     );
     const filter: GetItemRequest = {

@@ -1,3 +1,4 @@
+import { newId } from "../lib/id";
 import { create, type StateCreator } from "zustand";
 import { Group, type GetItemRequest, type ItemType } from "../types/backend";
 import {
@@ -464,13 +465,13 @@ export const useUiStore = create<UiStore>(
               activePaneId: child.id,
             };
           }
-          const pane = createDetailPane(crypto.randomUUID(), itemId);
+          const pane = createDetailPane(newId(), itemId);
           return {
             panes: [...s.panes.slice(0, idx + 1), pane],
             activePaneId: pane.id,
           };
         } else if (paneType === "list") {
-          const pane = createListPane(crypto.randomUUID(), itemId);
+          const pane = createListPane(newId(), itemId);
           return {
             panes: [...s.panes.slice(0, idx + 1), pane],
             activePaneId: pane.id,

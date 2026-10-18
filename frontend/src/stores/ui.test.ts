@@ -772,6 +772,33 @@ describe("ui store: toggleMarked", () => {
   });
 });
 
+describe("ui store: marks on focus change", () => {
+  const seedMarked = () => {
+    const root = createRootPane();
+    root.markedIds = new Set(["a"]);
+    const child = createListPane("child", "g1");
+    useUiStore.setState({ mode: "normal", panes: [root, child], activePaneId: root.id });
+  };
+
+  it("clears the marks of the pane that lost the focus", () => {
+    seedMarked();
+
+    state().moveRight();
+
+    expect(state().activePaneId).toBe("child");
+    expect(firstPane().markedIds.size).toBe(0);
+  });
+
+  it("keeps the marks of the pane that gained the focus", () => {
+    seedMarked();
+
+    state().toggleMarked("child", "x");
+
+    expect(firstPane().markedIds.size).toBe(0);
+    expect([...(state().panes[1] as ListPane).markedIds]).toEqual(["x"]);
+  });
+});
+
 describe("ui store: visual mode", () => {
   it("enters and navigates via keyboard or mouse without altering markedIds", () => {
     seedRoot(["a", "b", "c", "d"], "a");

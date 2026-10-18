@@ -3,6 +3,7 @@ import Loading from "../loading";
 import Prompt from "../prompt/prompt";
 import Item from "./item";
 import SelectionScroller from "./selectionScroller";
+import MarkedOffscreen from "./markedOffscreen";
 import { useEffect, useRef } from "react";
 import { paneIsActive, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useUiStore } from "../../stores/ui";
@@ -48,8 +49,9 @@ export function ItemList({ paneId }: IItemList) {
       className={`w-full h-full flex flex-col border transition-colors duration-75 ${isActive ? "border-b-accent" : "border-bg"}`}
     >
       <Prompt paneId={paneId} />
-      <div className="px-5">
+      <div className="flex items-center justify-between px-5">
         <Breadcrumb paneId={paneId} />
+        <MarkedOffscreen paneId={paneId} listRef={listRef} />
       </div>
 
       <div className="flex-1 overflow-y-auto">

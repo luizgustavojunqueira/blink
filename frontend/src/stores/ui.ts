@@ -59,7 +59,15 @@ const hasUserFilter = (pane: ListPane) =>
 const mapActivePane = (panes: Pane[], activePaneId: string, nextPane: Pane): Pane[] =>
   panes.map((p) => (p.id === activePaneId ? nextPane : p));
 
-const commitVisualSelection = (pane: ListPane, fallbackAnchor?: string | null) => {
+const clearPaneMarks = (panes: Pane[], paneId: string): Pane[] => {
+  const pane = findPane(panes, paneId);
+  if (!pane || pane.type !== "list" || (pane.markedIds.size === 0 && pane.anchorGuid === null)) {
+    return panes;
+  }
+  return panes.map((p) => (p.id === paneId ? { ...pane, markedIds: new Set(), anchorGuid: null } : p));
+};
+
+const commitVisualSelection =(pane: ListPane, fallbackAnchor?: string | null) => {
   const anchor = pane.anchorGuid ?? fallbackAnchor ?? pane.selectedId;
   const markedIds = new Set(pane.markedIds);
   if (anchor && pane.selectedId) {
@@ -122,27 +130,30 @@ const withPaneSync =
   (config: StateCreator<UiStore>): StateCreator<UiStore> =>
   (set, get, api) =>
     config(
-      (partial, replace) => {
+      (partial) => {
         const patch = typeof partial === "function" ? partial(get()) : partial;
 
-        if (!patch || !("panes" in patch) || !patch.panes) {
-          set(patch as UiStore, replace as true);
+        const prevActiveId = get().activePaneId;
+        const focusLeft = !!patch.activePaneId && patch.activePaneId !== prevActiveId;
+
+        if (!patch.panes && !focusLeft) {
+          set(patch);
           return;
         }
 
-        const panes = syncChildPanes(get().panes, patch.panes);
-        const activePaneId = patch.activePaneId ?? get().activePaneId;
+        const nextPanes = patch.panes ?? get().panes;
+        const panes = syncChildPanes(
+          get().panes,
+          focusLeft ? clearPaneMarks(nextPanes, prevActiveId) : nextPanes,
+        );
+        const activePaneId = patch.activePaneId ?? prevActiveId;
         const stillThere = panes.some((p) => p.id === activePaneId);
 
-        set(
-          {
-            ...patch,
-            panes,
-            activePaneId:
-              stillThere || panes.length === 0 ? activePaneId : panes[panes.length - 1].id,
-          } as UiStore,
-          replace as true,
-        );
+        set({
+          ...patch,
+          panes,
+          activePaneId: stillThere || panes.length === 0 ? activePaneId : panes[panes.length - 1].id,
+        });
       },
       get,
       api,

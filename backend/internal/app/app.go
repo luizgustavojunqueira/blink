@@ -10,10 +10,11 @@ import (
 
 type App struct {
 	api *api.API
+	mcp http.Handler
 }
 
-func New(api *api.API) *App {
-	return &App{api: api}
+func New(api *api.API, mcp http.Handler) *App {
+	return &App{api: api, mcp: mcp}
 }
 
 func (a *App) Start(port string) error {
@@ -29,6 +30,10 @@ func (a *App) Start(port string) error {
 	mux.HandleFunc("POST /api/items/bulk", a.api.BulkUpdateItem)
 	mux.HandleFunc("GET /api/items", a.api.GetItems)
 	mux.HandleFunc("GET /api/tags", a.api.GetTags)
+
+	if a.mcp != nil {
+		mux.Handle("/mcp", a.mcp)
+	}
 
 	mux.Handle("/", ui.SPAHandler())
 

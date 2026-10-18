@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
+	"github.com/luizgustavojunqueira/blink/internal/agent"
 	"github.com/luizgustavojunqueira/blink/internal/api"
 	"github.com/luizgustavojunqueira/blink/internal/app"
 	"github.com/luizgustavojunqueira/blink/internal/db"
@@ -69,7 +71,12 @@ func run() error {
 	svc := service.NewService(repo)
 	myAPI := api.NewAPI(svc)
 
-	application := app.New(myAPI)
+	var mcpHandler http.Handler
+	if token := os.Getenv("MCP_TOKEN"); token != "" {
+		mcpHandler = agent.NewHandler(svc, token)
+	}
+
+	application := app.New(myAPI, mcpHandler)
 
 	if err := application.Start(port); err != nil {
 		return fmt.Errorf("could not start app: %w", err)

@@ -1,7 +1,10 @@
+-include .env
+export
+
 .PHONY: dev-api dev-ui build generate test test-back test-front
 
 dev-api:
-	cd backend && DB_PATH=../data/blink.db air
+	cd backend && air
 
 dev-ui:
 	cd frontend && bun run dev

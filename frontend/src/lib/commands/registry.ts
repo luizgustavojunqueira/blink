@@ -1,3 +1,4 @@
+import { configCommand } from "./implementations/config";
 import { createCommand } from "./implementations/create";
 import { editCommand } from "./implementations/edit";
 import { filterCommand } from "./implementations/filter";
@@ -13,6 +14,7 @@ export const commands = {
   create: createCommand,
   edit: editCommand,
   group: groupCommand,
+  config: configCommand,
 } as const satisfies Record<string, CommandDefinition>;
 
 export type CommandId = keyof typeof commands;

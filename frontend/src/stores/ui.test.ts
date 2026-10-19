@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useUiStore } from "./ui";
-import { createDetailPane, createListPane, createRootPane } from "../lib/pane/factories";
-import type { DetailPane, ListPane } from "../lib/pane/types";
+import {
+  createConfigPane,
+  createDetailPane,
+  createListPane,
+  createRootPane,
+} from "../lib/pane/factories";
+import type { ConfigPane, DetailPane, ListPane } from "../lib/pane/types";
 import { Group, Task, type ItemType } from "../types/backend";
 
 const state = () => useUiStore.getState();
@@ -869,5 +874,74 @@ describe("ui store: setFieldState", () => {
     state().setFieldState("item-1:status", null);
 
     expect(state().fieldStates).toBe(before);
+  });
+});
+
+describe("ui store: config pane", () => {
+  const config = () => state().panes.find((p) => p.type === "config") as ConfigPane | undefined;
+
+  it("opens next to the active pane with the given row selected", () => {
+    seedRoot(["a"], "a");
+
+    state().openConfig("theme:nord");
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "config"]);
+    expect(state().activePaneId).toBe(config()?.id);
+    expect(config()?.selectedRow).toBe("theme:nord");
+  });
+
+  it("replaces whatever was open after the active pane", () => {
+    seedRoot(["a"], "a");
+    state().openChildPane("a", "detail");
+    state().selectPane("root", "normal");
+
+    state().openConfig();
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "config"]);
+  });
+
+  it("focuses the open config pane instead of opening another", () => {
+    state().openConfig("theme:nord");
+    const id = config()?.id;
+    state().selectPane("root", "normal");
+
+    state().openConfig("theme:gruvbox");
+
+    expect(state().panes.filter((p) => p.type === "config")).toHaveLength(1);
+    expect(state().activePaneId).toBe(id);
+    expect(config()?.selectedRow).toBe("theme:nord");
+  });
+
+  it("stays open when the selection of the list behind it moves", () => {
+    seedRoot(["a", "b"], "a");
+    state().openConfig();
+    state().selectPane("root", "normal");
+
+    state().moveDown(1);
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "config"]);
+  });
+
+  it("selects a row and focuses the pane", () => {
+    const pane = createConfigPane("config");
+    useUiStore.setState({ panes: [firstPane(), pane], activePaneId: "root" });
+
+    state().selectRow("config", "key:list:down");
+
+    expect(config()?.selectedRow).toBe("key:list:down");
+    expect(state().activePaneId).toBe("config");
+  });
+
+  it("closes on escape from normal mode, after leaving insert first", () => {
+    state().openConfig();
+    state().enterInsert();
+
+    state().escape();
+    expect(state().mode).toBe("normal");
+    expect(config()).toBeDefined();
+
+    state().escape();
+    expect(config()).toBeUndefined();
+    expect(state().activePaneId).toBe("root");
   });
 });

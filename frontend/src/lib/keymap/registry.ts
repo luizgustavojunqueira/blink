@@ -3,6 +3,7 @@ import {
   detailPriorityKeyBindings,
   detailStatusKeyBindings,
 } from "./implementations/detailPane";
+import { configPaneBindings } from "./implementations/configPane";
 import { escapeBind } from "./implementations/escape";
 import { toggleHintBind } from "./implementations/hint";
 import { prefixKeyBindings } from "./implementations/insertMode";
@@ -26,22 +27,45 @@ export const keyBindings: KeyBinding[] = [
   ...markBindings,
   ...bulkUpdateStatusBindings,
   ...visualMode,
+  ...configPaneBindings,
 ];
 
 export type KeyMapId = keyof typeof keyBindings;
 
+export type Keymap = Record<string, string[]>;
+
+let active: KeyBinding[] = keyBindings;
 const prefixes = new Map<string, KeyBinding[]>();
 const byKey = new Map<string, KeyBinding[]>();
-for (const b of Object.values(keyBindings)) {
-  for (const k of b.keys) {
-    byKey.set(k, [...(byKey.get(k) ?? []), b]);
+const byId = new Map<string, KeyBinding>();
 
-    const tokens = k.split(" ");
-    for (let i = 1; i < tokens.length; i++) {
-      const prefix = tokens.slice(0, i).join(" ");
-      prefixes.set(prefix, [...(prefixes.get(prefix) ?? []), b]);
+function index() {
+  prefixes.clear();
+  byKey.clear();
+  byId.clear();
+
+  for (const b of active) {
+    byId.set(b.id, b);
+    for (const k of b.keys) {
+      byKey.set(k, [...(byKey.get(k) ?? []), b]);
+
+      const tokens = k.split(" ");
+      for (let i = 1; i < tokens.length; i++) {
+        const prefix = tokens.slice(0, i).join(" ");
+        prefixes.set(prefix, [...(prefixes.get(prefix) ?? []), b]);
+      }
     }
   }
+}
+
+index();
+
+export function applyKeymap(keymap: Keymap) {
+  active = keyBindings.map((b) => {
+    const keys = keymap[b.id];
+    return !b.fixed && keys && keys.length > 0 ? { ...b, keys } : b;
+  });
+  index();
 }
 
 const matches = (b: KeyBinding, ctx: KeyQueryContext) =>
@@ -64,10 +88,10 @@ export type AvailableBinding = {
 };
 
 export function availableKeys(ctx: KeyQueryContext): AvailableBinding[] {
-  const active = new Set(keyBindings.filter((b) => matches(b, ctx)));
-  const winner = (key: string) => byKey.get(key)?.find((b) => active.has(b));
+  const available = new Set(active.filter((b) => matches(b, ctx)));
+  const winner = (key: string) => byKey.get(key)?.find((b) => available.has(b));
 
-  return [...active]
+  return [...available]
     .map((binding) => ({
       binding,
       keys: binding.keys.filter((k) => winner(k) === binding),
@@ -76,14 +100,6 @@ export function availableKeys(ctx: KeyQueryContext): AvailableBinding[] {
     .filter(({ keys }) => keys.length > 0);
 }
 
-const keyBidingsIndex: Record<string, KeyBinding> = Object.values(keyBindings).reduce(
-  (acc, key) => {
-    acc[key.id] = key;
-    return acc;
-  },
-  {} as Record<string, KeyBinding>,
-);
-
 export function getKeyBinding(id: string): KeyBinding | undefined {
-  return keyBidingsIndex[id];
+  return byId.get(id);
 }

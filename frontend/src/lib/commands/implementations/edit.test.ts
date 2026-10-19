@@ -9,6 +9,7 @@ function fakeApp(bulkSetFields = vi.fn().mockResolvedValue(["item-1", "item-2"])
   return {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
+    config: {} as AppContext["config"],
     items: {
       findItem: vi.fn(),
       setField: vi.fn(),

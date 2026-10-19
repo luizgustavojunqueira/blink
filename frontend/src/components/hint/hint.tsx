@@ -1,5 +1,6 @@
-import { Fragment, memo, useMemo } from "react";
-import { availableKeys, type AvailableBinding } from "../../lib/keymap/registry";
+import { Fragment, memo, useCallback, useMemo } from "react";
+import { availableKeys, type AvailableBinding, type Keymap } from "../../lib/keymap/registry";
+import { useConfigStore } from "../../lib/config/store";
 import { queryContext } from "../../lib/keymap/context";
 import { useUiStore, type UiState } from "../../stores/ui";
 import { useCachedSelector } from "../../hooks/usePane";
@@ -7,7 +8,7 @@ import KeySequenceIndicator from "./keySequenceIndicator";
 
 const NO_HINTS: AvailableBinding[] = [];
 
-const selectHints = (s: UiState): AvailableBinding[] => {
+const selectHints = (s: UiState, _keymap: Keymap): AvailableBinding[] => {
   if (!s.showHint) return NO_HINTS;
   const pane = s.panes.find((p) => p.id === s.activePaneId);
   if (!pane) return NO_HINTS;
@@ -59,7 +60,9 @@ function groupBy<T>(items: Array<T>, field: keyof T): Record<string, Array<T>> {
 
 function HintComponent() {
   const showHint = useUiStore((s) => s.showHint);
-  const hints = useCachedSelector(selectHints, sameHints, NO_HINTS);
+  const keymap = useConfigStore((s) => s.keymap);
+  const select = useCallback((s: UiState) => selectHints(s, keymap), [keymap]);
+  const hints = useCachedSelector(select, sameHints, NO_HINTS);
   const hintsGrouped = useMemo(() => groupBy(hints, "group"), [hints]);
   const currentKeySeq = useUiStore((s) => s.currentKeySeq);
 

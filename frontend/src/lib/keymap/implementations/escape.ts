@@ -6,6 +6,7 @@ export const escapeBind: KeyBinding = {
   modes: ["normal", "insert", "visual"],
   scope: "global",
   description: "Escape",
+  fixed: true,
   run: (ctx) => {
     ctx.app.ui.escape();
   },

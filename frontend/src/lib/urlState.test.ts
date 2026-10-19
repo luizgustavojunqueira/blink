@@ -9,6 +9,7 @@ import {
   type GetItemResponse,
 } from "../types/backend";
 import {
+  createConfigPane,
   createDetailPane,
   createListPane,
   createRootPane,
@@ -132,6 +133,16 @@ describe("serializePanes", () => {
       { t: "l", s: "d1" },
       { t: "d", k: "status" },
     ]);
+  });
+
+  it("stops at a config pane instead of saving it", () => {
+    const root = { ...createRootPane(), selectedId: "g1" };
+    const config = createConfigPane("config", "theme:nord");
+
+    expect(JSON.parse(serializePanes([root, config], "config")!)).toEqual({
+      a: 0,
+      p: [{ t: "l", s: "g1" }],
+    });
   });
 
   it("drops panes whose parent has no selection", () => {

@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { availableKeys, getKeyBinding, keyBindings, resolve } from "./registry";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  applyKeymap,
+  availableKeys,
+  getKeyBinding,
+  isPrefix,
+  keyBindings,
+  resolve,
+} from "./registry";
 import type { KeyQueryContext, Mode } from "./types";
 import type { DetailField, ListPane } from "../pane/types";
 import { Group, Task } from "../../types/backend";
@@ -64,6 +71,14 @@ const detailCtx = (mode: Mode, selectedField: DetailField): KeyQueryContext => {
   } as KeyQueryContext;
 };
 
+const configCtx = (selectedRow: string): KeyQueryContext => {
+  const pane = { id: "config-0", type: "config" as const, selectedRow };
+  return {
+    ui: { mode: "normal", panes: [pane], activePaneId: pane.id },
+    pane,
+  } as KeyQueryContext;
+};
+
 describe("keymap registry: resolve", () => {
   it("keeps the item bindings out of reach while nothing is selected", () => {
     expect(resolve("3", ctx("normal", { selectedId: null }))).toBeUndefined();
@@ -100,6 +115,9 @@ describe("keymap registry: resolve", () => {
       detailCtx("normal", "status"),
       detailCtx("normal", "priority"),
       detailCtx("normal", "title"),
+      configCtx("theme:gruvbox"),
+      configCtx("theme:mine"),
+      configCtx("key:list:down"),
     ];
 
     for (const binding of keyBindings) {
@@ -179,5 +197,47 @@ describe("keymap registry: availableKeys", () => {
         expect(entry.keys.length).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe("keymap registry: applyKeymap", () => {
+  afterEach(() => applyKeymap({}));
+
+  it("moves a binding to its new keys and frees the old ones", () => {
+    applyKeymap({ "list:down": ["n"] });
+
+    expect(resolve("n", ctx("normal"))?.id).toBe("list:down");
+    expect(resolve("j", ctx("normal"))).toBeUndefined();
+    expect(getKeyBinding("list:down")?.keys).toEqual(["n"]);
+  });
+
+  it("indexes the prefixes of remapped sequences", () => {
+    applyKeymap({ "list:top": ["z z"] });
+
+    expect(isPrefix("z", ctx("normal"))).toBe(true);
+    expect(isPrefix("g", ctx("normal"))).toBe(false);
+    expect(resolve("z z", ctx("normal"))?.id).toBe("list:top");
+  });
+
+  it("ignores overrides for fixed bindings and unknown ids", () => {
+    applyKeymap({ escape: ["q"], nope: ["x"] });
+
+    expect(resolve("escape", ctx("normal"))?.id).toBe("escape");
+    expect(resolve("q", ctx("normal"))).toBeUndefined();
+  });
+
+  it("shows the remapped keys in the available keys", () => {
+    applyKeymap({ "list:down": ["n"] });
+
+    const down = availableKeys(ctx("normal")).find((a) => a.binding.id === "list:down");
+    expect(down?.keys).toEqual(["n"]);
+  });
+
+  it("goes back to the defaults with an empty keymap", () => {
+    applyKeymap({ "list:down": ["n"] });
+    applyKeymap({});
+
+    expect(resolve("j", ctx("normal"))?.id).toBe("list:down");
+    expect(getKeyBinding("list:down")).toBe(keyBindings.find((b) => b.id === "list:down"));
   });
 });

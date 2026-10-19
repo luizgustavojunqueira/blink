@@ -1,7 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { useEffect, useState } from "react";
-import { getTheme, setTheme } from "./lib/theme";
 import { getAppContext } from "./lib/appContext";
 import { useKeyMap } from "./hooks/useKeyMap";
 import { useUiStore } from "./stores/ui";
@@ -13,11 +12,6 @@ import { bootUrlState, hasUrlState } from "./lib/urlState";
 
 function Main() {
   useKeyMap(getAppContext());
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setTheme(getTheme());
-  }, []);
 
   const [ready, setReady] = useState(() => !hasUrlState());
 

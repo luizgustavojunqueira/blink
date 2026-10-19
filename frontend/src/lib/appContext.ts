@@ -2,7 +2,8 @@ import type { QueryClient } from "@tanstack/react-query";
 import { bulkUpdateItem, createItem, updateItem } from "../api/items";
 import { useUiStore } from "../stores/ui";
 import { queryClient } from "./queryClient";
-import { setTheme } from "./theme";
+import { useConfigStore } from "./config/store";
+import { configRows } from "./config/rows";
 import type { AppContext, ItemPatch } from "./types";
 import type { CreateItemRequest, GetItemResponse, UpdateItemRequest } from "../types/backend";
 
@@ -134,10 +135,29 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
   return { findItem, setField, create, update, bulkSetFields };
 }
 
+function createConfigActions(): AppContext["config"] {
+  const store = () => useConfigStore.getState();
+
+  return {
+    get: store,
+    rows: () => configRows(store()),
+    setTheme: (name) => store().setTheme(name),
+    setKeys: (bindingId, input) => store().setKeys(bindingId, input),
+    resetKeys: (bindingId) => store().resetKeys(bindingId),
+    duplicateTheme: (from) => store().duplicateTheme(from),
+    renameTheme: (from, input) => store().renameTheme(from, input),
+    deleteTheme: (name) => store().deleteTheme(name),
+    setThemeColor: (name, token, input) => store().setThemeColor(name, token, input),
+  };
+}
+
 export function createAppContext(client: QueryClient): AppContext {
   return {
     ui: useUiStore.getState(),
-    setTheme,
+    setTheme: (theme) => {
+      useConfigStore.getState().setTheme(theme);
+    },
+    config: createConfigActions(),
     items: createItemActions(client),
   };
 }

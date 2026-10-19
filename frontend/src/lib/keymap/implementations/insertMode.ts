@@ -16,6 +16,7 @@ export const prefixKeyBindings: KeyBinding[] = [
     modes: ["normal"],
     scope: "list",
     description: "Enter insert mode with mod",
+    fixed: true,
     when: () => true,
     run: ({ app }, key) => app.ui.enterInsert(key),
   },

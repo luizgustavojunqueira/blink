@@ -24,6 +24,7 @@ export type KeyBinding = {
   scope: PaneType | "global";
   description: string;
   hint?: { group: "nav" | "item" | "pane" | "prompt"; primary?: boolean };
+  fixed?: boolean;
   when?: (ctx: KeyQueryContext) => boolean;
   run: (ctx: KeyContext, key?: string) => void | boolean;
 };

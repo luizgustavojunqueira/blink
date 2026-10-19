@@ -98,6 +98,8 @@ export function serializePanes(
       if (parent.type !== "list" || !parent.selectedId) break;
     }
 
+    if (pane.type === "config") break;
+
     if (pane.type === "detail") {
       saved.push({ t: "d", k: pane.selectedField });
       break;

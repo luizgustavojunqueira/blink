@@ -1,4 +1,4 @@
-import type { DetailPane, ListPane } from "./types";
+import type { ConfigPane, DetailPane, ListPane } from "./types";
 
 export const createListPane = (id: string, parentId: string | null): ListPane => ({
   id,
@@ -20,4 +20,10 @@ export const createDetailPane = (id: string, itemId: string): DetailPane => ({
   type: "detail",
   itemId,
   selectedField: "title",
+});
+
+export const createConfigPane = (id: string, selectedRow: string | null = null): ConfigPane => ({
+  id,
+  type: "config",
+  selectedRow,
 });

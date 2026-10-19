@@ -8,6 +8,7 @@ import { useUiStore } from "../../stores/ui";
 const app: AppContext = {
   ui: useUiStore.getState(),
   setTheme: vi.fn(),
+  config: {} as AppContext["config"],
   items: {
     findItem: vi.fn(),
     setField: vi.fn(),

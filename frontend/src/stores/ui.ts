@@ -8,7 +8,12 @@ import {
   type Pane,
   type PaneType,
 } from "../lib/pane/types";
-import { createDetailPane, createListPane, createRootPane } from "../lib/pane/factories";
+import {
+  createConfigPane,
+  createDetailPane,
+  createListPane,
+  createRootPane,
+} from "../lib/pane/factories";
 import type { Mode } from "../lib/keymap/types";
 
 export type FieldState = { status: "saving" } | { status: "error"; message: string };
@@ -49,6 +54,8 @@ export type UiActions = {
   setFieldState: (key: string, state: FieldState | null) => void;
   toggleMarked: (paneId: string, itemId: string) => void;
   toggleVisual: (anchorGuid: string) => void;
+  openConfig: (selectedRow?: string | null) => void;
+  selectRow: (paneId: string, rowId: string) => void;
 };
 
 const findPane = (panes: Pane[], paneId: string) => panes.find((p) => p.id === paneId);
@@ -82,7 +89,7 @@ const commitVisualSelection =(pane: ListPane, fallbackAnchor?: string | null) =>
 };
 
 const syncChild = (parent: Pane, child: Pane): Pane => {
-  if (parent.type !== "list") return child;
+  if (parent.type !== "list" || child.type === "config") return child;
 
   const target = parent.selectedId;
   const targetType = target ? parent.renderedTypes[target] : undefined;
@@ -522,6 +529,27 @@ export const useUiStore = create<UiStore>(
         const prev = s.panes[Math.max(i - 1, lo)];
         if (!prev || prev.id === s.activePaneId) return {};
         return { activePaneId: prev.id };
+      }),
+
+    openConfig: (selectedRow = null) =>
+      set((s) => {
+        const existing = s.panes.find((p) => p.type === "config");
+        if (existing) return { activePaneId: existing.id };
+
+        const idx = s.panes.findIndex((p) => p.id === s.activePaneId);
+        const pane = createConfigPane(newId(), selectedRow);
+        return { panes: [...s.panes.slice(0, idx + 1), pane], activePaneId: pane.id };
+      }),
+
+    selectRow: (paneId, rowId) =>
+      set((s) => {
+        const pane = findPane(s.panes, paneId);
+        if (!pane || pane.type !== "config") return {};
+        if (pane.selectedRow === rowId && s.activePaneId === paneId) return {};
+        return {
+          activePaneId: paneId,
+          panes: mapActivePane(s.panes, paneId, { ...pane, selectedRow: rowId }),
+        };
       }),
 
     moveField: (dir: 1 | -1) =>

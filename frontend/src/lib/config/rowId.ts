@@ -1,0 +1,24 @@
+import type { ThemeToken } from "../theme";
+
+export type RowRef =
+  | { kind: "theme"; name: string }
+  | { kind: "color"; token: ThemeToken }
+  | { kind: "key"; bindingId: string };
+
+export const themeRowId = (name: string) => `theme:${name}`;
+export const colorRowId = (token: ThemeToken) => `color:${token}`;
+export const keyRowId = (bindingId: string) => `key:${bindingId}`;
+
+export function parseRowId(id: string | null): RowRef | null {
+  if (!id) return null;
+  const sep = id.indexOf(":");
+  if (sep === -1) return null;
+
+  const kind = id.slice(0, sep);
+  const rest = id.slice(sep + 1);
+
+  if (kind === "theme") return { kind, name: rest };
+  if (kind === "color") return { kind, token: rest as ThemeToken };
+  if (kind === "key") return { kind, bindingId: rest };
+  return null;
+}

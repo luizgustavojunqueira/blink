@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AppContext } from "../../types";
 import { THEMES, themeCommand } from "./theme";
 import { useUiStore } from "../../../stores/ui";
+import { defaultConfig, useConfigStore } from "../../config/store";
 
 const A_THEME = THEMES[0];
 
@@ -9,6 +10,7 @@ function fakeApp(): AppContext {
   return {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
+    config: {} as AppContext["config"],
     items: {
       findItem: vi.fn(),
       setField: vi.fn(),
@@ -74,5 +76,22 @@ describe("themeCommand.execute()", () => {
     const result = await themeCommand.execute!({ rawArgs: "banana", app });
 
     expect(result?.shouldClearPrompt).toBeFalsy();
+  });
+});
+
+describe("themeCommand with custom themes", () => {
+  afterEach(() => {
+    useConfigStore.setState(defaultConfig());
+  });
+
+  it("offers and accepts custom themes next to the built-in ones", async () => {
+    useConfigStore.getState().duplicateTheme(A_THEME);
+    const custom = `${A_THEME}-copy`;
+    const app = fakeApp();
+
+    expect(themeCommand.getOptions!("").map((o) => o.value)).toContain(custom);
+    await themeCommand.execute!({ rawArgs: custom, app });
+
+    expect(app.setTheme).toHaveBeenCalledWith(custom);
   });
 });

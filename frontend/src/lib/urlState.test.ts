@@ -93,11 +93,11 @@ describe("serializePanes", () => {
   });
 
   it("stores the selection of a list", () => {
-    const root = { ...createRootPane(), selectedId: "g1" };
+    const root = { ...createRootPane(), selectedGuid: "g1" };
 
     expect(JSON.parse(serializePanes([root], root.id)!)).toEqual({
       a: 0,
-      p: [{ t: "l", s: "g1" }],
+      p: [{ t: "l", g: "g1" }],
     });
   });
 
@@ -109,14 +109,14 @@ describe("serializePanes", () => {
     };
 
     expect(JSON.parse(serializePanes([root], root.id)!).p).toEqual([
-      { t: "l", s: null, f: { title: "milk", status: ["TODO"] }, q: "milk" },
+      { t: "l", g: null, f: { title: "milk", status: ["TODO"] }, q: "milk" },
     ]);
   });
 
   it("stores every pane of a deep stack and the active one", () => {
-    const root = { ...createRootPane(), selectedId: "g1" };
-    const child = { ...createListPane("child", "g1"), selectedId: "c2" };
-    const grand = { ...createListPane("grand", "c2"), selectedId: "d1" };
+    const root = { ...createRootPane(), selectedGuid: "g1" };
+    const child = { ...createListPane("child", "g1"), selectedGuid: "c2" };
+    const grand = { ...createListPane("grand", "c2"), selectedGuid: "d1" };
     const detail: DetailPane = {
       ...createDetailPane("detail", "d1"),
       selectedField: "status",
@@ -128,20 +128,20 @@ describe("serializePanes", () => {
 
     expect(saved.a).toBe(2);
     expect(saved.p).toEqual([
-      { t: "l", s: "g1" },
-      { t: "l", s: "c2" },
-      { t: "l", s: "d1" },
+      { t: "l", g: "g1" },
+      { t: "l", g: "c2" },
+      { t: "l", g: "d1" },
       { t: "d", k: "status" },
     ]);
   });
 
   it("stops at a config pane instead of saving it", () => {
-    const root = { ...createRootPane(), selectedId: "g1" };
+    const root = { ...createRootPane(), selectedGuid: "g1" };
     const config = createConfigPane("config", "theme:nord");
 
     expect(JSON.parse(serializePanes([root, config], "config")!)).toEqual({
       a: 0,
-      p: [{ t: "l", s: "g1" }],
+      p: [{ t: "l", g: "g1" }],
     });
   });
 
@@ -171,7 +171,7 @@ describe("hasUrlState", () => {
   });
 
   it("is true for a valid state", () => {
-    setUrl({ a: 0, p: [{ t: "l", s: "g1" }] });
+    setUrl({ a: 0, p: [{ t: "l", g: "g1" }] });
 
     expect(hasUrlState()).toBe(true);
   });
@@ -182,9 +182,9 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 3,
       p: [
-        { t: "l", s: "g1" },
-        { t: "l", s: "c2" },
-        { t: "l", s: "d1" },
+        { t: "l", g: "g1" },
+        { t: "l", g: "c2" },
+        { t: "l", g: "d1" },
         { t: "d", k: "status" },
       ],
     });
@@ -198,13 +198,13 @@ describe("hydrateFromUrl", () => {
       "detail",
     ]);
     expect(state().panes[0].id).toBe("root");
-    expect(list(0).selectedId).toBe("g1");
-    expect(list(1).parentId).toBe("g1");
-    expect(list(1).selectedId).toBe("c2");
-    expect(list(2).parentId).toBe("c2");
-    expect(list(2).selectedId).toBe("d1");
+    expect(list(0).selectedGuid).toBe("g1");
+    expect(list(1).parentGuid).toBe("g1");
+    expect(list(1).selectedGuid).toBe("c2");
+    expect(list(2).parentGuid).toBe("c2");
+    expect(list(2).selectedGuid).toBe("d1");
     expect(state().panes[3]).toMatchObject({
-      itemId: "d1",
+      itemGuid: "d1",
       selectedField: "status",
     });
     expect(state().activePaneId).toBe(state().panes[3].id);
@@ -215,14 +215,14 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 1,
       p: [
-        { t: "l", s: "g1" },
-        { t: "l", s: "c2" },
+        { t: "l", g: "g1" },
+        { t: "l", g: "c2" },
       ],
     });
 
     await hydrateFromUrl(newClient());
 
-    expect(list(0).renderedIds).toEqual(["g1", "t1"]);
+    expect(list(0).renderedGuids).toEqual(["g1", "t1"]);
     expect(list(0).renderedTypes).toEqual({ g1: Group, t1: Task });
   });
 
@@ -230,8 +230,8 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 0,
       p: [
-        { t: "l", s: "g1" },
-        { t: "l", s: null },
+        { t: "l", g: "g1" },
+        { t: "l", g: null },
       ],
     });
 
@@ -241,7 +241,7 @@ describe("hydrateFromUrl", () => {
   });
 
   it("clamps an out-of-range active pane", async () => {
-    setUrl({ a: 9, p: [{ t: "l", s: "g1" }] });
+    setUrl({ a: 9, p: [{ t: "l", g: "g1" }] });
 
     await hydrateFromUrl(newClient());
 
@@ -252,7 +252,7 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 0,
       p: [
-        { t: "l", s: null, f: { title: "milk", status: ["TODO"] }, q: "milk" },
+        { t: "l", g: null, f: { title: "milk", status: ["TODO"] }, q: "milk" },
       ],
     });
 
@@ -275,8 +275,8 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 2,
       p: [
-        { t: "l", s: "g1" },
-        { t: "l", s: "gone" },
+        { t: "l", g: "g1" },
+        { t: "l", g: "gone" },
         { t: "d", k: "title" },
       ],
     });
@@ -284,7 +284,7 @@ describe("hydrateFromUrl", () => {
     await hydrateFromUrl(newClient());
 
     expect(state().panes.map((p) => p.type)).toEqual(["list", "list"]);
-    expect(list(1).selectedId).toBeNull();
+    expect(list(1).selectedGuid).toBeNull();
     expect(state().activePaneId).toBe(state().panes[1].id);
   });
 
@@ -292,7 +292,7 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 1,
       p: [
-        { t: "l", s: "gone" },
+        { t: "l", g: "gone" },
         { t: "d", k: "title" },
       ],
     });
@@ -300,29 +300,29 @@ describe("hydrateFromUrl", () => {
     await hydrateFromUrl(newClient());
 
     expect(state().panes.map((p) => p.type)).toEqual(["list"]);
-    expect(list(0).selectedId).toBeNull();
+    expect(list(0).selectedGuid).toBeNull();
   });
 
   it("drops a child list under an item that is not a group", async () => {
     setUrl({
       a: 1,
       p: [
-        { t: "l", s: "t1" },
-        { t: "l", s: null },
+        { t: "l", g: "t1" },
+        { t: "l", g: null },
       ],
     });
 
     await hydrateFromUrl(newClient());
 
     expect(state().panes).toHaveLength(1);
-    expect(list(0).selectedId).toBe("t1");
+    expect(list(0).selectedGuid).toBe("t1");
   });
 
   it("opens a detail for a task selected in the previous list", async () => {
     setUrl({
       a: 1,
       p: [
-        { t: "l", s: "t1" },
+        { t: "l", g: "t1" },
         { t: "d", k: "description" },
       ],
     });
@@ -331,7 +331,7 @@ describe("hydrateFromUrl", () => {
 
     expect(state().panes[1]).toMatchObject({
       type: "detail",
-      itemId: "t1",
+      itemGuid: "t1",
       selectedField: "description",
     });
   });
@@ -344,25 +344,25 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 1,
       p: [
-        { t: "l", s: "g1" },
-        { t: "l", s: "c1" },
+        { t: "l", g: "g1" },
+        { t: "l", g: "c1" },
       ],
     });
 
     await hydrateFromUrl(newClient());
 
     expect(state().panes).toHaveLength(1);
-    expect(list(0).selectedId).toBe("g1");
+    expect(list(0).selectedGuid).toBe("g1");
   });
 
   it("leaves the default state when the first request fails", async () => {
     vi.mocked(getItems).mockRejectedValue(new Error("boom"));
-    setUrl({ a: 0, p: [{ t: "l", s: "g1" }] });
+    setUrl({ a: 0, p: [{ t: "l", g: "g1" }] });
 
     await hydrateFromUrl(newClient());
 
     expect(state().panes).toHaveLength(1);
-    expect(list(0).selectedId).toBeNull();
+    expect(list(0).selectedGuid).toBeNull();
   });
 
   it("ignores a malformed param", async () => {
@@ -378,7 +378,7 @@ describe("hydrateFromUrl", () => {
     setUrl({
       a: 1,
       p: [
-        { t: "l", s: "t1", f: { title: "x", status: "TODO", nope: 1 } },
+        { t: "l", g: "t1", f: { title: "x", status: "TODO", nope: 1 } },
         { t: "d", k: "bogus" },
       ],
     });
@@ -408,7 +408,9 @@ describe("startUrlSync", () => {
   it("writes the state to the URL after a pause", () => {
     stop = startUrlSync();
 
-    useUiStore.setState({ panes: [{ ...createRootPane(), selectedId: "g1" }] });
+    useUiStore.setState({
+      panes: [{ ...createRootPane(), selectedGuid: "g1" }],
+    });
 
     expect(window.location.search).toBe("");
 
@@ -417,7 +419,7 @@ describe("startUrlSync", () => {
     const saved = JSON.parse(
       new URLSearchParams(window.location.search).get("s")!,
     );
-    expect(saved).toEqual({ a: 0, p: [{ t: "l", s: "g1" }] });
+    expect(saved).toEqual({ a: 0, p: [{ t: "l", g: "g1" }] });
   });
 
   it("writes once for a burst of changes", () => {
@@ -426,7 +428,9 @@ describe("startUrlSync", () => {
     replace.mockClear();
 
     for (const id of ["g1", "t1", "g1", "t1"]) {
-      useUiStore.setState({ panes: [{ ...createRootPane(), selectedId: id }] });
+      useUiStore.setState({
+        panes: [{ ...createRootPane(), selectedGuid: id }],
+      });
     }
     vi.advanceTimersByTime(250);
 
@@ -435,7 +439,7 @@ describe("startUrlSync", () => {
   });
 
   it("removes the param when the state goes back to the default", () => {
-    setUrl({ a: 0, p: [{ t: "l", s: "g1" }] });
+    setUrl({ a: 0, p: [{ t: "l", g: "g1" }] });
     stop = startUrlSync();
 
     expect(window.location.search).toBe("");
@@ -445,7 +449,9 @@ describe("startUrlSync", () => {
     window.history.replaceState(null, "", "/?theme=dark#top");
     stop = startUrlSync();
 
-    useUiStore.setState({ panes: [{ ...createRootPane(), selectedId: "g1" }] });
+    useUiStore.setState({
+      panes: [{ ...createRootPane(), selectedGuid: "g1" }],
+    });
     vi.advanceTimersByTime(250);
 
     const url = new URL(window.location.href);
@@ -457,13 +463,15 @@ describe("startUrlSync", () => {
   it("flushes pending changes on pagehide", () => {
     stop = startUrlSync();
 
-    useUiStore.setState({ panes: [{ ...createRootPane(), selectedId: "t1" }] });
+    useUiStore.setState({
+      panes: [{ ...createRootPane(), selectedGuid: "t1" }],
+    });
     window.dispatchEvent(new Event("pagehide"));
 
     const saved = JSON.parse(
       new URLSearchParams(window.location.search).get("s")!,
     );
-    expect(saved.p[0].s).toBe("t1");
+    expect(saved.p[0].g).toBe("t1");
   });
 });
 
@@ -479,7 +487,7 @@ describe("bootUrlState", () => {
     const urlState = await import("./urlState");
     const { useUiStore: freshStore } = await import("../stores/ui");
 
-    setUrl({ a: 0, p: [{ t: "l", s: "g1" }] });
+    setUrl({ a: 0, p: [{ t: "l", g: "g1" }] });
 
     const client = newClient();
     const first = urlState.bootUrlState(client);
@@ -488,7 +496,9 @@ describe("bootUrlState", () => {
 
     expect(first).toBe(second);
     expect(freshGetItems).toHaveBeenCalledTimes(1);
-    expect((freshStore.getState().panes[0] as ListPane).selectedId).toBe("g1");
+    expect((freshStore.getState().panes[0] as ListPane).selectedGuid).toBe(
+      "g1",
+    );
     expect(new URLSearchParams(window.location.search).get("s")).not.toBeNull();
   });
 });

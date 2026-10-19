@@ -9,7 +9,7 @@ import { Group, type GetItemRequest, type ItemType } from "../types/backend";
 const PARAM = "s";
 const WRITE_DELAY_MS = 200;
 
-type SavedList = { t: "l"; s: string | null; f?: GetItemRequest; q?: string };
+type SavedList = { t: "l"; g: string | null; f?: GetItemRequest; q?: string };
 type SavedDetail = { t: "d"; k: DetailField | null };
 type SavedPane = SavedList | SavedDetail;
 type SavedState = { a: number; p: SavedPane[] };
@@ -49,7 +49,7 @@ function sanitizePane(raw: unknown): SavedPane | null {
   }
 
   if (input.t === "l") {
-    const saved: SavedList = { t: "l", s: isString(input.s) ? input.s : null };
+    const saved: SavedList = { t: "l", g: isString(input.g) ? input.g : null };
     const filter = sanitizeFilter(input.f);
     if (filter) saved.f = filter;
     if (isString(input.q) && input.q !== "") saved.q = input.q;
@@ -95,7 +95,7 @@ export function serializePanes(
 
     if (i > 0) {
       const parent = panes[i - 1];
-      if (parent.type !== "list" || !parent.selectedId) break;
+      if (parent.type !== "list" || !parent.selectedGuid) break;
     }
 
     if (pane.type === "config") break;
@@ -105,7 +105,7 @@ export function serializePanes(
       break;
     }
 
-    const entry: SavedList = { t: "l", s: pane.selectedId };
+    const entry: SavedList = { t: "l", g: pane.selectedGuid };
     const filter = userFilter(pane.filter);
     if (Object.keys(filter).length > 0) entry.f = filter;
     if (pane.prompt !== "") entry.q = pane.prompt;
@@ -116,7 +116,7 @@ export function serializePanes(
   if (
     saved.length === 1 &&
     first.t === "l" &&
-    first.s === null &&
+    first.g === null &&
     !first.f &&
     !first.q
   ) {
@@ -132,11 +132,11 @@ export function serializePanes(
 
 const selectionOf = (
   pane: Pane | undefined,
-): { id: string; type: ItemType } | null =>
+): { guid: string; type: ItemType } | null =>
   pane?.type === "list" &&
-  pane.selectedId &&
-  pane.renderedIds.includes(pane.selectedId)
-    ? { id: pane.selectedId, type: pane.renderedTypes[pane.selectedId] }
+  pane.selectedGuid &&
+  pane.renderedGuids.includes(pane.selectedGuid)
+    ? { guid: pane.selectedGuid, type: pane.renderedTypes[pane.selectedGuid] }
     : null;
 
 const savedParam = () => new URLSearchParams(window.location.search).get(PARAM);
@@ -158,7 +158,7 @@ export async function hydrateFromUrl(client: QueryClient) {
     if (entry.t === "d") {
       if (!from) break;
       panes.push({
-        ...createDetailPane(newId(), from.id),
+        ...createDetailPane(newId(), from.guid),
         selectedField: entry.k,
       });
       break;
@@ -168,11 +168,11 @@ export async function hydrateFromUrl(client: QueryClient) {
 
     const base = createListPane(
       i === 0 ? "root" : newId(),
-      from?.id ?? null,
+      from?.guid ?? null,
     );
     const filter: GetItemRequest = {
       ...entry.f,
-      parent_id: base.parentId ?? undefined,
+      parent_id: base.parentGuid ?? undefined,
     };
 
     let items;
@@ -182,7 +182,7 @@ export async function hydrateFromUrl(client: QueryClient) {
       break;
     }
 
-    const renderedIds = items.map((item) => item.guid);
+    const renderedGuids = items.map((item) => item.guid);
     const renderedTypes = Object.fromEntries(
       items.map((item) => [item.guid, item.type]),
     );
@@ -191,9 +191,9 @@ export async function hydrateFromUrl(client: QueryClient) {
       ...base,
       prompt: entry.q ?? "",
       filter,
-      renderedIds,
+      renderedGuids,
       renderedTypes,
-      selectedId: entry.s && renderedIds.includes(entry.s) ? entry.s : null,
+      selectedGuid: entry.g && renderedGuids.includes(entry.g) ? entry.g : null,
     });
   }
 

@@ -207,8 +207,8 @@ describe("Prompt", () => {
 describe("Prompt vs. the global keymap", () => {
   function mountBoth() {
     const pane = seedRoot("insert");
-    pane.selectedId = "item-1";
-    pane.renderedIds = ["item-1"];
+    pane.selectedGuid = "item-1";
+    pane.renderedGuids = ["item-1"];
     useUiStore.setState({ mode: "insert", panes: [pane], activePaneId: pane.id });
 
     render(<Prompt paneId={ROOT_ID} />);

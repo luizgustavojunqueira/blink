@@ -6,6 +6,6 @@ describe("createRootPane", () => {
     const pane = createRootPane();
 
     expect(pane.id).toBe("root");
-    expect(pane.parentId).toBeNull();
+    expect(pane.parentGuid).toBeNull();
   });
 });

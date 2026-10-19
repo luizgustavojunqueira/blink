@@ -34,7 +34,7 @@ function Harness({ count }: { count: number }) {
     <div id="scroller" data-testid="scroller">
       <ul ref={listRef}>
         {Array.from({ length: count }, (_, i) => (
-          <li key={i} data-item-id={`i${i}`} />
+          <li key={i} data-item-guid={`i${i}`} />
         ))}
       </ul>
       <SelectionScroller paneId="root" listRef={listRef} />

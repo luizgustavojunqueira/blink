@@ -13,8 +13,8 @@ export const markBindings: KeyBinding[] = [
       return pane.type === "list";
     },
     run: ({ app, pane }) => {
-      if (pane.type !== "list" || pane.selectedId === null) return;
-      app.ui.toggleMarked(pane.id, pane.selectedId);
+      if (pane.type !== "list" || pane.selectedGuid === null) return;
+      app.ui.toggleMarked(pane.id, pane.selectedGuid);
     },
   },
 ];

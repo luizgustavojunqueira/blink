@@ -56,6 +56,18 @@ describe("execute()", () => {
     });
   });
 
+  it("refuses a command whose when() is false, without running it", async () => {
+    const run = vi.fn();
+    vi.spyOn(registry, "getCommand").mockReturnValue(
+      stubCommand({ when: () => false, execute: run }),
+    );
+
+    await expect(execute({ id: "stub", rawArgs: "" }, app)).resolves.toEqual({
+      message: ":stub isn't available here",
+    });
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it("awaits async commands", async () => {
     vi.spyOn(registry, "getCommand").mockReturnValue(
       stubCommand({ execute: async () => ({ message: "done" }) }),

@@ -8,7 +8,7 @@ import DetailTagsField from "./detailTagsField";
 import DetailTextField from "./detailTextField";
 import Breadcrumb from "../breadcrumb/breadcrumb";
 
-const selectItemId: PaneSelector<string> = (pane) => (pane?.type === "detail" ? pane.itemId : "");
+const selectItemGuid: PaneSelector<string> = (pane) => (pane?.type === "detail" ? pane.itemGuid : "");
 
 interface IItemDetail {
   paneId: string;
@@ -17,9 +17,9 @@ interface IItemDetail {
 const mapTagsToString = (tags: string[]) => tags.map((tag) => `${TAG_MODIFIER}${tag}`).join(" ");
 
 export default function ItemDetail({ paneId }: IItemDetail) {
-  const itemId = usePaneValue(paneId, selectItemId);
+  const itemGuid = usePaneValue(paneId, selectItemGuid);
   const isActive = usePaneValue(paneId, paneIsActive);
-  const item = useItem(itemId);
+  const item = useItem(itemGuid);
 
   if (!item) return null;
 

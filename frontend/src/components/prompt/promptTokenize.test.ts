@@ -29,6 +29,13 @@ const KNOWN_VALUES: [string, string[]][] = [
 const DELIMITERS = [PRIORITY_MODIFIER, STATUS_MODIFIER, ORDER_MODIFIER, TYPE_MODIFIER];
 
 describe("tokenizePrompt", () => {
+  it("leaves modifiers the command doesn't accept as plain text", () => {
+    expect(classOf(":edit @done =task", "@done")).toBe(STATUS_CLASS.done + " font-medium");
+    expect(classOf(":edit @done =task", "=task")).toBe("");
+    expect(classOf(":create buy %title", "%title")).toBe("");
+    expect(classOf(":theme #nope", "#nope")).toBe("");
+  });
+
   it("keeps plain text as a single token without highlight classes", () => {
     expect(tokenizePrompt("hello world")).toEqual([{ text: "hello world", className: "" }]);
   });

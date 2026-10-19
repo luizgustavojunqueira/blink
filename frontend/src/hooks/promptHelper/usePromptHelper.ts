@@ -1,8 +1,14 @@
 import { useCallback, useState, type KeyboardEvent } from "react";
-import { COMMAND_PREFIX, getAllCommands, getCommand } from "../../lib/commands/registry";
+import {
+  COMMAND_PREFIX,
+  getAllCommands,
+  getCommand,
+  isCommandAvailable,
+} from "../../lib/commands/registry";
 import { commandArgStart } from "../../lib/commands/argToken";
 import { toPromptOption, type PromptOption } from "../../lib/promptOptions";
 import { getModifier } from "../../lib/modifiers/registry";
+import { useUiStore } from "../../stores/ui";
 import { useTags } from "../useItems";
 
 /** True if `wordStart` is preceded by exactly one space (not 0, not 2+). */
@@ -38,6 +44,7 @@ export function usePromptHelper(
     const word = textUntilCursor.slice(wordStart, cursorPos);
 
     if (isCommandContext) {
+      const ui = useUiStore.getState();
       const spaceIndex = trimmedStart.indexOf(" ");
 
       if (spaceIndex === -1) {
@@ -45,7 +52,7 @@ export function usePromptHelper(
 
         setOptions(
           getAllCommands()
-            .filter((cmd) => cmd.id.toLowerCase().includes(filter))
+            .filter((cmd) => cmd.id.toLowerCase().includes(filter) && isCommandAvailable(cmd, ui))
             .map((cmd) =>
               toPromptOption("COMMAND", {
                 name: cmd.displayName,
@@ -62,10 +69,11 @@ export function usePromptHelper(
       const command = getCommand(cmdId);
       const rawargs = trimmedStart.slice(spaceIndex + 1);
 
+      const available = !!command && isCommandAvailable(command, ui);
       const strict = command?.strictArgPosition ?? true;
       const spacingOk = !strict || isSingleSpaceAway(textUntilCursor, wordStart);
 
-      setOptions(spacingOk ? (command?.getOptions?.(rawargs, { tags }) ?? []) : []);
+      setOptions(available && spacingOk ? (command.getOptions?.(rawargs, { tags }) ?? []) : []);
       setSelectedIndex(0);
       return;
     }

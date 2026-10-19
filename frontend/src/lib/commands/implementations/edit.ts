@@ -1,6 +1,7 @@
 import { useUiStore } from "../../../stores/ui";
 import {
   DESCRIPTION_MODIFIER,
+  HELP_MODIFIER,
   PRIORITY_MODIFIER,
   STATUS_MODIFIER,
   TAG_MODIFIER,
@@ -12,19 +13,35 @@ import type { ItemPatch } from "../../types";
 import type { CommandDefinition } from "../types";
 import { only } from "./utils";
 
+const EDIT_MODIFIERS = [
+  STATUS_MODIFIER,
+  PRIORITY_MODIFIER,
+  TAG_MODIFIER,
+  DESCRIPTION_MODIFIER,
+  HELP_MODIFIER,
+];
+
 export const editCommand: CommandDefinition = {
   id: "edit",
   displayName: "edit",
-  description: "Edit marked items",
+  description: "Edit marked items, or the current one",
   strictArgPosition: false,
-  getOptions: modifierOptions,
+  when: ({ pane }) =>
+    pane.type === "list" && (pane.markedGuids.size > 0 || pane.selectedGuid !== null),
+  modifiers: EDIT_MODIFIERS,
+  getOptions: modifierOptions(EDIT_MODIFIERS),
   execute: async ({ rawArgs, app }) => {
     const state = useUiStore.getState();
     const pane = state.panes.find((p) => p.id === state.activePaneId);
     if (!pane || pane.type !== "list") return;
 
-    const guids = [...pane.markedIds];
-    if (guids.length === 0) return { message: "Mark at least one item" };
+    const guids =
+      pane.markedGuids.size > 0
+        ? [...pane.markedGuids]
+        : pane.selectedGuid
+          ? [pane.selectedGuid]
+          : [];
+    if (guids.length === 0) return { message: "Select or mark an item" };
 
     const result = parseEdit(rawArgs, guids.length);
 

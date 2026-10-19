@@ -15,23 +15,23 @@ import type { ItemType } from "../../types/backend";
 type CtxOptions = {
   panes?: number;
   activeIdx?: number;
-  selectedId?: string | null;
-  markedIds?: Set<string> | null;
+  selectedGuid?: string | null;
+  markedGuids?: Set<string> | null;
   itemType?: ItemType;
 };
 
 const listPane = (
   id: string,
-  selectedId: string | null,
-  markedIds: Set<string> = new Set(),
+  selectedGuid: string | null,
+  markedGuids: Set<string> = new Set(),
 ): ListPane => ({
   id,
   type: "list",
   prompt: "",
-  parentId: null,
-  selectedId,
-  renderedIds: selectedId ? [selectedId] : [],
-  markedIds,
+  parentGuid: null,
+  selectedGuid,
+  renderedGuids: selectedGuid ? [selectedGuid] : [],
+  markedGuids,
   anchorGuid: null,
   renderedTypes: {},
   filter: {},
@@ -42,19 +42,19 @@ const ctx = (
   {
     panes = 1,
     activeIdx = 0,
-    selectedId = "item-1",
-    markedIds = null,
+    selectedGuid = "item-1",
+    markedGuids = null,
     itemType = Task,
   }: CtxOptions = {},
 ) => {
   const list = Array.from({ length: panes }, (_, i) =>
-    listPane(`pane-${i}`, selectedId, markedIds ?? new Set()),
+    listPane(`pane-${i}`, selectedGuid, markedGuids ?? new Set()),
   );
   const pane = list[activeIdx];
   return {
     ui: { mode, panes: list, activePaneId: pane.id },
     pane,
-    itemType: selectedId ? itemType : undefined,
+    itemType: selectedGuid ? itemType : undefined,
   } as KeyQueryContext;
 };
 
@@ -62,7 +62,7 @@ const detailCtx = (mode: Mode, selectedField: DetailField): KeyQueryContext => {
   const pane = {
     id: "detail-0",
     type: "detail" as const,
-    itemId: "item-1",
+    itemGuid: "item-1",
     selectedField,
   };
   return {
@@ -81,8 +81,8 @@ const configCtx = (selectedRow: string): KeyQueryContext => {
 
 describe("keymap registry: resolve", () => {
   it("keeps the item bindings out of reach while nothing is selected", () => {
-    expect(resolve("3", ctx("normal", { selectedId: null }))).toBeUndefined();
-    expect(resolve("l", ctx("normal", { selectedId: null }))).toBeUndefined();
+    expect(resolve("3", ctx("normal", { selectedGuid: null }))).toBeUndefined();
+    expect(resolve("l", ctx("normal", { selectedGuid: null }))).toBeUndefined();
   });
 
   it("resolves escape in all modes", () => {
@@ -108,8 +108,8 @@ describe("keymap registry: resolve", () => {
       ctx("normal"),
       ctx("normal", { itemType: Group }),
       ctx("insert"),
-      ctx("normal", { selectedId: null, markedIds: new Set() }),
-      ctx("normal", { markedIds: new Set(["item-1"]) }),
+      ctx("normal", { selectedGuid: null, markedGuids: new Set() }),
+      ctx("normal", { markedGuids: new Set(["item-1"]) }),
       ctx("normal", { panes: 2, activeIdx: 0 }),
       ctx("normal", { panes: 2, activeIdx: 1 }),
       detailCtx("normal", "status"),

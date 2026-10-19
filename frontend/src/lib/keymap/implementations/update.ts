@@ -29,14 +29,14 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
   when: ({ pane }) => {
     return (
       pane.type === "list" &&
-      pane.markedIds.size === 0 &&
-      pane.selectedId !== null &&
-      pane.selectedId !== undefined
+      pane.markedGuids.size === 0 &&
+      pane.selectedGuid !== null &&
+      pane.selectedGuid !== undefined
     );
   },
   run: ({ app, pane }) => {
     if (pane.type !== "list") return;
-    if (pane.selectedId) app.items.setField(pane.selectedId, "status", status);
+    if (pane.selectedGuid) app.items.setField(pane.selectedGuid, "status", status);
   },
 });
 
@@ -50,11 +50,11 @@ const bulkUpdateStatusBinds = (status: ItemStatus): KeyBinding => ({
     group: "item",
   },
   when: ({ pane }) => {
-    return pane.type === "list" && pane.markedIds.size > 0;
+    return pane.type === "list" && pane.markedGuids.size > 0;
   },
   run: ({ app, pane }) => {
     if (pane.type !== "list") return;
-    if (pane.markedIds.size > 0) app.items.bulkSetFields([...pane.markedIds], { status });
+    if (pane.markedGuids.size > 0) app.items.bulkSetFields([...pane.markedGuids], { status });
   },
 });
 

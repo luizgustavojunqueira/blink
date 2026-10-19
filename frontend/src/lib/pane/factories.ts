@@ -1,24 +1,24 @@
 import type { ConfigPane, DetailPane, ListPane } from "./types";
 
-export const createListPane = (id: string, parentId: string | null): ListPane => ({
+export const createListPane = (id: string, parentGuid: string | null): ListPane => ({
   id,
-  parentId,
+  parentGuid,
   prompt: "",
   type: "list",
-  filter: { parent_id: parentId ?? undefined },
-  selectedId: null,
-  renderedIds: [],
-  markedIds: new Set(),
+  filter: { parent_id: parentGuid ?? undefined },
+  selectedGuid: null,
+  renderedGuids: [],
+  markedGuids: new Set(),
   anchorGuid: null,
   renderedTypes: {},
 });
 
 export const createRootPane = (): ListPane => createListPane("root", null);
 
-export const createDetailPane = (id: string, itemId: string): DetailPane => ({
+export const createDetailPane = (id: string, itemGuid: string): DetailPane => ({
   id,
   type: "detail",
-  itemId,
+  itemGuid,
   selectedField: "title",
 });
 

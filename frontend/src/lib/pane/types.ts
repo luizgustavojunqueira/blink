@@ -6,10 +6,10 @@ export type ListPane = {
   id: string;
   type: "list";
   prompt: string;
-  parentId: string | null;
-  selectedId: string | null;
-  renderedIds: string[];
-  markedIds: Set<string>;
+  parentGuid: string | null;
+  selectedGuid: string | null;
+  renderedGuids: string[];
+  markedGuids: Set<string>;
   anchorGuid: string | null;
   renderedTypes: Record<string, ItemType>;
   filter: GetItemRequest;
@@ -18,7 +18,7 @@ export type ListPane = {
 export type DetailPane = {
   id: string;
   type: "detail";
-  itemId: string;
+  itemGuid: string;
   selectedField: DetailField | null;
 };
 

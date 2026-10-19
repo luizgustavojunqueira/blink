@@ -1,3 +1,4 @@
+import type { KeyQueryContext } from "../keymap/types";
 import type { PromptOption } from "../promptOptions";
 import type { AppContext } from "../types";
 
@@ -15,6 +16,8 @@ export type CommandDefinition<TOptions = any> = {
   id: string;
   displayName: string;
   description: string;
+  when?: (ctx: KeyQueryContext) => boolean;
+  modifiers?: readonly string[];
 
   getOptions?: (rawArgs: string, options?: TOptions) => PromptOption[];
   execute?: (context: CommandContext) => Promise<ExecuteResult | void> | ExecuteResult | void;

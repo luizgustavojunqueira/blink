@@ -43,7 +43,7 @@ describe("groupCommand", () => {
   it("rejects when title is missing", async () => {
     const create = vi.fn();
     const pane = createListPane("p1", null);
-    pane.markedIds = new Set(["item-1"]);
+    pane.markedGuids = new Set(["item-1"]);
     useUiStore.setState({ panes: [pane], activePaneId: pane.id });
 
     const result = await groupCommand.execute!({
@@ -63,7 +63,7 @@ describe("groupCommand", () => {
     const bulkSetFields = vi.fn().mockResolvedValue(undefined);
 
     const pane = createListPane("p1", "parent-folder");
-    pane.markedIds = new Set(["item-1", "item-2"]);
+    pane.markedGuids = new Set(["item-1", "item-2"]);
     useUiStore.setState({ panes: [pane], activePaneId: pane.id });
 
     const result = await groupCommand.execute!({
@@ -84,8 +84,8 @@ describe("groupCommand", () => {
     });
 
     const updatedPane = useUiStore.getState().panes.find((p) => p.id === "p1") as ListPane;
-    expect(updatedPane?.markedIds.size).toBe(0);
-    expect(updatedPane?.selectedId).toBe("group-123");
+    expect(updatedPane?.markedGuids.size).toBe(0);
+    expect(updatedPane?.selectedGuid).toBe("group-123");
 
     expect(result).toEqual({ shouldClearPrompt: true });
   });

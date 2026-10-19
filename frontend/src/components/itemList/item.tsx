@@ -26,23 +26,23 @@ function ItemComponent({ item, paneId }: IItem) {
   const isDone = item.status === "DONE" || item.status === "CANCELED";
 
   const selectIsSelected = useCallback<PaneSelector<boolean>>(
-    (pane) => pane?.type === "list" && pane.selectedId === item.guid,
+    (pane) => pane?.type === "list" && pane.selectedGuid === item.guid,
     [item.guid],
   );
 
   const selectIsMarked = useCallback<PaneSelector<boolean>>(
-    (pane) => pane?.type === "list" && pane.markedIds.has(item.guid),
+    (pane) => pane?.type === "list" && pane.markedGuids.has(item.guid),
     [item.guid],
   );
 
   const selectIsInVisualRange = useCallback<PaneSelector<boolean>>(
     (pane, ui) => {
-      if (ui.mode !== "visual" || pane?.type !== "list" || !pane.anchorGuid || !pane.selectedId) {
+      if (ui.mode !== "visual" || pane?.type !== "list" || !pane.anchorGuid || !pane.selectedGuid) {
         return false;
       }
-      const a = pane.renderedIds.indexOf(pane.anchorGuid);
-      const b = pane.renderedIds.indexOf(pane.selectedId);
-      const i = pane.renderedIds.indexOf(item.guid);
+      const a = pane.renderedGuids.indexOf(pane.anchorGuid);
+      const b = pane.renderedGuids.indexOf(pane.selectedGuid);
+      const i = pane.renderedGuids.indexOf(item.guid);
       return a !== -1 && b !== -1 && i >= Math.min(a, b) && i <= Math.max(a, b);
     },
     [item.guid],
@@ -58,7 +58,7 @@ function ItemComponent({ item, paneId }: IItem) {
 
   return (
     <li
-      data-item-id={item.guid}
+      data-item-guid={item.guid}
       className={[
         "group flex w-full flex-row items-center gap-1",
         "transition-colors",

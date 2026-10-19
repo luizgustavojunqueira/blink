@@ -9,9 +9,9 @@ const ui = () => useUiStore.getState();
 describe("queryContext", () => {
   it("reads the selected item's type from the pane itself", () => {
     const pane = createRootPane();
-    pane.renderedIds = ["t1", "g1"];
+    pane.renderedGuids = ["t1", "g1"];
     pane.renderedTypes = { t1: Task, g1: Group };
-    pane.selectedId = "g1";
+    pane.selectedGuid = "g1";
 
     expect(queryContext(ui(), pane).itemType).toBe(Group);
   });
@@ -26,9 +26,9 @@ describe("queryContext", () => {
 
   it("has no type when the selection is not among the rendered items", () => {
     const pane = createRootPane();
-    pane.renderedIds = ["t1"];
+    pane.renderedGuids = ["t1"];
     pane.renderedTypes = { t1: Task };
-    pane.selectedId = "gone";
+    pane.selectedGuid = "gone";
 
     expect(queryContext(ui(), pane).itemType).toBeUndefined();
   });

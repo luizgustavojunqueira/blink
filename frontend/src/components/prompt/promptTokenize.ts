@@ -6,10 +6,21 @@ import {
   ORDER_MODIFIER,
   TYPE_MODIFIER,
 } from "../../lib/modifiers/delimiters.ts";
+import { modifiersFor } from "../../lib/commands/registry";
 import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS, TYPE_CLASS } from "../../lib/validator";
 import type { Token } from "../textField/textOverlay";
 
+const MODIFIER_CHARS = new Set([
+  PRIORITY_MODIFIER,
+  TAG_MODIFIER,
+  STATUS_MODIFIER,
+  DESCRIPTION_MODIFIER,
+  ORDER_MODIFIER,
+  TYPE_MODIFIER,
+]);
+
 export function tokenizePrompt(text: string): Token[] {
+  const allowed = new Set(modifiersFor(text));
   const regex = new RegExp(
     `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}\\${ORDER_MODIFIER}\\${TYPE_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
     "g",
@@ -20,6 +31,11 @@ export function tokenizePrompt(text: string): Token[] {
 
   for (const part of parts) {
     if (!part) continue;
+
+    if (MODIFIER_CHARS.has(part[0]) && !allowed.has(part[0])) {
+      tokens.push({ text: part, className: isDescription ? "text-fg-dim" : "" });
+      continue;
+    }
 
     if (part === DESCRIPTION_MODIFIER) {
       isDescription = true;

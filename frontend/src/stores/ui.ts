@@ -31,19 +31,19 @@ export type UiActions = {
   setPrompt: (prompt: string) => void;
   setFilter: (filter: GetItemRequest) => void;
   setMode: (mode: Mode) => void;
-  select: (paneId: string, id: string | null) => void;
+  select: (paneId: string, guid: string | null) => void;
   enterInsert: (seed?: string) => void;
   escape: () => void;
   setRendered: (
     paneId: string,
-    renderedIds: string[],
+    renderedGuids: string[],
     renderedTypes: Record<string, ItemType>,
   ) => void;
   moveUp: (steps?: number, all?: boolean) => void;
   moveDown: (steps?: number, all?: boolean) => void;
   pushPane: (pane: Pane) => void;
   popPane: () => void;
-  openChildPane: (itemId: string, paneType: PaneType) => void;
+  openChildPane: (itemGuid: string, paneType: PaneType) => void;
   moveRight: () => void;
   moveLeft: () => void;
   moveField: (dir: 1 | -1) => void;
@@ -52,7 +52,7 @@ export type UiActions = {
   toggleHint: () => void;
   setCurrentKeySeq: (keySeq: string) => void;
   setFieldState: (key: string, state: FieldState | null) => void;
-  toggleMarked: (paneId: string, itemId: string) => void;
+  toggleMarked: (paneId: string, itemGuid: string) => void;
   toggleVisual: (anchorGuid: string) => void;
   openConfig: (selectedRow?: string | null) => void;
   selectRow: (paneId: string, rowId: string) => void;
@@ -68,40 +68,40 @@ const mapActivePane = (panes: Pane[], activePaneId: string, nextPane: Pane): Pan
 
 const clearPaneMarks = (panes: Pane[], paneId: string): Pane[] => {
   const pane = findPane(panes, paneId);
-  if (!pane || pane.type !== "list" || (pane.markedIds.size === 0 && pane.anchorGuid === null)) {
+  if (!pane || pane.type !== "list" || (pane.markedGuids.size === 0 && pane.anchorGuid === null)) {
     return panes;
   }
-  return panes.map((p) => (p.id === paneId ? { ...pane, markedIds: new Set(), anchorGuid: null } : p));
+  return panes.map((p) => (p.id === paneId ? { ...pane, markedGuids: new Set(), anchorGuid: null } : p));
 };
 
 const commitVisualSelection =(pane: ListPane, fallbackAnchor?: string | null) => {
-  const anchor = pane.anchorGuid ?? fallbackAnchor ?? pane.selectedId;
-  const markedIds = new Set(pane.markedIds);
-  if (anchor && pane.selectedId) {
-    const a = pane.renderedIds.indexOf(anchor);
-    const b = pane.renderedIds.indexOf(pane.selectedId);
+  const anchor = pane.anchorGuid ?? fallbackAnchor ?? pane.selectedGuid;
+  const markedGuids = new Set(pane.markedGuids);
+  if (anchor && pane.selectedGuid) {
+    const a = pane.renderedGuids.indexOf(anchor);
+    const b = pane.renderedGuids.indexOf(pane.selectedGuid);
     if (a !== -1 && b !== -1) {
       const [start, end] = a <= b ? [a, b] : [b, a];
-      for (let i = start; i <= end; i++) markedIds.add(pane.renderedIds[i]);
+      for (let i = start; i <= end; i++) markedGuids.add(pane.renderedGuids[i]);
     }
   }
-  return { anchorGuid: null, markedIds };
+  return { anchorGuid: null, markedGuids };
 };
 
 const syncChild = (parent: Pane, child: Pane): Pane => {
   if (parent.type !== "list" || child.type === "config") return child;
 
-  const target = parent.selectedId;
+  const target = parent.selectedGuid;
   const targetType = target ? parent.renderedTypes[target] : undefined;
 
   if (targetType === Group) {
-    if (child.type === "list" && child.parentId === target) return child;
+    if (child.type === "list" && child.parentGuid === target) return child;
     return createListPane(child.id, target);
   }
 
   if (child.type === "detail") {
-    if (child.itemId === (target ?? "")) return child;
-    return { ...child, itemId: target ?? "", selectedField: null };
+    if (child.itemGuid === (target ?? "")) return child;
+    return { ...child, itemGuid: target ?? "", selectedField: null };
   }
 
   return { ...createDetailPane(child.id, target ?? ""), selectedField: null };
@@ -118,7 +118,7 @@ const syncChildPanes = (prev: Pane[], next: Pane[]): Pane[] => {
     const before = prev.find((p) => p.id === parent.id);
 
     const moved =
-      parent.type === "list" && before?.type === "list" && before.selectedId !== parent.selectedId;
+      parent.type === "list" && before?.type === "list" && before.selectedGuid !== parent.selectedGuid;
 
     const child = moved ? syncChild(parent, next[i]) : next[i];
     if (child !== next[i]) changed = true;
@@ -194,15 +194,15 @@ export const useUiStore = create<UiStore>(
         return { showHint: !s.showHint };
       }),
 
-    setRendered: (paneId, newIds, newTypes) =>
+    setRendered: (paneId, newGuids, newTypes) =>
       set((s) => {
         const pane = findPane(s.panes, paneId);
         if (!pane || pane.type !== "list") return {};
 
         if (
-          pane.renderedIds.length === newIds.length &&
-          pane.renderedIds.every(
-            (id, i) => id === newIds[i] && pane.renderedTypes[id] === newTypes[id],
+          pane.renderedGuids.length === newGuids.length &&
+          pane.renderedGuids.every(
+            (guid, i) => guid === newGuids[i] && pane.renderedTypes[guid] === newTypes[guid],
           )
         ) {
           return {};
@@ -210,12 +210,12 @@ export const useUiStore = create<UiStore>(
 
         const nextPane: Pane = {
           ...pane,
-          renderedIds: newIds,
+          renderedGuids: newGuids,
           renderedTypes: newTypes,
-          selectedId:
-            pane.selectedId && !newIds.includes(pane.selectedId)
-              ? (newIds[0] ?? null)
-              : pane.selectedId,
+          selectedGuid:
+            pane.selectedGuid && !newGuids.includes(pane.selectedGuid)
+              ? (newGuids[0] ?? null)
+              : pane.selectedGuid,
         };
 
         return { panes: mapActivePane(s.panes, paneId, nextPane) };
@@ -224,36 +224,36 @@ export const useUiStore = create<UiStore>(
     moveDown: (steps = 1, all = false) =>
       set((s) => {
         const pane = findPane(s.panes, s.activePaneId);
-        if (!pane || pane.type !== "list" || pane.renderedIds.length === 0) return {};
+        if (!pane || pane.type !== "list" || pane.renderedGuids.length === 0) return {};
 
         if (all) {
           return {
             panes: mapActivePane(s.panes, s.activePaneId, {
               ...pane,
-              selectedId: pane.renderedIds[pane.renderedIds.length - 1],
+              selectedGuid: pane.renderedGuids[pane.renderedGuids.length - 1],
             }),
           };
         }
 
         let newIndex = 0;
 
-        if (pane.selectedId) {
-          const currentIndex = pane.renderedIds.indexOf(pane.selectedId);
+        if (pane.selectedGuid) {
+          const currentIndex = pane.renderedGuids.indexOf(pane.selectedGuid);
           if (currentIndex === -1) {
-            newIndex = Math.max(0, Math.min(steps - 1, pane.renderedIds.length - 1));
+            newIndex = Math.max(0, Math.min(steps - 1, pane.renderedGuids.length - 1));
           } else {
-            newIndex = Math.min(currentIndex + steps, pane.renderedIds.length - 1);
+            newIndex = Math.min(currentIndex + steps, pane.renderedGuids.length - 1);
           }
         } else {
-          newIndex = Math.max(0, Math.min(steps - 1, pane.renderedIds.length - 1));
+          newIndex = Math.max(0, Math.min(steps - 1, pane.renderedGuids.length - 1));
         }
 
-        if (pane.selectedId === pane.renderedIds[newIndex]) return {};
+        if (pane.selectedGuid === pane.renderedGuids[newIndex]) return {};
 
         return {
           panes: mapActivePane(s.panes, s.activePaneId, {
             ...pane,
-            selectedId: pane.renderedIds[newIndex],
+            selectedGuid: pane.renderedGuids[newIndex],
           }),
         };
       }),
@@ -261,35 +261,35 @@ export const useUiStore = create<UiStore>(
     moveUp: (steps = 1, all = false) =>
       set((s) => {
         const pane = findPane(s.panes, s.activePaneId);
-        if (!pane || pane.type !== "list" || pane.renderedIds.length === 0) return {};
+        if (!pane || pane.type !== "list" || pane.renderedGuids.length === 0) return {};
         if (all) {
           return {
             panes: mapActivePane(s.panes, s.activePaneId, {
               ...pane,
-              selectedId: pane.renderedIds[0],
+              selectedGuid: pane.renderedGuids[0],
             }),
           };
         }
 
-        let newIndex = pane.renderedIds.length - 1;
+        let newIndex = pane.renderedGuids.length - 1;
 
-        if (pane.selectedId) {
-          const currentIndex = pane.renderedIds.indexOf(pane.selectedId);
+        if (pane.selectedGuid) {
+          const currentIndex = pane.renderedGuids.indexOf(pane.selectedGuid);
           if (currentIndex === -1) {
-            newIndex = Math.max(0, pane.renderedIds.length - steps);
+            newIndex = Math.max(0, pane.renderedGuids.length - steps);
           } else {
             newIndex = Math.max(0, currentIndex - steps);
           }
         } else {
-          newIndex = Math.max(0, pane.renderedIds.length - steps);
+          newIndex = Math.max(0, pane.renderedGuids.length - steps);
         }
 
-        if (pane.selectedId === pane.renderedIds[newIndex]) return {};
+        if (pane.selectedGuid === pane.renderedGuids[newIndex]) return {};
 
         return {
           panes: mapActivePane(s.panes, s.activePaneId, {
             ...pane,
-            selectedId: pane.renderedIds[newIndex],
+            selectedGuid: pane.renderedGuids[newIndex],
           }),
         };
       }),
@@ -312,28 +312,28 @@ export const useUiStore = create<UiStore>(
         };
       }),
 
-    select: (paneId, selectedId) =>
+    select: (paneId, selectedGuid) =>
       set((s) => {
         const pane = findPane(s.panes, paneId);
-        if (!pane || pane.type !== "list" || pane.selectedId === selectedId) return {};
+        if (!pane || pane.type !== "list" || pane.selectedGuid === selectedGuid) return {};
 
         const isVisualInActivePane = s.mode === "visual" && s.activePaneId === paneId;
 
         return {
           activePaneId: paneId,
           mode: isVisualInActivePane ? "visual" : "normal",
-          panes: mapActivePane(s.panes, paneId, { ...pane, selectedId }),
+          panes: mapActivePane(s.panes, paneId, { ...pane, selectedGuid }),
         };
       }),
 
-    toggleMarked: (paneId, itemId) =>
+    toggleMarked: (paneId, itemGuid) =>
       set((s) => {
         const pane = findPane(s.panes, paneId);
         if (!pane || pane.type !== "list") return {};
 
-        const newSet = new Set(pane.markedIds);
-        if (newSet.has(itemId)) newSet.delete(itemId);
-        else newSet.add(itemId);
+        const newSet = new Set(pane.markedGuids);
+        if (newSet.has(itemGuid)) newSet.delete(itemGuid);
+        else newSet.add(itemGuid);
 
         return {
           activePaneId: paneId,
@@ -341,7 +341,7 @@ export const useUiStore = create<UiStore>(
           panes: mapActivePane(s.panes, paneId, {
             ...pane,
             anchorGuid: null,
-            markedIds: newSet,
+            markedGuids: newSet,
           }),
         };
       }),
@@ -374,7 +374,7 @@ export const useUiStore = create<UiStore>(
         const pane = findPane(s.panes, s.activePaneId);
         if (!pane || pane.type !== "list") return {};
 
-        const anchor = anchorGuid ?? pane.selectedId;
+        const anchor = anchorGuid ?? pane.selectedGuid;
         if (!anchor) return {};
 
         const isEntering = s.mode === "normal";
@@ -425,24 +425,24 @@ export const useUiStore = create<UiStore>(
               panes: mapActivePane(s.panes, s.activePaneId, {
                 ...pane,
                 prompt: "",
-                filter: { parent_id: pane.parentId ?? undefined },
+                filter: { parent_id: pane.parentGuid ?? undefined },
               }),
             };
           }
 
-          if (pane.markedIds.size !== 0) {
+          if (pane.markedGuids.size !== 0) {
             return {
               panes: mapActivePane(s.panes, s.activePaneId, {
                 ...pane,
-                markedIds: new Set(),
+                markedGuids: new Set(),
               }),
             };
           }
-          if (pane.selectedId !== null) {
+          if (pane.selectedGuid !== null) {
             return {
               panes: mapActivePane(s.panes, s.activePaneId, {
                 ...pane,
-                selectedId: null,
+                selectedGuid: null,
               }),
             };
           }
@@ -468,7 +468,7 @@ export const useUiStore = create<UiStore>(
         return { panes, activePaneId: panes[panes.length - 1].id };
       }),
 
-    openChildPane: (itemId, paneType) =>
+    openChildPane: (itemGuid, paneType) =>
       set((s) => {
         const idx = s.panes.findIndex((p) => p.id === s.activePaneId);
         if (idx === -1) return {};
@@ -477,19 +477,19 @@ export const useUiStore = create<UiStore>(
 
         if (paneType === "detail") {
           if (child?.type === "detail") {
-            if (child.itemId === itemId) return { activePaneId: child.id };
+            if (child.itemGuid === itemGuid) return { activePaneId: child.id };
             return {
-              panes: [...s.panes.slice(0, idx + 1), { ...child, itemId }],
+              panes: [...s.panes.slice(0, idx + 1), { ...child, itemGuid }],
               activePaneId: child.id,
             };
           }
-          const pane = createDetailPane(newId(), itemId);
+          const pane = createDetailPane(newId(), itemGuid);
           return {
             panes: [...s.panes.slice(0, idx + 1), pane],
             activePaneId: pane.id,
           };
         } else if (paneType === "list") {
-          const pane = createListPane(newId(), itemId);
+          const pane = createListPane(newId(), itemGuid);
           return {
             panes: [...s.panes.slice(0, idx + 1), pane],
             activePaneId: pane.id,

@@ -3,6 +3,7 @@ import { useUiStore } from "../../../stores/ui";
 import { Done, High } from "../../../types/backend";
 import { createListPane, createRootPane } from "../../pane/factories";
 import type { AppContext } from "../../types";
+import { queryContext } from "../../keymap/context";
 import { editCommand } from "./edit";
 
 function fakeApp(bulkSetFields = vi.fn().mockResolvedValue(["item-1", "item-2"])): AppContext {
@@ -22,21 +23,51 @@ function fakeApp(bulkSetFields = vi.fn().mockResolvedValue(["item-1", "item-2"])
 
 function markItems(...guids: string[]) {
   const pane = createListPane("p1", null);
-  pane.markedIds = new Set(guids);
+  pane.markedGuids = new Set(guids);
   useUiStore.setState({ panes: [pane], activePaneId: pane.id });
   return pane;
 }
 
 describe("editCommand", () => {
-  it("rejects when no items are marked", async () => {
-    const bulkSetFields = vi.fn();
+  it("is only available with marked items or a selected item", () => {
     const root = createRootPane();
+    const ctx = () => queryContext(useUiStore.getState(), useUiStore.getState().panes[0]);
+
+    useUiStore.setState({ panes: [root], activePaneId: root.id });
+    expect(editCommand.when!(ctx())).toBe(false);
+
+    useUiStore.setState({ panes: [{ ...root, selectedGuid: "item-1" }] });
+    expect(editCommand.when!(ctx())).toBe(true);
+
+    markItems("item-1");
+    expect(editCommand.when!(ctx())).toBe(true);
+  });
+
+  it("edits the selected item, title included, when nothing is marked", async () => {
+    const bulkSetFields = vi.fn().mockResolvedValue(["item-1"]);
+    const root = { ...createRootPane(), selectedGuid: "item-1" };
     useUiStore.setState({ panes: [root], activePaneId: root.id });
 
-    const result = await editCommand.execute!({ rawArgs: "@done", app: fakeApp(bulkSetFields) });
+    const result = await editCommand.execute!({
+      rawArgs: "Buy milk @done",
+      app: fakeApp(bulkSetFields),
+    });
 
-    expect(result).toEqual({ message: "Mark at least one item" });
-    expect(bulkSetFields).not.toHaveBeenCalled();
+    expect(bulkSetFields).toHaveBeenCalledWith(
+      ["item-1"],
+      expect.objectContaining({ title: "Buy milk", status: Done }),
+    );
+    expect(result).toEqual({ shouldClearPrompt: true });
+  });
+
+  it("prefers marked items over the selected one", async () => {
+    const bulkSetFields = vi.fn().mockResolvedValue(["item-2"]);
+    const pane = markItems("item-2");
+    useUiStore.setState({ panes: [{ ...pane, selectedGuid: "item-1" }] });
+
+    await editCommand.execute!({ rawArgs: "@done", app: fakeApp(bulkSetFields) });
+
+    expect(bulkSetFields).toHaveBeenCalledWith(["item-2"], expect.anything());
   });
 
   it("rejects an attempt to change the type", async () => {

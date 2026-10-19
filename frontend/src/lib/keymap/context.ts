@@ -4,7 +4,7 @@ import type { KeyQueryContext } from "./types";
 
 export function queryContext(ui: UiState, pane: Pane): KeyQueryContext {
   const itemType =
-    pane.type === "list" && pane.selectedId ? pane.renderedTypes[pane.selectedId] : undefined;
+    pane.type === "list" && pane.selectedGuid ? pane.renderedTypes[pane.selectedGuid] : undefined;
 
   return { ui, pane, itemType };
 }

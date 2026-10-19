@@ -1,8 +1,8 @@
 import { useEffect, type RefObject } from "react";
 import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
 
-const selectSelectedId: PaneSelector<string | null> = (pane) =>
-  pane?.type === "list" ? pane.selectedId : null;
+const selectSelectedGuid: PaneSelector<string | null> = (pane) =>
+  pane?.type === "list" ? pane.selectedGuid : null;
 
 interface ISelectionScroller {
   paneId: string;
@@ -12,14 +12,14 @@ interface ISelectionScroller {
 const SCROLLOFF: number = 3;
 
 export default function SelectionScroller({ paneId, listRef }: ISelectionScroller) {
-  const selectedId = usePaneValue(paneId, selectSelectedId);
+  const selectedGuid = usePaneValue(paneId, selectSelectedGuid);
 
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedGuid) return;
 
     const list = listRef.current;
     const container = list?.parentElement;
-    const element = list?.querySelector<HTMLElement>(`[data-item-id="${selectedId}"]`);
+    const element = list?.querySelector<HTMLElement>(`[data-item-guid="${selectedGuid}"]`);
 
     if (!container || !element) return;
 
@@ -40,7 +40,7 @@ export default function SelectionScroller({ paneId, listRef }: ISelectionScrolle
 
     if (topEdge < box.top) container.scrollTop += topEdge - box.top;
     else if (bottomEdge > box.bottom) container.scrollTop += bottomEdge - box.bottom;
-  }, [selectedId, listRef]);
+  }, [selectedGuid, listRef]);
 
   return null;
 }

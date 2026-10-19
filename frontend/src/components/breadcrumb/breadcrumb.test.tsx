@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import Breadcrumb from "./breadcrumb";
 import { useUiStore } from "../../stores/ui";
@@ -88,5 +88,26 @@ describe("Breadcrumb", () => {
     render(<Breadcrumb paneId={group.id} />);
 
     expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
+  });
+
+  it("does not re-render when typing in the prompt or moving the selection", () => {
+    itemsByGuid([makeItem({ guid: "group-guid", title: "Groceries" })]);
+
+    render(<Breadcrumb paneId={group.id} />);
+    const calls = mockItems.findItem.mock.calls.length;
+
+    act(() => {
+      useUiStore.setState((s) => ({
+        panes: s.panes.map((p) =>
+          p.id === root.id
+            ? { ...root, prompt: "milk" }
+            : p.id === group.id
+              ? { ...group, prompt: "milk", selectedGuid: "other" }
+              : p,
+        ),
+      }));
+    });
+
+    expect(mockItems.findItem).toHaveBeenCalledTimes(calls);
   });
 });

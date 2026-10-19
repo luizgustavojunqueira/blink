@@ -29,17 +29,17 @@ export function ItemList({ paneId }: IItemList) {
   const renderedKey = items.map((item) => `${item.guid}:${item.type}`).join(",");
 
   useEffect(() => {
-    const ids: string[] = [];
+    const guids: string[] = [];
     const types: Record<string, ItemType> = {};
 
     for (const entry of renderedKey ? renderedKey.split(",") : []) {
       const sep = entry.lastIndexOf(":");
-      const id = entry.slice(0, sep);
-      ids.push(id);
-      types[id] = entry.slice(sep + 1);
+      const guid = entry.slice(0, sep);
+      guids.push(guid);
+      types[guid] = entry.slice(sep + 1);
     }
 
-    setRendered(paneId, ids, types);
+    setRendered(paneId, guids, types);
   }, [renderedKey, paneId, setRendered]);
 
   const listRef = useRef<HTMLUListElement>(null);

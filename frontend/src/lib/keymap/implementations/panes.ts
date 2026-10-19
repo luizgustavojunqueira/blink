@@ -12,15 +12,15 @@ export const paneNavigation: KeyBinding[] = [
     when: ({ pane, itemType }) => {
       return (
         pane.type === "list" &&
-        pane.selectedId !== null &&
-        pane.selectedId !== undefined &&
+        pane.selectedGuid !== null &&
+        pane.selectedGuid !== undefined &&
         itemType === Group
       );
     },
     run: ({ app, pane, itemType }) => {
-      if (pane.type !== "list" || !pane.selectedId) return;
+      if (pane.type !== "list" || !pane.selectedGuid) return;
       if (!itemType || itemType !== Group) return;
-      app.ui.openChildPane(pane.selectedId, "list");
+      app.ui.openChildPane(pane.selectedGuid, "list");
     },
   },
   {
@@ -33,15 +33,15 @@ export const paneNavigation: KeyBinding[] = [
     when: ({ pane, itemType }) => {
       return (
         pane.type === "list" &&
-        pane.selectedId !== null &&
-        pane.selectedId !== undefined &&
+        pane.selectedGuid !== null &&
+        pane.selectedGuid !== undefined &&
         itemType === Task
       );
     },
     run: ({ app, pane, itemType }) => {
-      if (pane.type !== "list" || !pane.selectedId) return;
+      if (pane.type !== "list" || !pane.selectedGuid) return;
       if (!itemType || itemType !== Task) return;
-      app.ui.openChildPane(pane.selectedId, "detail");
+      app.ui.openChildPane(pane.selectedGuid, "detail");
     },
   },
   {
@@ -54,15 +54,15 @@ export const paneNavigation: KeyBinding[] = [
     when: ({ pane, itemType }) => {
       return (
         pane.type === "list" &&
-        pane.selectedId !== null &&
-        pane.selectedId !== undefined &&
+        pane.selectedGuid !== null &&
+        pane.selectedGuid !== undefined &&
         itemType === Group
       );
     },
     run: ({ app, pane, itemType }) => {
-      if (pane.type !== "list" || !pane.selectedId || itemType !== Group) return;
+      if (pane.type !== "list" || !pane.selectedGuid || itemType !== Group) return;
 
-      app.ui.openChildPane(pane.selectedId, "detail");
+      app.ui.openChildPane(pane.selectedGuid, "detail");
     },
   },
   {

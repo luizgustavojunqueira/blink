@@ -1,14 +1,14 @@
 import { useEffect, useState, type RefObject } from "react";
 import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
 
-const EMPTY_IDS: string[] = [];
+const EMPTY_GUIDS: string[] = [];
 const EMPTY_MARKED = new Set<string>();
 
-const selectMarkedIds: PaneSelector<Set<string>> = (pane) =>
-  pane?.type === "list" ? pane.markedIds : EMPTY_MARKED;
+const selectMarkedGuids: PaneSelector<Set<string>> = (pane) =>
+  pane?.type === "list" ? pane.markedGuids : EMPTY_MARKED;
 
-const selectRenderedIds: PaneSelector<string[]> = (pane) =>
-  pane?.type === "list" ? pane.renderedIds : EMPTY_IDS;
+const selectRenderedGuids: PaneSelector<string[]> = (pane) =>
+  pane?.type === "list" ? pane.renderedGuids : EMPTY_GUIDS;
 
 const firstIndexWhere = (rows: HTMLCollection, test: (row: Element) => boolean) => {
   let lo = 0;
@@ -27,8 +27,8 @@ interface IMarkedOffscreen {
 }
 
 export default function MarkedOffscreen({ paneId, listRef }: IMarkedOffscreen) {
-  const markedIds = usePaneValue(paneId, selectMarkedIds);
-  const renderedIds = usePaneValue(paneId, selectRenderedIds);
+  const markedGuids = usePaneValue(paneId, selectMarkedGuids);
+  const renderedGuids = usePaneValue(paneId, selectRenderedGuids);
   const [counts, setCounts] = useState({ above: 0, below: 0 });
 
   useEffect(() => {
@@ -44,8 +44,8 @@ export default function MarkedOffscreen({ paneId, listRef }: IMarkedOffscreen) {
 
       let above = 0;
       let below = 0;
-      renderedIds.forEach((id, i) => {
-        if (!markedIds.has(id)) return;
+      renderedGuids.forEach((guid, i) => {
+        if (!markedGuids.has(guid)) return;
         if (i < first) above++;
         else if (i > last) below++;
       });
@@ -53,7 +53,7 @@ export default function MarkedOffscreen({ paneId, listRef }: IMarkedOffscreen) {
       setCounts((c) => (c.above === above && c.below === below ? c : { above, below }));
     };
 
-    if (markedIds.size === 0) {
+    if (markedGuids.size === 0) {
       setCounts((c) => (c.above === 0 && c.below === 0 ? c : { above: 0, below: 0 }));
       return;
     }
@@ -61,7 +61,7 @@ export default function MarkedOffscreen({ paneId, listRef }: IMarkedOffscreen) {
     measure();
     container.addEventListener("scroll", measure, { passive: true });
     return () => container.removeEventListener("scroll", measure);
-  }, [markedIds, renderedIds, listRef]);
+  }, [markedGuids, renderedGuids, listRef]);
 
   if (counts.above === 0 && counts.below === 0) return null;
 

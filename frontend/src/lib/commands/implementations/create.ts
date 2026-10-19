@@ -2,6 +2,7 @@ import { useUiStore } from "../../../stores/ui";
 import { Normal, Task, ToDo, type CreateItemRequest } from "../../../types/backend";
 import {
   DESCRIPTION_MODIFIER,
+  HELP_MODIFIER,
   PRIORITY_MODIFIER,
   STATUS_MODIFIER,
   TAG_MODIFIER,
@@ -12,12 +13,23 @@ import { parseModifiers } from "../../modifiers/parse";
 import type { CommandDefinition } from "../types";
 import { only } from "./utils";
 
+const CREATE_MODIFIERS = [
+  STATUS_MODIFIER,
+  PRIORITY_MODIFIER,
+  TAG_MODIFIER,
+  DESCRIPTION_MODIFIER,
+  TYPE_MODIFIER,
+  HELP_MODIFIER,
+];
+
 export const createCommand: CommandDefinition = {
   id: "create",
   displayName: "create",
   description: "Create a new item",
   strictArgPosition: false,
-  getOptions: modifierOptions,
+  when: ({ pane }) => pane.type === "list",
+  modifiers: CREATE_MODIFIERS,
+  getOptions: modifierOptions(CREATE_MODIFIERS),
   execute: async ({ rawArgs, app }) => {
     const state = useUiStore.getState();
     const pane = state.panes.find((p) => p.id === state.activePaneId);
@@ -29,7 +41,7 @@ export const createCommand: CommandDefinition = {
       return { message: result.error };
     }
 
-    result.req.parent_guid = pane.parentId ?? undefined;
+    result.req.parent_guid = pane.parentGuid ?? undefined;
 
     await app.items.create(result.req);
 

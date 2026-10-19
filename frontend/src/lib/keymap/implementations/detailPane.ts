@@ -85,7 +85,7 @@ const updateStatusBinds = (status: ItemStatus): KeyBinding => ({
   },
   run: ({ app, pane }) => {
     if (pane.type !== "detail" || pane.selectedField !== "status") return;
-    if (pane.itemId) app.items.setField(pane.itemId, "status", status);
+    if (pane.itemGuid) app.items.setField(pane.itemGuid, "status", status);
   },
 });
 
@@ -114,7 +114,7 @@ const updatePriorityBinds = (priority: ItemPriority): KeyBinding => ({
   },
   run: ({ app, pane }) => {
     if (pane.type !== "detail" || pane.selectedField !== "priority") return;
-    if (pane.itemId) app.items.setField(pane.itemId, "priority", priority);
+    if (pane.itemGuid) app.items.setField(pane.itemGuid, "priority", priority);
   },
 });
 

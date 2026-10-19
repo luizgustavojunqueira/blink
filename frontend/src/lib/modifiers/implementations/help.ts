@@ -14,16 +14,18 @@ const OTHER_MODIFIERS = [
   orderModifier,
 ];
 
+export const helpOptions = (allowed?: readonly string[]) =>
+  OTHER_MODIFIERS.filter((m) => !allowed || allowed.includes(m.id)).map((m) =>
+    toPromptOption("MODIFIER", {
+      name: m.id,
+      description: m.description,
+      value: m.id,
+    }),
+  );
+
 export const helpModifier: CommandDefinition = {
   id: "?",
   displayName: "?",
   description: "Show available modifiers",
-  getOptions: () =>
-    OTHER_MODIFIERS.map((m) =>
-      toPromptOption("MODIFIER", {
-        name: m.id,
-        description: m.description,
-        value: m.id,
-      }),
-    ),
+  getOptions: () => helpOptions(),
 };

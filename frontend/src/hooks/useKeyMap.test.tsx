@@ -28,10 +28,10 @@ function press(key: string, init: KeyboardEventInit = {}) {
   return window.dispatchEvent(new KeyboardEvent("keydown", { key, cancelable: true, ...init }));
 }
 
-function seedRoot(renderedIds: string[] = [], selectedId: string | null = null) {
+function seedRoot(renderedGuids: string[] = [], selectedGuid: string | null = null) {
   const pane = createRootPane();
-  pane.renderedIds = renderedIds;
-  pane.selectedId = selectedId;
+  pane.renderedGuids = renderedGuids;
+  pane.selectedGuid = selectedGuid;
   useUiStore.setState({ mode: "normal", panes: [pane], activePaneId: pane.id });
   return pane;
 }
@@ -109,11 +109,11 @@ describe("useKeyMap", () => {
     renderHook(() => useKeyMap(makeApp()));
     press("j");
 
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane().selectedGuid).toBe("a");
 
     press("j");
 
-    expect(firstPane().selectedId).toBe("b");
+    expect(firstPane().selectedGuid).toBe("b");
   });
 
   it("reads the mode from the store, not from the app it was mounted with", () => {
@@ -123,7 +123,7 @@ describe("useKeyMap", () => {
     useUiStore.setState({ mode: "insert" });
     press("j");
 
-    expect(firstPane().selectedId).toBeNull();
+    expect(firstPane().selectedGuid).toBeNull();
   });
 
   it("dispatches to the latest app after a rerender", () => {
@@ -162,7 +162,7 @@ describe("useKeyMap", () => {
     unmount();
     press("j");
 
-    expect(firstPane().selectedId).toBeNull();
+    expect(firstPane().selectedGuid).toBeNull();
   });
 
   it("does not swallow the next key after an unbound one", () => {
@@ -172,7 +172,7 @@ describe("useKeyMap", () => {
     press("d");
     press("j");
 
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane().selectedGuid).toBe("a");
   });
 
   it("restarts the sequence instead of losing the key that broke it", () => {
@@ -182,7 +182,7 @@ describe("useKeyMap", () => {
     press("g");
     press("j");
 
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane().selectedGuid).toBe("a");
   });
 
   it("handles double key key bindings", () => {
@@ -192,10 +192,10 @@ describe("useKeyMap", () => {
     press("g");
     press("g");
 
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane().selectedGuid).toBe("a");
 
     press("G");
 
-    expect(firstPane().selectedId).toBe("c");
+    expect(firstPane().selectedGuid).toBe("c");
   });
 });

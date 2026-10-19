@@ -19,14 +19,14 @@ const allTasks = (ids: string[]): Record<string, ItemType> =>
   Object.fromEntries(ids.map((id) => [id, Task]));
 
 function seedRoot(
-  renderedIds: string[] = [],
-  selectedId: string | null = null,
-  renderedTypes: Record<string, ItemType> = allTasks(renderedIds),
+  renderedGuids: string[] = [],
+  selectedGuid: string | null = null,
+  renderedTypes: Record<string, ItemType> = allTasks(renderedGuids),
 ) {
   const pane = createRootPane();
-  pane.renderedIds = renderedIds;
+  pane.renderedGuids = renderedGuids;
   pane.renderedTypes = renderedTypes;
-  pane.selectedId = selectedId;
+  pane.selectedGuid = selectedGuid;
   useUiStore.setState({ mode: "normal", panes: [pane], activePaneId: pane.id });
   return pane;
 }
@@ -39,7 +39,7 @@ describe("ui store: setRendered", () => {
   it("stores the rendered ids", () => {
     state().setRendered("root", ["a", "b", "c"], allTasks(["a", "b", "c"]));
 
-    expect(firstPane().renderedIds).toEqual(["a", "b", "c"]);
+    expect(firstPane().renderedGuids).toEqual(["a", "b", "c"]);
   });
 
   it("stores the type of each rendered item", () => {
@@ -60,11 +60,11 @@ describe("ui store: setRendered", () => {
 
   it("keeps the previous array when the ids did not change", () => {
     state().setRendered("root", ["a", "b"], allTasks(["a", "b"]));
-    const previous = firstPane().renderedIds;
+    const previous = firstPane().renderedGuids;
 
     state().setRendered("root", ["a", "b"], allTasks(["a", "b"]));
 
-    expect(firstPane().renderedIds).toBe(previous);
+    expect(firstPane().renderedGuids).toBe(previous);
   });
 
   it("keeps the selection when it survives the new list", () => {
@@ -72,7 +72,7 @@ describe("ui store: setRendered", () => {
 
     state().setRendered("root", ["b", "c"], allTasks(["b", "c"]));
 
-    expect(firstPane().selectedId).toBe("b");
+    expect(firstPane().selectedGuid).toBe("b");
   });
 
   it("falls back to the first id when the selected item drops out", () => {
@@ -80,7 +80,7 @@ describe("ui store: setRendered", () => {
 
     state().setRendered("root", ["b", "c"], allTasks(["b", "c"]));
 
-    expect(firstPane().selectedId).toBe("b");
+    expect(firstPane().selectedGuid).toBe("b");
   });
 
   it("clears the selection when the list becomes empty", () => {
@@ -88,16 +88,16 @@ describe("ui store: setRendered", () => {
 
     state().setRendered("root", [], allTasks([]));
 
-    expect(firstPane().selectedId).toBeNull();
+    expect(firstPane().selectedGuid).toBeNull();
   });
 });
 
 describe("ui store: child pane sync", () => {
-  const seedWithChild = (child: ListPane | DetailPane, selectedId: string, activeId?: string) => {
+  const seedWithChild = (child: ListPane | DetailPane, selectedGuid: string, activeId?: string) => {
     const root = createRootPane();
-    root.renderedIds = ["t1", "g1", "g2"];
+    root.renderedGuids = ["t1", "g1", "g2"];
     root.renderedTypes = { t1: Task, g1: Group, g2: Group };
-    root.selectedId = selectedId;
+    root.selectedGuid = selectedGuid;
     useUiStore.setState({
       mode: "normal",
       panes: [root, child],
@@ -110,7 +110,7 @@ describe("ui store: child pane sync", () => {
 
     state().select("root", "g1");
 
-    expect(state().panes[1]).toMatchObject({ id: "child", type: "list", parentId: "g1" });
+    expect(state().panes[1]).toMatchObject({ id: "child", type: "list", parentGuid: "g1" });
   });
 
   it("turns the child into a detail when the selection leaves a group", () => {
@@ -118,7 +118,7 @@ describe("ui store: child pane sync", () => {
 
     state().select("root", "t1");
 
-    expect(state().panes[1]).toMatchObject({ id: "child", type: "detail", itemId: "t1" });
+    expect(state().panes[1]).toMatchObject({ id: "child", type: "detail", itemGuid: "t1" });
   });
 
   it("retargets without rebuilding the child when the type stays the same", () => {
@@ -126,7 +126,7 @@ describe("ui store: child pane sync", () => {
 
     state().select("root", "g2");
 
-    expect(state().panes[1]).toMatchObject({ id: "child", type: "list", parentId: "g2" });
+    expect(state().panes[1]).toMatchObject({ id: "child", type: "list", parentGuid: "g2" });
   });
 
   it("drops the panes below the child when its type changes", () => {
@@ -142,9 +142,9 @@ describe("ui store: child pane sync", () => {
 
   it("falls back to the last pane when the dropped one had the focus", () => {
     const root = createRootPane();
-    root.renderedIds = ["t1", "g1"];
+    root.renderedGuids = ["t1", "g1"];
     root.renderedTypes = { t1: Task, g1: Group };
-    root.selectedId = "g1";
+    root.selectedGuid = "g1";
     useUiStore.setState({
       mode: "normal",
       panes: [root, createListPane("child", "g1"), createDetailPane("grandchild", "inner")],
@@ -164,7 +164,7 @@ describe("ui store: moveDown", () => {
 
     state().moveDown(1);
 
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane().selectedGuid).toBe("a");
   });
 
   it("moves by the given number of steps", () => {
@@ -172,7 +172,7 @@ describe("ui store: moveDown", () => {
 
     state().moveDown(2);
 
-    expect(firstPane().selectedId).toBe("c");
+    expect(firstPane().selectedGuid).toBe("c");
   });
 
   it("stops at the last item instead of wrapping around", () => {
@@ -180,7 +180,7 @@ describe("ui store: moveDown", () => {
 
     state().moveDown(5);
 
-    expect(firstPane().selectedId).toBe("c");
+    expect(firstPane().selectedGuid).toBe("c");
   });
 
   it("counts from the top when the selected id is no longer rendered", () => {
@@ -188,13 +188,13 @@ describe("ui store: moveDown", () => {
 
     state().moveDown(2);
 
-    expect(firstPane().selectedId).toBe("b");
+    expect(firstPane().selectedGuid).toBe("b");
   });
 
   it("does nothing on an empty list", () => {
     state().moveDown(1);
 
-    expect(firstPane().selectedId).toBeNull();
+    expect(firstPane().selectedGuid).toBeNull();
   });
 });
 
@@ -204,7 +204,7 @@ describe("ui store: moveUp", () => {
 
     state().moveUp(1);
 
-    expect(firstPane().selectedId).toBe("c");
+    expect(firstPane().selectedGuid).toBe("c");
   });
 
   it("moves by the given number of steps", () => {
@@ -212,7 +212,7 @@ describe("ui store: moveUp", () => {
 
     state().moveUp(2);
 
-    expect(firstPane().selectedId).toBe("b");
+    expect(firstPane().selectedGuid).toBe("b");
   });
 
   it("stops at the first item instead of wrapping around", () => {
@@ -220,7 +220,7 @@ describe("ui store: moveUp", () => {
 
     state().moveUp(5);
 
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane().selectedGuid).toBe("a");
   });
 
   it("counts from the bottom when the selected id is no longer rendered", () => {
@@ -228,13 +228,13 @@ describe("ui store: moveUp", () => {
 
     state().moveUp(2);
 
-    expect(firstPane().selectedId).toBe("b");
+    expect(firstPane().selectedGuid).toBe("b");
   });
 
   it("does nothing on an empty list", () => {
     state().moveUp(1);
 
-    expect(firstPane().selectedId).toBeNull();
+    expect(firstPane().selectedGuid).toBeNull();
   });
 });
 
@@ -286,7 +286,7 @@ describe("ui store: escape", () => {
     const pane = seedRoot();
     pane.prompt = "typed";
     pane.filter = { title: "x" };
-    pane.selectedId = "a";
+    pane.selectedGuid = "a";
     useUiStore.setState({ panes: [pane], activePaneId: pane.id });
 
     state().escape();
@@ -294,7 +294,7 @@ describe("ui store: escape", () => {
     expect(state().mode).toBe("normal");
     expect(firstPane().prompt).toBe("");
     expect(firstPane().filter).toEqual({});
-    expect(firstPane().selectedId).toBe("a");
+    expect(firstPane().selectedGuid).toBe("a");
   });
 
   it("clears a filter with an empty prompt", () => {
@@ -312,18 +312,18 @@ describe("ui store: escape", () => {
 
     state().escape();
 
-    expect(firstPane().selectedId).toBeNull();
+    expect(firstPane().selectedGuid).toBeNull();
   });
 
   it("deselects on a group pane too, since its parent scope is not a filter", () => {
     const child = createListPane("child", "g1");
-    child.selectedId = "a";
+    child.selectedGuid = "a";
     useUiStore.setState({ mode: "normal", panes: [createRootPane(), child], activePaneId: "child" });
 
     state().escape();
 
     const pane = state().panes[1] as ListPane;
-    expect(pane.selectedId).toBeNull();
+    expect(pane.selectedGuid).toBeNull();
     expect(pane.filter).toMatchObject({ parent_id: "g1" });
   });
 
@@ -383,7 +383,7 @@ describe("ui store: select", () => {
 
     expect(state().activePaneId).toBe("root");
     expect(state().mode).toBe("normal");
-    expect(firstPane().selectedId).toBe("b");
+    expect(firstPane().selectedGuid).toBe("b");
   });
 
   it("does nothing when the selection is unchanged, leaving mode and pane untouched", () => {
@@ -477,14 +477,14 @@ describe("ui store: openChildPane", () => {
     expect(state().panes).toHaveLength(2);
     expect(state().panes[1]).toMatchObject({
       type: "detail",
-      itemId: "item-1",
+      itemGuid: "item-1",
     });
     expect(state().activePaneId).toBe(state().panes[1].id);
   });
 
   it("only moves the focus when the child detail already shows the item", () => {
     const root = createRootPane();
-    root.selectedId = "item-1";
+    root.selectedGuid = "item-1";
     const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({ panes: [root, detail], activePaneId: root.id });
     const before = state().panes;
@@ -503,7 +503,7 @@ describe("ui store: openChildPane", () => {
     state().openChildPane("item-1", "detail");
 
     expect(state().panes).toHaveLength(2);
-    expect(state().panes[1]).toMatchObject({ id: "d1", itemId: "item-1" });
+    expect(state().panes[1]).toMatchObject({ id: "d1", itemGuid: "item-1" });
     expect(state().activePaneId).toBe("d1");
   });
 
@@ -515,7 +515,7 @@ describe("ui store: openChildPane", () => {
     expect(state().panes).toHaveLength(2);
     expect(state().panes[1]).toMatchObject({
       type: "list",
-      parentId: "g1",
+      parentGuid: "g1",
       filter: { parent_id: "g1" },
     });
     expect(state().activePaneId).toBe(state().panes[1].id);
@@ -523,9 +523,9 @@ describe("ui store: openChildPane", () => {
 
   it("replaces the child detail when the same slot opens a group", () => {
     const root = createRootPane();
-    root.renderedIds = ["g1"];
+    root.renderedGuids = ["g1"];
     root.renderedTypes = { g1: Group };
-    root.selectedId = "g1";
+    root.selectedGuid = "g1";
     useUiStore.setState({
       panes: [root, createDetailPane("d1", "old")],
       activePaneId: root.id,
@@ -534,7 +534,7 @@ describe("ui store: openChildPane", () => {
     state().openChildPane("g1", "list");
 
     expect(state().panes).toHaveLength(2);
-    expect(state().panes[1]).toMatchObject({ type: "list", parentId: "g1" });
+    expect(state().panes[1]).toMatchObject({ type: "list", parentGuid: "g1" });
   });
 });
 
@@ -725,7 +725,7 @@ describe("ui store: toggleMarked", () => {
 
     state().toggleMarked("root", "a");
 
-    expect([...firstPane().markedIds]).toEqual(["a"]);
+    expect([...firstPane().markedGuids]).toEqual(["a"]);
   });
 
   it("unmarks the item on the second toggle", () => {
@@ -734,7 +734,7 @@ describe("ui store: toggleMarked", () => {
     state().toggleMarked("root", "a");
     state().toggleMarked("root", "a");
 
-    expect(firstPane().markedIds.size).toBe(0);
+    expect(firstPane().markedGuids.size).toBe(0);
   });
 
   it("keeps the other marks when toggling one off", () => {
@@ -744,17 +744,17 @@ describe("ui store: toggleMarked", () => {
     state().toggleMarked("root", "b");
     state().toggleMarked("root", "a");
 
-    expect([...firstPane().markedIds]).toEqual(["b"]);
+    expect([...firstPane().markedGuids]).toEqual(["b"]);
   });
 
   it("replaces the set instead of mutating the one already published", () => {
     seedRoot(["a", "b"], "a");
     state().toggleMarked("root", "a");
-    const before = firstPane().markedIds;
+    const before = firstPane().markedGuids;
 
     state().toggleMarked("root", "b");
 
-    expect(firstPane().markedIds).not.toBe(before);
+    expect(firstPane().markedGuids).not.toBe(before);
     expect([...before]).toEqual(["a"]);
   });
 
@@ -780,7 +780,7 @@ describe("ui store: toggleMarked", () => {
 describe("ui store: marks on focus change", () => {
   const seedMarked = () => {
     const root = createRootPane();
-    root.markedIds = new Set(["a"]);
+    root.markedGuids = new Set(["a"]);
     const child = createListPane("child", "g1");
     useUiStore.setState({ mode: "normal", panes: [root, child], activePaneId: root.id });
   };
@@ -791,7 +791,7 @@ describe("ui store: marks on focus change", () => {
     state().moveRight();
 
     expect(state().activePaneId).toBe("child");
-    expect(firstPane().markedIds.size).toBe(0);
+    expect(firstPane().markedGuids.size).toBe(0);
   });
 
   it("keeps the marks of the pane that gained the focus", () => {
@@ -799,13 +799,13 @@ describe("ui store: marks on focus change", () => {
 
     state().toggleMarked("child", "x");
 
-    expect(firstPane().markedIds.size).toBe(0);
-    expect([...(state().panes[1] as ListPane).markedIds]).toEqual(["x"]);
+    expect(firstPane().markedGuids.size).toBe(0);
+    expect([...(state().panes[1] as ListPane).markedGuids]).toEqual(["x"]);
   });
 });
 
 describe("ui store: visual mode", () => {
-  it("enters and navigates via keyboard or mouse without altering markedIds", () => {
+  it("enters and navigates via keyboard or mouse without altering markedGuids", () => {
     seedRoot(["a", "b", "c", "d"], "a");
 
     state().toggleVisual("a");
@@ -815,13 +815,13 @@ describe("ui store: visual mode", () => {
     state().moveDown();
     state().select("root", "c");
     expect(state().mode).toBe("visual");
-    expect(firstPane().selectedId).toBe("c");
-    expect(firstPane().markedIds.size).toBe(0);
+    expect(firstPane().selectedGuid).toBe("c");
+    expect(firstPane().markedGuids.size).toBe(0);
   });
 
-  it("commits union into markedIds on toggleVisual or escape", () => {
+  it("commits union into markedGuids on toggleVisual or escape", () => {
     seedRoot(["a", "b", "c", "d"], "b");
-    firstPane().markedIds = new Set(["d"]);
+    firstPane().markedGuids = new Set(["d"]);
 
     // Forward toggleVisual exit
     state().toggleVisual("b");
@@ -829,7 +829,7 @@ describe("ui store: visual mode", () => {
     state().toggleVisual("c");
     expect(state().mode).toBe("normal");
     expect(firstPane().anchorGuid).toBeNull();
-    expect([...firstPane().markedIds].sort()).toEqual(["b", "c", "d"]);
+    expect([...firstPane().markedGuids].sort()).toEqual(["b", "c", "d"]);
 
     // Backward escape exit
     state().moveDown(); // to d
@@ -838,7 +838,7 @@ describe("ui store: visual mode", () => {
     state().escape();
     expect(state().mode).toBe("normal");
     expect(firstPane().anchorGuid).toBeNull();
-    expect([...firstPane().markedIds].sort()).toEqual(["b", "c", "d"]);
+    expect([...firstPane().markedGuids].sort()).toEqual(["b", "c", "d"]);
   });
 });
 

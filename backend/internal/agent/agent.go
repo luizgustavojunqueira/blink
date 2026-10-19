@@ -4,6 +4,7 @@ package agent
 import (
 	"context"
 	"crypto/subtle"
+	"errors"
 	"net/http"
 
 	"github.com/luizgustavojunqueira/blink/internal/models"
@@ -13,6 +14,8 @@ import (
 
 type ItemService interface {
 	GetItems(ctx context.Context, req models.GetItemRequest) ([]models.GetItemResponse, error)
+	CreateItem(ctx context.Context, req models.CreateItemRequest) (*models.GetItemResponse, error)
+	UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error)
 }
 
 type listProjectsInput struct {
@@ -27,11 +30,51 @@ type listTasksInput struct {
 	Order     []string              `json:"order,omitempty" jsonschema:"title, created, updated, status or priority; prefix with - for descending; defaults to priority"`
 }
 
+type createTaskInput struct {
+	ProjectID   string               `json:"project_id" jsonschema:"guid of the project the task belongs to"`
+	Title       string               `json:"title" jsonschema:"title of the task"`
+	Description *string              `json:"description,omitempty" jsonschema:"markdown notes"`
+	Priority    *models.ItemPriority `json:"priority,omitempty" jsonschema:"LOW, NORMAL, HIGH or URGENT; defaults to NORMAL"`
+	Status      *models.ItemStatus   `json:"status,omitempty" jsonschema:"TODO, IN_PROGRESS, DONE, CANCELED or ARCHIVED; defaults to TODO"`
+	Tags        []string             `json:"tags,omitempty"`
+}
+
+type updateItemInput struct {
+	GUID        string               `json:"guid" jsonschema:"guid of the task or project to update"`
+	Status      *models.ItemStatus   `json:"status,omitempty" jsonschema:"TODO, IN_PROGRESS, DONE, CANCELED or ARCHIVED"`
+	Priority    *models.ItemPriority `json:"priority,omitempty" jsonschema:"LOW, NORMAL, HIGH or URGENT"`
+	Title       *string              `json:"title,omitempty"`
+	Description *string              `json:"description,omitempty" jsonschema:"markdown notes; replaces the current description"`
+	Tags        *[]string            `json:"tags,omitempty" jsonschema:"replaces the current tags; an empty list clears them"`
+}
+
 type itemsOutput struct {
 	Items []models.GetItemResponse `json:"items"`
 }
 
+type itemOutput struct {
+	Item models.GetItemResponse `json:"item"`
+}
+
 func NewHandler(svc ItemService, token string) http.Handler {
+	server := newServer(svc)
+
+	handler := mcp.NewStreamableHTTPHandler(
+		func(*http.Request) *mcp.Server { return server },
+		&mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true},
+	)
+
+	verify := func(_ context.Context, got string, _ *http.Request) (*auth.TokenInfo, error) {
+		if subtle.ConstantTimeCompare([]byte(got), []byte(token)) != 1 {
+			return nil, auth.ErrInvalidToken
+		}
+		return &auth.TokenInfo{}, nil
+	}
+
+	return auth.RequireBearerToken(verify, &auth.RequireBearerTokenOptions{AllowMissingExpiration: true})(handler)
+}
+
+func newServer(svc ItemService) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "blink"}, nil)
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -66,19 +109,67 @@ func NewHandler(svc ItemService, token string) http.Handler {
 		})
 	})
 
-	handler := mcp.NewStreamableHTTPHandler(
-		func(*http.Request) *mcp.Server { return server },
-		&mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true},
-	)
-
-	verify := func(_ context.Context, got string, _ *http.Request) (*auth.TokenInfo, error) {
-		if subtle.ConstantTimeCompare([]byte(got), []byte(token)) != 1 {
-			return nil, auth.ErrInvalidToken
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "create_task",
+		Description: "Create a task inside a project.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in createTaskInput) (*mcp.CallToolResult, itemOutput, error) {
+		req := models.CreateItemRequest{
+			ParentGUID:  &in.ProjectID,
+			Title:       in.Title,
+			Description: in.Description,
+			Type:        models.Task,
+			Status:      models.ToDo,
+			Priority:    models.Normal,
+			Tags:        in.Tags,
 		}
-		return &auth.TokenInfo{}, nil
-	}
+		if in.Status != nil {
+			req.Status = *in.Status
+		}
+		if in.Priority != nil {
+			req.Priority = *in.Priority
+		}
+		if err := req.Validate(); err != nil {
+			return nil, itemOutput{}, err
+		}
 
-	return auth.RequireBearerToken(verify, &auth.RequireBearerTokenOptions{AllowMissingExpiration: true})(handler)
+		item, err := svc.CreateItem(ctx, req)
+		if err != nil {
+			return nil, itemOutput{}, err
+		}
+		return nil, itemOutput{Item: *item}, nil
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "update_item",
+		Description: "Update a task or project, e.g. set its status to IN_PROGRESS when starting it and DONE when finished. Only the given fields change.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in updateItemInput) (*mcp.CallToolResult, itemOutput, error) {
+		if in.Status == nil && in.Priority == nil && in.Title == nil && in.Description == nil && in.Tags == nil {
+			return nil, itemOutput{}, errors.New("nothing to update")
+		}
+		if in.Title != nil && *in.Title == "" {
+			return nil, itemOutput{}, errors.New("title cannot be empty")
+		}
+
+		req := models.UpdateItemRequest{
+			GUID:        in.GUID,
+			Title:       in.Title,
+			Description: in.Description,
+			Status:      in.Status,
+			Priority:    in.Priority,
+			Tags:        in.Tags,
+		}
+		if err := req.Validate(); err != nil {
+			return nil, itemOutput{}, err
+		}
+
+		item, err := svc.UpdateItem(ctx, req)
+		if err != nil {
+			return nil, itemOutput{}, err
+		}
+		return nil, itemOutput{Item: *item}, nil
+	})
+
+	return server
 }
 
 func list(ctx context.Context, svc ItemService, req models.GetItemRequest) (*mcp.CallToolResult, itemsOutput, error) {

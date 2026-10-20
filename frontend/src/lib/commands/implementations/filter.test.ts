@@ -9,7 +9,7 @@ function fakeApp(): AppContext {
     ui: useUiStore.getState(),
     setTheme: vi.fn(),
     config: {} as AppContext["config"],
-    items: { findItem: vi.fn(), setField: vi.fn(), bulkSetFields: vi.fn(), create: vi.fn(), update: vi.fn() },
+    items: { findItem: vi.fn(), setField: vi.fn(), bulkSetFields: vi.fn(), remove: vi.fn(), undo: vi.fn(), create: vi.fn(), update: vi.fn() },
   };
 }
 

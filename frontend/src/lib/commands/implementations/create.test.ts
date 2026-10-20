@@ -13,6 +13,8 @@ function fakeApp(create = vi.fn().mockResolvedValue({})): AppContext {
       findItem: vi.fn(),
       setField: vi.fn(),
       bulkSetFields: vi.fn(),
+      remove: vi.fn(),
+      undo: vi.fn(),
       create,
       update: vi.fn(),
     },

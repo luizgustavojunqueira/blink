@@ -4,6 +4,7 @@ import {
   detailStatusKeyBindings,
 } from "./implementations/detailPane";
 import { configPaneBindings } from "./implementations/configPane";
+import { deleteBindings } from "./implementations/delete";
 import { escapeBind } from "./implementations/escape";
 import { toggleHintBind } from "./implementations/hint";
 import { prefixKeyBindings } from "./implementations/insertMode";
@@ -26,6 +27,7 @@ export const keyBindings: KeyBinding[] = [
   toggleHintBind,
   ...markBindings,
   ...bulkUpdateStatusBindings,
+  ...deleteBindings,
   ...visualMode,
   ...configPaneBindings,
 ];

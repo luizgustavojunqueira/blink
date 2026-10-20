@@ -1,5 +1,6 @@
 import { configCommand } from "./implementations/config";
 import { createCommand } from "./implementations/create";
+import { deleteCommand } from "./implementations/delete";
 import { editCommand } from "./implementations/edit";
 import { filterCommand } from "./implementations/filter";
 import { groupCommand } from "./implementations/group";
@@ -16,6 +17,7 @@ export const commands = {
   create: createCommand,
   edit: editCommand,
   group: groupCommand,
+  delete: deleteCommand,
   config: configCommand,
 } as const satisfies Record<string, CommandDefinition>;
 

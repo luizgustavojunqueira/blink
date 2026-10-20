@@ -17,6 +17,8 @@ function fakeApp(bulkSetFields = vi.fn().mockResolvedValue(["item-1", "item-2"])
       bulkSetFields,
       create: vi.fn(),
       update: vi.fn(),
+      remove: vi.fn(),
+      undo: vi.fn(),
     },
   };
 }

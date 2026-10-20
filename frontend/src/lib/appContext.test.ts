@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { bulkUpdateItem, createItem, updateItem } from "../api/items";
+import { bulkUpdateItem, createItem, deleteItems, restoreItems, updateItem } from "../api/items";
 import { createAppContext, getAppContext, getItemActions } from "./appContext";
 import { useUiStore } from "../stores/ui";
 import { Done, High, InProgress, Normal, Task, ToDo } from "../types/backend";
@@ -12,6 +12,8 @@ vi.mock("../api/items", () => ({
   createItem: vi.fn(),
   updateItem: vi.fn(),
   bulkUpdateItem: vi.fn(),
+  deleteItems: vi.fn(),
+  restoreItems: vi.fn(),
 }));
 
 function item(guid: string, overrides: Partial<GetItemResponse> = {}): GetItemResponse {
@@ -496,5 +498,46 @@ describe("appContext: setField optimistic", () => {
 
     retry.resolve(item("item-1", { status: Done }));
     await waitFor(() => expect(fieldState("item-1:status")).toBeUndefined());
+  });
+
+  it("drops removed items from the cache and deletes them on the server", async () => {
+    vi.mocked(deleteItems).mockResolvedValue(undefined);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1"), item("item-2")]);
+
+    await result.current.items.remove(["item-1"]);
+
+    expect(deleteItems).toHaveBeenCalledWith({ guids: ["item-1"] });
+    expect(client.getQueryData<GetItemResponse[]>(["items", {}])?.map((i) => i.guid)).toEqual([
+      "item-2",
+    ]);
+  });
+
+  it("refetches and drops the undo entry when the delete fails", async () => {
+    vi.mocked(deleteItems).mockRejectedValue(new Error("boom"));
+
+    const { result, client, invalidate } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1")]);
+
+    await expect(result.current.items.remove(["item-1"])).rejects.toThrow("boom");
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["items"] });
+    expect(await result.current.items.undo()).toBe(0);
+    expect(restoreItems).not.toHaveBeenCalled();
+  });
+
+  it("undoes the last delete first", async () => {
+    vi.mocked(deleteItems).mockResolvedValue(undefined);
+    vi.mocked(restoreItems).mockResolvedValue([item("item-2")]);
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["items", {}], [item("item-1"), item("item-2")]);
+
+    await result.current.items.remove(["item-1"]);
+    await result.current.items.remove(["item-2"]);
+
+    expect(await result.current.items.undo()).toBe(1);
+    expect(restoreItems).toHaveBeenCalledWith({ guids: ["item-2"] });
   });
 });

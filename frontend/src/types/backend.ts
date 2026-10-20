@@ -52,6 +52,9 @@ export interface BulkUpdateItemRequest {
   tags?: string[];
   parent_guid?: string;
 }
+export interface ItemGuidsRequest {
+  guids: string[];
+}
 export interface GetItemRequest {
   parent_id?: string;
   title?: string;

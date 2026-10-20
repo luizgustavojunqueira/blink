@@ -4,6 +4,7 @@ import type {
   GetItemRequest,
   GetItemResponse,
   GetTagsResponse,
+  ItemGuidsRequest,
   UpdateItemRequest,
 } from "../types/backend";
 import { api } from "./client";
@@ -47,6 +48,20 @@ export function getTags() {
 
 export function bulkUpdateItem(req: BulkUpdateItemRequest) {
   return api<GetItemResponse[]>("/items/bulk", {
+    method: "POST",
+    body: JSON.stringify(req),
+  });
+}
+
+export function deleteItems(req: ItemGuidsRequest) {
+  return api<void>("/items", {
+    method: "DELETE",
+    body: JSON.stringify(req),
+  });
+}
+
+export function restoreItems(req: ItemGuidsRequest) {
+  return api<GetItemResponse[]>("/items/restore", {
     method: "POST",
     body: JSON.stringify(req),
   });

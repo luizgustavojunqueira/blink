@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { bulkUpdateItem, createItem, updateItem } from "../api/items";
+import { bulkUpdateItem, createItem, deleteItems, restoreItems, updateItem } from "../api/items";
 import { useUiStore } from "../stores/ui";
 import { queryClient } from "./queryClient";
 import { useConfigStore } from "./config/store";
@@ -22,6 +22,7 @@ type Flight = { controller: AbortController; original: unknown };
 
 export function createItemActions(client: QueryClient): AppContext["items"] {
   const flights = new Map<string, Flight>();
+  const removed: string[][] = [];
 
   const findItem = (guid: string) => {
     for (const [, list] of client.getQueriesData<GetItemResponse[]>({
@@ -132,7 +133,42 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     return bulkUpdate(updateableGuids, patch);
   };
 
-  return { findItem, setField, create, update, bulkSetFields };
+  const remove = async (guids: string[]) => {
+    if (guids.length === 0) return;
+
+    const gone = new Set(guids);
+    client.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
+      old?.filter((i) => !gone.has(i.guid)),
+    );
+    removed.push(guids);
+
+    try {
+      await deleteItems({ guids });
+    } catch (err) {
+      removed.splice(removed.lastIndexOf(guids), 1);
+      client.invalidateQueries({ queryKey: ["items"] });
+      throw err;
+    }
+
+    client.invalidateQueries({ queryKey: ["tags"] });
+  };
+
+  const undo = async () => {
+    const guids = removed.pop();
+    if (!guids) return 0;
+
+    try {
+      const restored = await restoreItems({ guids });
+      client.invalidateQueries({ queryKey: ["items"] });
+      client.invalidateQueries({ queryKey: ["tags"] });
+      return restored.length;
+    } catch (err) {
+      removed.push(guids);
+      throw err;
+    }
+  };
+
+  return { findItem, setField, create, update, bulkSetFields, remove, undo };
 }
 
 function createConfigActions(): AppContext["config"] {

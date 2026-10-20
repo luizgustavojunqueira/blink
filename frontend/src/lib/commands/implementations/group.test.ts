@@ -19,6 +19,8 @@ function fakeApp(
       bulkSetFields,
       create,
       update: vi.fn(),
+      remove: vi.fn(),
+      undo: vi.fn(),
     },
   };
 }

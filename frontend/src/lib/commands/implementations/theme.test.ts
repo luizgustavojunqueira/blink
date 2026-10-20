@@ -15,6 +15,8 @@ function fakeApp(): AppContext {
       findItem: vi.fn(),
       setField: vi.fn(),
       bulkSetFields: vi.fn(),
+      remove: vi.fn(),
+      undo: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },

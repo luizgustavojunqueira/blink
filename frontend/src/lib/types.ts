@@ -23,5 +23,7 @@ export type AppContext = {
     setField: (guid: string, key: keyof UpdateItemRequest, value: string | string[]) => void;
     create: (req: CreateItemRequest) => Promise<GetItemResponse>;
     update: (req: UpdateItemRequest, signal?: AbortSignal) => Promise<GetItemResponse>;
+    remove: (guids: string[]) => Promise<void>;
+    undo: () => Promise<number>;
   };
 };

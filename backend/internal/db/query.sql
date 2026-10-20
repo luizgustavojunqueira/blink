@@ -39,6 +39,7 @@ WITH all_tags AS (
     WHERE
         tags IS NOT NULL
         AND tags != ''
+        AND deleted_at IS NULL
 )
 SELECT DISTINCT
     tag

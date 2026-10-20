@@ -28,6 +28,8 @@ func (a *App) Start(port string) error {
 	mux.HandleFunc("POST /api/items", a.api.CreateItem)
 	mux.HandleFunc("PATCH /api/items", a.api.UpdateItem)
 	mux.HandleFunc("POST /api/items/bulk", a.api.BulkUpdateItem)
+	mux.HandleFunc("DELETE /api/items", a.api.DeleteItems)
+	mux.HandleFunc("POST /api/items/restore", a.api.RestoreItems)
 	mux.HandleFunc("GET /api/items", a.api.GetItems)
 	mux.HandleFunc("GET /api/tags", a.api.GetTags)
 

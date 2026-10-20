@@ -4,6 +4,8 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -59,7 +61,7 @@ const (
 
 var defaultOrder = []string{statusRankExpr + " ASC", "i.created_at DESC"}
 
-const bulkUpdateReturning = `RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, (SELECT p.guid FROM items p WHERE p.id = items.parent_id) AS parent_guid`
+const bulkUpdateReturning = `RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, (SELECT p.guid FROM items p WHERE p.id = items.parent_id) AS parent_guid`
 
 var orderColumns = map[string]string{
 	"title":    "i.title",
@@ -83,10 +85,12 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 		"i.created_at",
 		"i.updated_at",
 		"i.completed_at",
+		"i.deleted_at",
 		"p.guid AS parent_guid",
 	).
 		From("items i").
 		LeftJoin("items p ON p.id = i.parent_id").
+		Where(squirrel.Eq{"i.deleted_at": nil}).
 		PlaceholderFormat(squirrel.Question)
 
 	if len(filter.Status) > 0 {
@@ -191,6 +195,48 @@ func (s *SQLStore) BulkUpdateItems(ctx context.Context, arg BulkUpdateItemsParam
 	return scanItemsWithParent(rows)
 }
 
+const deleteItemsQuery = `WITH RECURSIVE tree(id) AS (
+	SELECT id FROM items WHERE guid IN (%s) AND deleted_at IS NULL
+	UNION ALL
+	SELECT i.id FROM items i JOIN tree t ON i.parent_id = t.id WHERE i.deleted_at IS NULL
+)
+UPDATE items SET deleted_at = strftime('%%Y-%%m-%%d %%H:%%M:%%f', 'now') WHERE id IN (SELECT id FROM tree)`
+
+const restoreItemsQuery = `WITH RECURSIVE tree(id) AS (
+	SELECT id FROM items WHERE guid IN (%s) AND deleted_at IS NOT NULL
+	UNION ALL
+	SELECT i.id FROM items i JOIN tree t ON i.parent_id = t.id
+	WHERE i.deleted_at = (SELECT deleted_at FROM items WHERE id = t.id)
+)
+UPDATE items SET deleted_at = NULL WHERE id IN (SELECT id FROM tree) ` + bulkUpdateReturning
+
+func guidPlaceholders(guids []string) (string, []any) {
+	args := make([]any, len(guids))
+	for i, g := range guids {
+		args[i] = g
+	}
+	return strings.TrimSuffix(strings.Repeat("?,", len(guids)), ","), args
+}
+
+func (s *SQLStore) DeleteItems(ctx context.Context, guids []string) error {
+	placeholders, args := guidPlaceholders(guids)
+
+	_, err := s.db.ExecContext(ctx, fmt.Sprintf(deleteItemsQuery, placeholders), args...)
+
+	return err
+}
+
+func (s *SQLStore) RestoreItems(ctx context.Context, guids []string) ([]ItemWithParent, error) {
+	placeholders, args := guidPlaceholders(guids)
+
+	rows, err := s.db.QueryContext(ctx, fmt.Sprintf(restoreItemsQuery, placeholders), args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return scanItemsWithParent(rows)
+}
+
 func scanItemsWithParent(rows *sql.Rows) ([]ItemWithParent, error) {
 	var items []ItemWithParent
 
@@ -209,6 +255,7 @@ func scanItemsWithParent(rows *sql.Rows) ([]ItemWithParent, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.CompletedAt,
+			&i.DeletedAt,
 			&i.ParentGuid,
 		); err != nil {
 			return nil, err

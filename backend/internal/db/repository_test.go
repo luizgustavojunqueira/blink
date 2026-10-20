@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/luizgustavojunqueira/blink/internal/db"
 	"github.com/luizgustavojunqueira/blink/internal/db/migrations"
@@ -24,13 +25,15 @@ func newTestStore(t *testing.T) *db.SQLStore {
 		}
 	})
 
-	schema, err := migrations.FS.ReadFile("000001_create_items_table.up.sql")
-	if err != nil {
-		t.Fatalf("failed to read migration: %v", err)
-	}
+	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql"} {
+		schema, err := migrations.FS.ReadFile(name)
+		if err != nil {
+			t.Fatalf("failed to read migration: %v", err)
+		}
 
-	if _, err := conn.Exec(string(schema)); err != nil {
-		t.Fatalf("failed to apply migration: %v", err)
+		if _, err := conn.Exec(string(schema)); err != nil {
+			t.Fatalf("failed to apply migration: %v", err)
+		}
 	}
 
 	items := []struct {
@@ -369,6 +372,122 @@ func TestBulkUpdateItems(t *testing.T) {
 
 		if got := byGuid["a"]; got.ParentGuid.Valid {
 			t.Errorf("expected no parent guid for a root item, got %+v", got.ParentGuid)
+		}
+	})
+}
+
+func TestDeleteAndRestoreItems(t *testing.T) {
+	ctx := context.Background()
+
+	listed := func(t *testing.T, store *db.SQLStore, parent *string) []string {
+		t.Helper()
+		items, err := store.GetItemsDynamic(ctx, db.GetIemsFilter{ParentID: parent})
+		if err != nil {
+			t.Fatalf("failed to list items: %v", err)
+		}
+		return guidsOf(items)
+	}
+
+	t.Run("A deleted item stops being listed", func(t *testing.T) {
+		store := newTestStore(t)
+
+		if err := store.DeleteItems(ctx, []string{"a", "b"}); err != nil {
+			t.Fatalf("failed to delete: %v", err)
+		}
+
+		got := listed(t, store, nil)
+		for _, guid := range []string{"a", "b"} {
+			if slices.Contains(got, guid) {
+				t.Errorf("Expected %v to leave %s out", got, guid)
+			}
+		}
+		if !slices.Contains(got, "c") {
+			t.Errorf("Expected %v to keep c", got)
+		}
+	})
+
+	t.Run("Deleting a group takes its children with it", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		if err := store.DeleteItems(ctx, []string{"group"}); err != nil {
+			t.Fatalf("failed to delete: %v", err)
+		}
+
+		parent := "group"
+		if got := listed(t, store, &parent); len(got) != 0 {
+			t.Errorf("Expected no children but got %v", got)
+		}
+	})
+
+	t.Run("Restoring a group brings its children back", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		if err := store.DeleteItems(ctx, []string{"group"}); err != nil {
+			t.Fatalf("failed to delete: %v", err)
+		}
+
+		restored, err := store.RestoreItems(ctx, []string{"group"})
+		if err != nil {
+			t.Fatalf("failed to restore: %v", err)
+		}
+
+		if len(restored) != 3 {
+			t.Errorf("Expected 3 restored items but got %v", guidsOf(restored))
+		}
+
+		parent := "group"
+		got := listed(t, store, &parent)
+		for _, child := range []string{"child-a", "child-b"} {
+			if !slices.Contains(got, child) {
+				t.Errorf("Expected %v to contain %s", got, child)
+			}
+		}
+	})
+
+	t.Run("Restoring a group leaves a child deleted earlier deleted", func(t *testing.T) {
+		store := newTestStore(t)
+		seedGroups(t, store)
+
+		if err := store.DeleteItems(ctx, []string{"child-a"}); err != nil {
+			t.Fatalf("failed to delete: %v", err)
+		}
+		time.Sleep(5 * time.Millisecond)
+		if err := store.DeleteItems(ctx, []string{"group"}); err != nil {
+			t.Fatalf("failed to delete: %v", err)
+		}
+
+		if _, err := store.RestoreItems(ctx, []string{"group"}); err != nil {
+			t.Fatalf("failed to restore: %v", err)
+		}
+
+		parent := "group"
+		got := listed(t, store, &parent)
+		if slices.Contains(got, "child-a") {
+			t.Errorf("Expected %v to leave child-a out", got)
+		}
+		if !slices.Contains(got, "child-b") {
+			t.Errorf("Expected %v to contain child-b", got)
+		}
+	})
+
+	t.Run("Deleted items stop showing in tags", func(t *testing.T) {
+		store := newTestStore(t)
+
+		if _, err := store.BulkUpdateItems(ctx, db.BulkUpdateItemsParams{Guids: []string{"a"}, Tags: new("gone")}); err != nil {
+			t.Fatalf("failed to tag: %v", err)
+		}
+		if err := store.DeleteItems(ctx, []string{"a"}); err != nil {
+			t.Fatalf("failed to delete: %v", err)
+		}
+
+		tags, err := store.GetTags(ctx)
+		if err != nil {
+			t.Fatalf("failed to get tags: %v", err)
+		}
+		if slices.Contains(tags, "gone") {
+			t.Errorf("Expected %v to leave gone out", tags)
 		}
 	})
 }

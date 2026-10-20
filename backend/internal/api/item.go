@@ -50,6 +50,51 @@ func (a *API) BulkUpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (a *API) DeleteItems(w http.ResponseWriter, r *http.Request) {
+	var req models.ItemGuidsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := a.itemService.DeleteItems(r.Context(), req); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) RestoreItems(w http.ResponseWriter, r *http.Request) {
+	var req models.ItemGuidsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	restored, err := a.itemService.RestoreItems(r.Context(), req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(restored); err != nil {
+		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (a *API) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	var updateItemReq models.UpdateItemRequest
 	err := json.NewDecoder(r.Body).Decode(&updateItemReq)

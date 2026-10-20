@@ -13,6 +13,8 @@ type ItemService interface {
 	UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error)
 	GetTags(ctx context.Context) (*models.GetTagsResponse, error)
 	BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemRequest) ([]models.GetItemResponse, error)
+	DeleteItems(ctx context.Context, req models.ItemGuidsRequest) error
+	RestoreItems(ctx context.Context, req models.ItemGuidsRequest) ([]models.GetItemResponse, error)
 }
 
 type API struct {

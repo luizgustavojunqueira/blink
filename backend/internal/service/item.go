@@ -230,3 +230,31 @@ func (s *Service) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemR
 
 	return itemsResponse, nil
 }
+
+func (s *Service) DeleteItems(ctx context.Context, req models.ItemGuidsRequest) error {
+	return s.repo.DeleteItems(ctx, req.GUIDS)
+}
+
+func (s *Service) RestoreItems(ctx context.Context, req models.ItemGuidsRequest) ([]models.GetItemResponse, error) {
+	items, err := s.repo.RestoreItems(ctx, req.GUIDS)
+	if err != nil {
+		return nil, err
+	}
+
+	itemsResponse := make([]models.GetItemResponse, 0, len(items))
+
+	for _, item := range items {
+		itemsResponse = append(itemsResponse, models.GetItemResponse{
+			GUID:        item.Guid,
+			Title:       item.Title,
+			Description: nullStringToPointer(item.Description),
+			Type:        models.ItemType(item.Type),
+			Status:      models.ItemStatus(item.Status),
+			Priority:    models.ItemPriority(item.Priority),
+			Tags:        tagsToStringSlice(item.Tags),
+			ParentGUID:  nullStringToPointer(item.ParentGuid),
+		})
+	}
+
+	return itemsResponse, nil
+}

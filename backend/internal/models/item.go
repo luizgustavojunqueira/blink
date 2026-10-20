@@ -70,6 +70,10 @@ type BulkUpdateItemRequest struct {
 	ParentGUID  *string       `json:"parent_guid"`
 }
 
+type ItemGuidsRequest struct {
+	GUIDS []string `json:"guids"`
+}
+
 type GetItemRequest struct {
 	ParentID    *string        `json:"parent_id,omitempty"`
 	Title       *string        `json:"title"`
@@ -146,6 +150,14 @@ func (req *BulkUpdateItemRequest) Validate() error {
 		if err := validPriority(*req.Priority); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (req *ItemGuidsRequest) Validate() error {
+	if len(req.GUIDS) == 0 {
+		return errors.New("guids are required")
 	}
 
 	return nil

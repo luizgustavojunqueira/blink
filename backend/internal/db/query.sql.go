@@ -16,7 +16,7 @@ INSERT INTO items (
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at
+RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at
 `
 
 type CreateItemParams struct {
@@ -55,6 +55,7 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CompletedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -69,7 +70,7 @@ func (q *Queries) DeleteItem(ctx context.Context, guid string) error {
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at FROM items WHERE id = ?
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at FROM items WHERE id = ?
 `
 
 func (q *Queries) GetItem(ctx context.Context, id int64) (Item, error) {
@@ -88,12 +89,13 @@ func (q *Queries) GetItem(ctx context.Context, id int64) (Item, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CompletedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getItemByGuid = `-- name: GetItemByGuid :one
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at FROM items WHERE guid = ?
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at FROM items WHERE guid = ?
 `
 
 func (q *Queries) GetItemByGuid(ctx context.Context, guid string) (Item, error) {
@@ -112,6 +114,7 @@ func (q *Queries) GetItemByGuid(ctx context.Context, guid string) (Item, error) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CompletedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -126,6 +129,7 @@ WITH all_tags AS (
     WHERE
         tags IS NOT NULL
         AND tags != ''
+        AND deleted_at IS NULL
 )
 SELECT DISTINCT
     tag
@@ -172,7 +176,7 @@ SET
     updated_at = CURRENT_TIMESTAMP,
     completed_at = COALESCE(?7, completed_at)
 WHERE guid = ?8
-RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at
+RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at
 `
 
 type UpdateItemParams struct {
@@ -211,6 +215,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CompletedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

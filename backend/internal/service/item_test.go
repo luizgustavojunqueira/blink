@@ -111,6 +111,21 @@ func (m *MockRepository) GetItem(ctx context.Context, id int64) (db.Item, error)
 	return db.Item{}, sql.ErrNoRows
 }
 
+func (m *MockRepository) DeleteItems(ctx context.Context, guids []string) error {
+	return m.simulateErr
+}
+
+func (m *MockRepository) RestoreItems(ctx context.Context, guids []string) ([]db.ItemWithParent, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+	items := make([]db.ItemWithParent, 0, len(guids))
+	for _, guid := range guids {
+		items = append(items, db.ItemWithParent{Item: db.Item{Guid: guid, Status: "TODO", Priority: "NORMAL", Type: "TASK"}})
+	}
+	return items, nil
+}
+
 func (m *MockRepository) BulkUpdateItems(ctx context.Context, arg db.BulkUpdateItemsParams) ([]db.ItemWithParent, error) {
 	m.capturedBulkUpdateParams = &arg
 	if m.simulateErr != nil {

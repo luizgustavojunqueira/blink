@@ -22,4 +22,5 @@ type Item struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	CompletedAt sql.NullTime
+	DeletedAt   sql.NullTime
 }

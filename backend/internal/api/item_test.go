@@ -59,6 +59,21 @@ func (m *MockItemService) UpdateItem(ctx context.Context, req models.UpdateItemR
 	return &item, nil
 }
 
+func (m *MockItemService) DeleteItems(ctx context.Context, req models.ItemGuidsRequest) error {
+	return m.simulateErr
+}
+
+func (m *MockItemService) RestoreItems(ctx context.Context, req models.ItemGuidsRequest) ([]models.GetItemResponse, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+	items := make([]models.GetItemResponse, 0, len(req.GUIDS))
+	for _, guid := range req.GUIDS {
+		items = append(items, models.GetItemResponse{GUID: guid, Type: models.Task, Status: models.ToDo, Priority: models.Normal, Tags: []string{}})
+	}
+	return items, nil
+}
+
 func (m *MockItemService) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemRequest) ([]models.GetItemResponse, error) {
 	if m.simulateErr != nil {
 		return nil, m.simulateErr

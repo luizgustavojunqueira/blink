@@ -18,6 +18,8 @@ type Repository interface {
 	GetItemByGuid(ctx context.Context, guid string) (db.Item, error)
 	GetItem(ctx context.Context, id int64) (db.Item, error)
 	BulkUpdateItems(ctx context.Context, arg db.BulkUpdateItemsParams) ([]db.ItemWithParent, error)
+	DeleteItems(ctx context.Context, guids []string) error
+	RestoreItems(ctx context.Context, guids []string) ([]db.ItemWithParent, error)
 }
 
 type Service struct {

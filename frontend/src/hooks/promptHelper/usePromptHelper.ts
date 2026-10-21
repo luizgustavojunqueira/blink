@@ -9,7 +9,8 @@ import { commandArgStart } from "../../lib/commands/argToken";
 import { toPromptOption, type PromptOption } from "../../lib/promptOptions";
 import { getModifier } from "../../lib/modifiers/registry";
 import { useUiStore } from "../../stores/ui";
-import { useTags } from "../useItems";
+import type { GetItemResponse } from "../../types/backend";
+import { useGroups, useTags } from "../useItems";
 
 /** True if `wordStart` is preceded by exactly one space (not 0, not 2+). */
 function isSingleSpaceAway(text: string, wordStart: number): boolean {
@@ -18,6 +19,7 @@ function isSingleSpaceAway(text: string, wordStart: number): boolean {
 }
 
 const EMPTY_TAGS: string[] = [];
+const EMPTY_GROUPS: GetItemResponse[] = [];
 
 export function usePromptHelper(
   inputRef: React.RefObject<HTMLTextAreaElement | null>,
@@ -26,6 +28,7 @@ export function usePromptHelper(
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [options, setOptions] = useState<PromptOption[]>([]);
   const { data: tags = EMPTY_TAGS } = useTags();
+  const { data: groups = EMPTY_GROUPS } = useGroups();
 
   const isOpen = options.length > 0;
 
@@ -73,7 +76,7 @@ export function usePromptHelper(
       const strict = command?.strictArgPosition ?? true;
       const spacingOk = !strict || isSingleSpaceAway(textUntilCursor, wordStart);
 
-      setOptions(available && spacingOk ? (command.getOptions?.(rawargs, { tags }) ?? []) : []);
+      setOptions(available && spacingOk ? (command.getOptions?.(rawargs, { tags, groups }) ?? []) : []);
       setSelectedIndex(0);
       return;
     }
@@ -81,7 +84,7 @@ export function usePromptHelper(
     const modifier = getModifier(word[0]);
     setOptions(modifier?.getOptions?.(word.slice(1), { tags }) ?? []);
     setSelectedIndex(0);
-  }, [inputRef, tags]);
+  }, [inputRef, tags, groups]);
 
   const onSelect = (index?: number) => {
     const input = inputRef.current;

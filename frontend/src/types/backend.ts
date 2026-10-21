@@ -56,6 +56,7 @@ export interface ItemGuidsRequest {
   guids: string[];
 }
 export interface GetItemRequest {
+  recursive?: boolean;
   parent_id?: string;
   title?: string;
   description?: string;

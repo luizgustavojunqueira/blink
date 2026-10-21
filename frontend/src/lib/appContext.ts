@@ -5,7 +5,12 @@ import { queryClient } from "./queryClient";
 import { useConfigStore } from "./config/store";
 import { configRows } from "./config/rows";
 import type { AppContext, ItemPatch } from "./types";
-import type { CreateItemRequest, GetItemResponse, UpdateItemRequest } from "../types/backend";
+import {
+  Group,
+  type CreateItemRequest,
+  type GetItemResponse,
+  type UpdateItemRequest,
+} from "../types/backend";
 
 function sameValue(current: unknown, next: unknown): boolean {
   if (Array.isArray(current) && Array.isArray(next)) {
@@ -53,6 +58,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
 
     client.invalidateQueries({ queryKey: ["items"] });
     client.invalidateQueries({ queryKey: ["tags"] });
+    if (req.type === Group) client.invalidateQueries({ queryKey: ["groups"] });
 
     return created;
   };
@@ -68,6 +74,9 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     );
 
     if (req.tags !== undefined) client.invalidateQueries({ queryKey: ["tags"] });
+    if (req.title !== undefined && updated.type === Group) {
+      client.invalidateQueries({ queryKey: ["groups"] });
+    }
 
     return updated;
   };
@@ -80,6 +89,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     );
 
     client.invalidateQueries({ queryKey: ["tags"] });
+    if (patch.parent_guid !== undefined) client.invalidateQueries({ queryKey: ["groups"] });
 
     return guids;
   };
@@ -151,6 +161,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     }
 
     client.invalidateQueries({ queryKey: ["tags"] });
+    client.invalidateQueries({ queryKey: ["groups"] });
   };
 
   const undo = async () => {
@@ -161,6 +172,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
       const restored = await restoreItems({ guids });
       client.invalidateQueries({ queryKey: ["items"] });
       client.invalidateQueries({ queryKey: ["tags"] });
+      client.invalidateQueries({ queryKey: ["groups"] });
       return restored.length;
     } catch (err) {
       removed.push(guids);

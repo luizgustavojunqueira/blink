@@ -29,6 +29,15 @@ export function useItems(filter: GetItemRequest = {}) {
   return useQuery(itemsQuery(filter));
 }
 
+export const groupsQuery = () => ({
+  queryKey: ["groups"] as const,
+  queryFn: () => getItems({ type: ["GROUP"], recursive: true, order: ["title"] }),
+});
+
+export function useGroups() {
+  return useQuery(groupsQuery());
+}
+
 export function useTags() {
   return useQuery({
     queryKey: ["tags"],

@@ -4,6 +4,7 @@ import { deleteCommand } from "./implementations/delete";
 import { editCommand } from "./implementations/edit";
 import { filterCommand } from "./implementations/filter";
 import { groupCommand } from "./implementations/group";
+import { moveCommand } from "./implementations/move";
 import { themeCommand } from "./implementations/theme";
 import type { UiState } from "../../stores/ui";
 import { queryContext } from "../keymap/context";
@@ -18,6 +19,7 @@ export const commands = {
   edit: editCommand,
   group: groupCommand,
   delete: deleteCommand,
+  move: moveCommand,
   config: configCommand,
 } as const satisfies Record<string, CommandDefinition>;
 

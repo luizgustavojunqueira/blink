@@ -6,6 +6,7 @@ import { THEMES } from "../../lib/commands/implementations/theme";
 
 vi.mock("../useItems", () => ({
   useTags: vi.fn(() => ({ data: [] })),
+  useGroups: vi.fn(() => ({ data: [] })),
 }));
 
 const A_THEME = THEMES[0];

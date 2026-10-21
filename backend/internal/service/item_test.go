@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/luizgustavojunqueira/blink/internal/db"
@@ -109,6 +110,13 @@ func (m *MockRepository) GetItem(ctx context.Context, id int64) (db.Item, error)
 		return item, nil
 	}
 	return db.Item{}, sql.ErrNoRows
+}
+
+func (m *MockRepository) IsInTree(ctx context.Context, rootGuids []string, guid string) (bool, error) {
+	if m.simulateErr != nil {
+		return false, m.simulateErr
+	}
+	return slices.Contains(rootGuids, guid), nil
 }
 
 func (m *MockRepository) DeleteItems(ctx context.Context, guids []string) error {
@@ -782,6 +790,45 @@ func TestService_BulkUpdateItem_Parent(t *testing.T) {
 
 		if mockRepo.capturedBulkUpdateParams != nil {
 			t.Error("expected BulkUpdateItems to not be called when the parent is not a Group")
+		}
+	})
+}
+
+func TestService_BulkUpdateItem_MoveIntoGroup(t *testing.T) {
+	groups := map[string]db.Item{
+		"group":  {ID: 7, Guid: "group", Type: string(models.Group)},
+		"target": {ID: 9, Guid: "target", Type: string(models.Group)},
+	}
+
+	t.Run("Success - items move into the group", func(t *testing.T) {
+		mockRepo := &MockRepository{itemsByGuid: groups}
+		svc := service.NewService(mockRepo)
+
+		_, err := svc.BulkUpdateItem(context.Background(), models.BulkUpdateItemRequest{
+			GUIDS: []string{"group"}, ParentGUID: new("target"),
+		})
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		if mockRepo.capturedBulkUpdateParams == nil || *mockRepo.capturedBulkUpdateParams.ParentID != 9 {
+			t.Errorf("expected parent id 9, got %+v", mockRepo.capturedBulkUpdateParams)
+		}
+	})
+
+	t.Run("Error - a group cannot move into itself or its own tree", func(t *testing.T) {
+		mockRepo := &MockRepository{itemsByGuid: groups}
+		svc := service.NewService(mockRepo)
+
+		_, err := svc.BulkUpdateItem(context.Background(), models.BulkUpdateItemRequest{
+			GUIDS: []string{"group", "target"}, ParentGUID: new("group"),
+		})
+		if err == nil {
+			t.Fatal("expected an error when moving a group into itself")
+		}
+
+		if mockRepo.capturedBulkUpdateParams != nil {
+			t.Error("expected BulkUpdateItems to not be called")
 		}
 	})
 }

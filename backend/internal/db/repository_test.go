@@ -491,3 +491,56 @@ func TestDeleteAndRestoreItems(t *testing.T) {
 		}
 	})
 }
+
+func TestIsInTree(t *testing.T) {
+	ctx := context.Background()
+	store := newTestStore(t)
+	seedGroups(t, store)
+
+	cases := []struct {
+		name  string
+		roots []string
+		guid  string
+		want  bool
+	}{
+		{"the root itself", []string{"group"}, "group", true},
+		{"a child of the root", []string{"group"}, "child-a", true},
+		{"a sibling of the root", []string{"group"}, "empty", false},
+		{"the parent of the root", []string{"child-a"}, "group", false},
+		{"any of several roots", []string{"a", "group"}, "child-b", true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := store.IsInTree(ctx, tc.roots, tc.guid)
+			if err != nil {
+				t.Fatalf("Didn't expect error but got: %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("expected %v, got %v", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestGetItemsDynamic_Recursive(t *testing.T) {
+	store := newTestStore(t)
+	seedGroups(t, store)
+
+	items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{Type: []string{"GROUP"}, Recursive: true})
+	if err != nil {
+		t.Fatalf("Didn't expect error but got: %v", err)
+	}
+
+	if got := guidsOf(items); !slices.Contains(got, "group") || !slices.Contains(got, "empty") || len(got) != 2 {
+		t.Errorf("expected both groups, got %v", got)
+	}
+
+	all, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{Recursive: true})
+	if err != nil {
+		t.Fatalf("Didn't expect error but got: %v", err)
+	}
+	if !slices.Contains(guidsOf(all), "child-a") {
+		t.Errorf("expected children to be listed, got %v", guidsOf(all))
+	}
+}

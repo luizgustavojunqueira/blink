@@ -19,6 +19,7 @@ type GetIemsFilter struct {
 	Tags        []string
 	Order       []OrderBy
 	ParentID    *string
+	Recursive   bool
 }
 
 type ItemWithParent struct {
@@ -110,9 +111,11 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 		query = query.Where(squirrel.Like{"i.description": "%" + *filter.Description + "%"})
 	}
 
-	if filter.ParentID == nil {
+	switch {
+	case filter.Recursive:
+	case filter.ParentID == nil:
 		query = query.Where(squirrel.Eq{"i.parent_id": nil})
-	} else {
+	default:
 		sub := squirrel.Select("id").From("items").Where(squirrel.Eq{"guid": *filter.ParentID})
 		query = query.Where(squirrel.Expr("i.parent_id = (?)", sub))
 	}
@@ -209,6 +212,22 @@ const restoreItemsQuery = `WITH RECURSIVE tree(id) AS (
 	WHERE i.deleted_at = (SELECT deleted_at FROM items WHERE id = t.id)
 )
 UPDATE items SET deleted_at = NULL WHERE id IN (SELECT id FROM tree) ` + bulkUpdateReturning
+
+const inTreeQuery = `WITH RECURSIVE tree(id) AS (
+	SELECT id FROM items WHERE guid IN (%s)
+	UNION ALL
+	SELECT i.id FROM items i JOIN tree t ON i.parent_id = t.id
+)
+SELECT EXISTS(SELECT 1 FROM tree WHERE id = (SELECT id FROM items WHERE guid = ?))`
+
+func (s *SQLStore) IsInTree(ctx context.Context, rootGuids []string, guid string) (bool, error) {
+	placeholders, args := guidPlaceholders(rootGuids)
+
+	var found bool
+	err := s.db.QueryRowContext(ctx, fmt.Sprintf(inTreeQuery, placeholders), append(args, guid)...).Scan(&found)
+
+	return found, err
+}
 
 func guidPlaceholders(guids []string) (string, []any) {
 	args := make([]any, len(guids))

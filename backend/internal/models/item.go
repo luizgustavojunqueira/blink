@@ -83,6 +83,7 @@ type GetItemRequest struct {
 	Priority    []ItemPriority `json:"priority,omitempty"`
 	Tags        []string       `json:"tags,omitempty"`
 	Order       []string       `json:"order,omitempty"`
+	Recursive   bool           `json:"recursive,omitempty"`
 }
 
 type OrderBy struct {

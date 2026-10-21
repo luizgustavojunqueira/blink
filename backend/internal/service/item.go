@@ -120,6 +120,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 		Tags:        tags,
 		Order:       toDBOrders(models.ParseOrders(req.Order)),
 		ParentID:    req.ParentID,
+		Recursive:   req.Recursive,
 	}
 
 	if filter.Title != nil {
@@ -190,6 +191,15 @@ func (s *Service) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemR
 
 		if parentItem.Type != string(models.Group) {
 			return nil, errors.New("parent is not of type Group")
+		}
+
+		inside, err := s.repo.IsInTree(ctx, req.GUIDS, *req.ParentGUID)
+		if err != nil {
+			return nil, err
+		}
+
+		if inside {
+			return nil, errors.New("cannot move a group into itself")
 		}
 
 		parentId = &parentItem.ID

@@ -1,3 +1,4 @@
+import { archiveCommand } from "./implementations/archive";
 import { configCommand } from "./implementations/config";
 import { createCommand } from "./implementations/create";
 import { deleteCommand } from "./implementations/delete";
@@ -20,6 +21,7 @@ export const commands = {
   group: groupCommand,
   delete: deleteCommand,
   move: moveCommand,
+  archive: archiveCommand,
   config: configCommand,
 } as const satisfies Record<string, CommandDefinition>;
 

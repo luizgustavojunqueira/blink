@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { useAgentsStore } from "../config/agents";
 import {
   applyKeymap,
   availableKeys,
@@ -118,7 +119,11 @@ describe("keymap registry: resolve", () => {
       configCtx("theme:gruvbox"),
       configCtx("theme:mine"),
       configCtx("key:list:down"),
+      configCtx("agent:a1"),
+      configCtx("agent:new"),
     ];
+
+    useAgentsStore.getState().reveal("a1", "blk_token");
 
     for (const binding of keyBindings) {
       for (const key of binding.keys) {
@@ -126,6 +131,8 @@ describe("keymap registry: resolve", () => {
         expect(reached, `${binding.id} via ${key}`).toBe(true);
       }
     }
+
+    useAgentsStore.getState().hide();
   });
 });
 

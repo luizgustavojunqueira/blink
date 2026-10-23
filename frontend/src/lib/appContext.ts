@@ -1,4 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { createAgent, deleteAgent } from "../api/agents";
+import { useAgentsStore } from "./config/agents";
 import { bulkUpdateItem, createItem, deleteItems, restoreItems, updateItem } from "../api/items";
 import { useUiStore } from "../stores/ui";
 import { queryClient } from "./queryClient";
@@ -8,6 +10,7 @@ import type { AppContext, ItemPatch } from "./types";
 import {
   Group,
   type CreateItemRequest,
+  type GetAgentResponse,
   type GetItemResponse,
   type UpdateItemRequest,
 } from "../types/backend";
@@ -183,12 +186,30 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
   return { findItem, setField, create, update, bulkSetFields, remove, undo };
 }
 
-function createConfigActions(): AppContext["config"] {
+function createConfigActions(client: QueryClient): AppContext["config"] {
   const store = () => useConfigStore.getState();
 
   return {
     get: store,
-    rows: () => configRows(store()),
+    rows: () => configRows(store(), client.getQueryData<GetAgentResponse[]>(["agents"])),
+    createAgent: async (name) => {
+      const { token, ...agent } = await createAgent(name);
+
+      useAgentsStore.getState().reveal(agent.guid, token);
+      client.setQueryData<GetAgentResponse[]>(["agents"], (old) => [...(old ?? []), agent]);
+      client.invalidateQueries({ queryKey: ["agents"] });
+
+      return agent;
+    },
+    removeAgent: async (guid) => {
+      await deleteAgent(guid);
+
+      if (useAgentsStore.getState().revealed?.guid === guid) useAgentsStore.getState().hide();
+      client.setQueryData<GetAgentResponse[]>(["agents"], (old) =>
+        old?.filter((a) => a.guid !== guid),
+      );
+      client.invalidateQueries({ queryKey: ["agents"] });
+    },
     setTheme: (name) => store().setTheme(name),
     setKeys: (bindingId, input) => store().setKeys(bindingId, input),
     resetKeys: (bindingId) => store().resetKeys(bindingId),
@@ -205,7 +226,7 @@ export function createAppContext(client: QueryClient): AppContext {
     setTheme: (theme) => {
       useConfigStore.getState().setTheme(theme);
     },
-    config: createConfigActions(),
+    config: createConfigActions(client),
     items: createItemActions(client),
   };
 }

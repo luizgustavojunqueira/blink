@@ -1,7 +1,9 @@
 import { Fragment, useMemo } from "react";
 import { paneIsActive, usePaneValue } from "../../hooks/usePane";
 import { useConfigStore } from "../../lib/config/store";
-import { configRows, type ConfigRow } from "../../lib/config/rows";
+import { useAgents } from "../../hooks/useItems";
+import { configRows, sectionOf, type ConfigRow } from "../../lib/config/rows";
+import type { GetAgentResponse } from "../../types/backend";
 import { isBuiltinTheme } from "../../lib/theme";
 import Breadcrumb from "../breadcrumb/breadcrumb";
 import ConfigRowView from "./configRow";
@@ -45,8 +47,18 @@ function header(row: ConfigRow, theme: string) {
           note="i or enter to edit · r resets to default"
         />
       );
+    case "agent":
+    case "agentNew":
+      return (
+        <SectionHeader
+          title="agents"
+          note="i adds · d d revokes · a token is shown only once"
+        />
+      );
   }
 }
+
+const NO_AGENTS: GetAgentResponse[] = [];
 
 export default function ConfigPane({ paneId }: IConfigPane) {
   const isActive = usePaneValue(paneId, paneIsActive);
@@ -54,9 +66,11 @@ export default function ConfigPane({ paneId }: IConfigPane) {
   const themes = useConfigStore((s) => s.themes);
   const keymap = useConfigStore((s) => s.keymap);
 
+  const { data: agents = NO_AGENTS } = useAgents();
+
   const rows = useMemo(
-    () => configRows({ theme, themes, keymap }),
-    [theme, themes, keymap],
+    () => configRows({ theme, themes, keymap }, agents),
+    [theme, themes, keymap, agents],
   );
 
   return (
@@ -69,7 +83,7 @@ export default function ConfigPane({ paneId }: IConfigPane) {
       <ul className="flex-1 overflow-y-auto">
         {rows.map((row, i) => (
           <Fragment key={row.id}>
-            {(i === 0 || rows[i - 1].kind !== row.kind) && header(row, theme)}
+            {(i === 0 || sectionOf(rows[i - 1]) !== sectionOf(row)) && header(row, theme)}
             <ConfigRowView paneId={paneId} row={row} />
           </Fragment>
         ))}

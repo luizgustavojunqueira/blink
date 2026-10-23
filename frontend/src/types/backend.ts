@@ -55,6 +55,18 @@ export interface BulkUpdateItemRequest {
 export interface ItemGuidsRequest {
   guids: string[];
 }
+export interface CreateAgentRequest {
+  name: string;
+}
+export interface GetAgentResponse {
+  guid: string;
+  name: string;
+  created_at: string;
+  last_used_at?: string;
+}
+export interface CreateAgentResponse extends GetAgentResponse {
+  token: string;
+}
 export interface GetItemRequest {
   recursive?: boolean;
   parent_id?: string;

@@ -1,5 +1,7 @@
 import { isBuiltinTheme } from "../../theme";
 import { parseRowId, themeRowId, type RowRef } from "../../config/rowId";
+import { useAgentsStore } from "../../config/agents";
+import { AGENT_NEW_ROW_ID } from "../../config/rowId";
 import type { AppContext } from "../../types";
 import type { Pane } from "../../pane/types";
 import type { KeyBinding, KeyQueryContext } from "../types";
@@ -90,7 +92,7 @@ export const configPaneBindings: KeyBinding[] = [
     description: "Edit",
     hint: { group: "item" },
     fixed: true,
-    when: onRow((row) => row.kind === "key" || row.kind === "color"),
+    when: onRow((row) => row.kind === "key" || row.kind === "color" || row.kind === "agentNew"),
     run: ({ app }) => app.ui.enterInsert(),
   },
   {
@@ -134,6 +136,42 @@ export const configPaneBindings: KeyBinding[] = [
       if (row?.kind !== "theme") return;
       app.config.deleteTheme(row.name);
       app.ui.selectRow(pane.id, themeRowId(app.config.get().theme));
+    },
+  },
+  {
+    id: "config:revoke",
+    keys: ["d d"],
+    modes: ["normal"],
+    scope: "config",
+    description: "Revoke agent",
+    hint: { group: "item" },
+    fixed: true,
+    when: onRow((row) => row.kind === "agent"),
+    run: ({ app, pane }) => {
+      const row = rowOf(pane);
+      if (row?.kind !== "agent") return;
+      void app.config.removeAgent(row.guid);
+      app.ui.selectRow(pane.id, AGENT_NEW_ROW_ID);
+    },
+  },
+  {
+    id: "config:copyToken",
+    keys: ["y"],
+    modes: ["normal"],
+    scope: "config",
+    description: "Copy agent token",
+    hint: { group: "item" },
+    fixed: true,
+    when: ({ pane }) => {
+      const row = rowOf(pane);
+      return row?.kind === "agent" && useAgentsStore.getState().revealed?.guid === row.guid;
+    },
+    run: ({ pane }) => {
+      const row = rowOf(pane);
+      const revealed = useAgentsStore.getState().revealed;
+      if (row?.kind === "agent" && revealed?.guid === row.guid) {
+        void navigator.clipboard?.writeText(revealed.token);
+      }
     },
   },
   {

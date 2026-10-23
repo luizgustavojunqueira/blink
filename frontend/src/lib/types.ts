@@ -4,6 +4,7 @@ import type { ConfigRow } from "./config/rows";
 import type {
   BulkUpdateItemRequest,
   CreateItemRequest,
+  GetAgentResponse,
   GetItemResponse,
   UpdateItemRequest,
 } from "../types/backend";
@@ -16,6 +17,8 @@ export type AppContext = {
   config: ConfigActions & {
     get: () => Config;
     rows: () => ConfigRow[];
+    createAgent: (name: string) => Promise<GetAgentResponse>;
+    removeAgent: (guid: string) => Promise<void>;
   };
   items: {
     findItem: (guid: string) => GetItemResponse | undefined;

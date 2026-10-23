@@ -1,11 +1,18 @@
 import { QueryClient } from "@tanstack/react-query";
 import { waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createAgent, deleteAgent } from "../api/agents";
+import { useAgentsStore } from "./config/agents";
 import { bulkUpdateItem, createItem, deleteItems, restoreItems, updateItem } from "../api/items";
 import { createAppContext, getAppContext, getItemActions } from "./appContext";
 import { useUiStore } from "../stores/ui";
 import { Done, High, InProgress, Normal, Task, ToDo } from "../types/backend";
 import type { GetItemResponse } from "../types/backend";
+
+vi.mock("../api/agents", () => ({
+  createAgent: vi.fn(),
+  deleteAgent: vi.fn(),
+}));
 
 vi.mock("../api/items", () => ({
   getItems: vi.fn(() => Promise.resolve([])),
@@ -539,5 +546,45 @@ describe("appContext: setField optimistic", () => {
 
     expect(await result.current.items.undo()).toBe(1);
     expect(restoreItems).toHaveBeenCalledWith({ guids: ["item-2"] });
+  });
+
+  it("keeps the new agent's token in memory and lists the agent without it", async () => {
+    vi.mocked(createAgent).mockResolvedValue({
+      guid: "a1",
+      name: "claude",
+      created_at: "2026-01-01T00:00:00Z",
+      token: "blk_secret",
+    });
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["agents"], []);
+
+    const agent = await result.current.config.createAgent("claude");
+
+    expect(agent).not.toHaveProperty("token");
+    expect(useAgentsStore.getState().revealed).toEqual({ guid: "a1", token: "blk_secret" });
+    expect(client.getQueryData(["agents"])).toEqual([
+      { guid: "a1", name: "claude", created_at: "2026-01-01T00:00:00Z" },
+    ]);
+    expect(result.current.config.rows().some((r) => r.id === "agent:a1")).toBe(true);
+
+    useAgentsStore.getState().hide();
+  });
+
+  it("revokes an agent and forgets its token", async () => {
+    vi.mocked(deleteAgent).mockResolvedValue(undefined);
+    useAgentsStore.getState().reveal("a1", "blk_secret");
+
+    const { result, client } = renderAppContext();
+    client.setQueryData(["agents"], [
+      { guid: "a1", name: "claude", created_at: "x" },
+      { guid: "a2", name: "cursor", created_at: "x" },
+    ]);
+
+    await result.current.config.removeAgent("a1");
+
+    expect(deleteAgent).toHaveBeenCalledWith("a1");
+    expect(useAgentsStore.getState().revealed).toBeNull();
+    expect(client.getQueryData<{ guid: string }[]>(["agents"])?.map((a) => a.guid)).toEqual(["a2"]);
   });
 });

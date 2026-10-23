@@ -1,11 +1,16 @@
-import { memo, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import TextField from "../textField/textField";
 import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useConfigEdit } from "../../hooks/useConfigEdit";
 import { useUiStore } from "../../stores/ui";
 import { isColor, normalizeName, useConfigStore } from "../../lib/config/store";
-import { themeRowId } from "../../lib/config/rowId";
+import { agentRowId, themeRowId } from "../../lib/config/rowId";
+import { useAgentsStore } from "../../lib/config/agents";
+import { getAppContext } from "../../lib/appContext";
+import { AGENT_NAME_MAX } from "../../lib/config/agentName";
 import type {
+  AgentNewRow,
+  AgentRow,
   ColorRow,
   ConfigRow,
   KeyRow,
@@ -218,6 +223,85 @@ function KeyRowView({ paneId, row }: { paneId: string; row: KeyRow }) {
   );
 }
 
+function AgentNewRowView({ paneId, row }: { paneId: string; row: AgentNewRow }) {
+  const selectRow = useUiStore((s) => s.selectRow);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const commit = useCallback(
+    (draft: string) => {
+      const name = draft.trim();
+      if (!name) return "name is required";
+      if (name.length > AGENT_NAME_MAX) return `at most ${AGENT_NAME_MAX} characters`;
+
+      setFailure(null);
+      getAppContext()
+        .config.createAgent(name)
+        .then(
+          (agent) => selectRow(paneId, agentRowId(agent.guid)),
+          (err: unknown) => setFailure(err instanceof Error ? err.message : "could not create"),
+        );
+
+      return null;
+    },
+    [paneId, selectRow],
+  );
+  const edit = useConfigEdit({ paneId, rowId: row.id, value: "", commit });
+
+  return (
+    <RowShell
+      paneId={paneId}
+      rowId={row.id}
+      help={edit.editing && "a name for the agent, e.g. claude-code"}
+      error={edit.error ?? failure}
+    >
+      <span className="w-4 shrink-0 text-accent">+</span>
+      {edit.editing ? (
+        <TextField
+          singleLine
+          value={edit.draft}
+          onChange={edit.setDraft}
+          editing
+          onKeyDown={edit.onKeyDown}
+          onBlur={edit.onBlur}
+          wrapperClassName="flex-1 min-w-0"
+        />
+      ) : (
+        <span
+          className="flex-1 truncate text-lg leading-normal text-fg-muted"
+          onClick={edit.requestEdit}
+        >
+          new agent
+        </span>
+      )}
+    </RowShell>
+  );
+}
+
+function AgentRowView({ paneId, row }: { paneId: string; row: AgentRow }) {
+  const token = useAgentsStore((s) =>
+    s.revealed?.guid === row.agent.guid ? s.revealed.token : null,
+  );
+  const lastUsed = row.agent.last_used_at
+    ? new Date(row.agent.last_used_at).toLocaleString()
+    : "never used";
+
+  return (
+    <RowShell
+      paneId={paneId}
+      rowId={row.id}
+      help={
+        token ? `${window.location.origin}/mcp · Bearer ${token} · y copies the token` : false
+      }
+    >
+      <span className="w-4 shrink-0 text-transparent">●</span>
+      <span className="flex-1 truncate text-lg leading-normal text-fg">
+        {row.agent.name}
+      </span>
+      <span className="shrink-0 text-xs text-fg-muted">{lastUsed}</span>
+    </RowShell>
+  );
+}
+
 function ConfigRowComponent({
   paneId,
   row,
@@ -232,6 +316,10 @@ function ConfigRowComponent({
       return <ColorRowView paneId={paneId} row={row} />;
     case "key":
       return <KeyRowView paneId={paneId} row={row} />;
+    case "agentNew":
+      return <AgentNewRowView paneId={paneId} row={row} />;
+    case "agent":
+      return <AgentRowView paneId={paneId} row={row} />;
   }
 }
 

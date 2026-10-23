@@ -2,7 +2,8 @@ import { THEME_TOKENS, isBuiltinTheme, type ThemeToken } from "../theme";
 import { keyBindings } from "../keymap/registry";
 import type { KeyBinding } from "../keymap/types";
 import { effectiveKeys } from "./keys";
-import { colorRowId, keyRowId, themeRowId } from "./rowId";
+import type { GetAgentResponse } from "../../types/backend";
+import { AGENT_NEW_ROW_ID, agentRowId, colorRowId, keyRowId, themeRowId } from "./rowId";
 import { themeNames, type Config } from "./store";
 
 export type ThemeRow = {
@@ -27,7 +28,16 @@ export type KeyRow = {
   isDefault: boolean;
 };
 
-export type ConfigRow = ThemeRow | ColorRow | KeyRow;
+export type AgentNewRow = { id: string; kind: "agentNew" };
+export type AgentRow = {
+  id: string;
+  kind: "agent";
+  agent: GetAgentResponse;
+};
+
+export type ConfigRow = ThemeRow | ColorRow | KeyRow | AgentNewRow | AgentRow;
+
+export const sectionOf = (row: ConfigRow) => (row.kind === "agentNew" ? "agent" : row.kind);
 
 const SCOPE_ORDER: KeyBinding["scope"][] = ["global", "list", "detail"];
 
@@ -35,7 +45,10 @@ export const remappableBindings = SCOPE_ORDER.flatMap((scope) =>
   keyBindings.filter((b) => b.scope === scope && !b.fixed),
 );
 
-export function configRows({ theme, themes, keymap }: Config): ConfigRow[] {
+export function configRows(
+  { theme, themes, keymap }: Config,
+  agents: GetAgentResponse[] = [],
+): ConfigRow[] {
   const rows: ConfigRow[] = themeNames(themes).map((name) => ({
     id: themeRowId(name),
     kind: "theme",
@@ -65,6 +78,11 @@ export function configRows({ theme, themes, keymap }: Config): ConfigRow[] {
       keys: effectiveKeys(binding, keymap),
       isDefault: !keymap[binding.id],
     });
+  }
+
+  rows.push({ id: AGENT_NEW_ROW_ID, kind: "agentNew" });
+  for (const agent of agents) {
+    rows.push({ id: agentRowId(agent.guid), kind: "agent", agent });
   }
 
   return rows;

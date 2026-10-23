@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useSyncExternalStore } from "react";
 import type { GetItemRequest, GetItemResponse } from "../types/backend";
+import { getAgents } from "../api/agents";
 import { getItems, getTags } from "../api/items";
 import { generateMockItems } from "../utils/mockItems";
 
@@ -36,6 +37,15 @@ export const groupsQuery = () => ({
 
 export function useGroups() {
   return useQuery(groupsQuery());
+}
+
+export const agentsQuery = () => ({
+  queryKey: ["agents"] as const,
+  queryFn: getAgents,
+});
+
+export function useAgents() {
+  return useQuery(agentsQuery());
 }
 
 export function useTags() {

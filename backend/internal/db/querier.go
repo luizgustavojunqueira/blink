@@ -9,11 +9,15 @@ import (
 )
 
 type Querier interface {
+	CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent, error)
 	CreateItem(ctx context.Context, arg CreateItemParams) (Item, error)
+	DeleteAgent(ctx context.Context, guid string) (int64, error)
 	DeleteItem(ctx context.Context, guid string) error
 	GetItem(ctx context.Context, id int64) (Item, error)
 	GetItemByGuid(ctx context.Context, guid string) (Item, error)
 	GetTags(ctx context.Context) ([]string, error)
+	ListAgents(ctx context.Context) ([]Agent, error)
+	TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
 }
 

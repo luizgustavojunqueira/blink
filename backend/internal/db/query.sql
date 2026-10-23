@@ -49,3 +49,20 @@ WHERE
     tag != ''
 ORDER BY
     tag ASC;
+
+-- name: CreateAgent :one
+INSERT INTO agents (
+    guid, name, token_hash
+) VALUES (
+    ?, ?, ?
+)
+RETURNING *;
+
+-- name: ListAgents :many
+SELECT * FROM agents ORDER BY created_at ASC, id ASC;
+
+-- name: DeleteAgent :execrows
+DELETE FROM agents WHERE guid = ?;
+
+-- name: TouchAgentByTokenHash :execrows
+UPDATE agents SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ?;

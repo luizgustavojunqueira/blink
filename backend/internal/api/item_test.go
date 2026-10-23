@@ -59,6 +59,27 @@ func (m *MockItemService) UpdateItem(ctx context.Context, req models.UpdateItemR
 	return &item, nil
 }
 
+func (m *MockItemService) CreateAgent(ctx context.Context, req models.CreateAgentRequest) (*models.CreateAgentResponse, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+	return &models.CreateAgentResponse{
+		GetAgentResponse: models.GetAgentResponse{GUID: "agent-1", Name: req.Name, CreatedAt: "2026-01-01T00:00:00Z"},
+		Token:            "blk_secret",
+	}, nil
+}
+
+func (m *MockItemService) GetAgents(ctx context.Context) ([]models.GetAgentResponse, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+	return []models.GetAgentResponse{{GUID: "agent-1", Name: "claude", CreatedAt: "2026-01-01T00:00:00Z"}}, nil
+}
+
+func (m *MockItemService) DeleteAgent(ctx context.Context, guid string) error {
+	return m.simulateErr
+}
+
 func (m *MockItemService) DeleteItems(ctx context.Context, req models.ItemGuidsRequest) error {
 	return m.simulateErr
 }

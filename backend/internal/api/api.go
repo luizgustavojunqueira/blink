@@ -13,6 +13,9 @@ type ItemService interface {
 	UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error)
 	GetTags(ctx context.Context) (*models.GetTagsResponse, error)
 	BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemRequest) ([]models.GetItemResponse, error)
+	CreateAgent(ctx context.Context, req models.CreateAgentRequest) (*models.CreateAgentResponse, error)
+	GetAgents(ctx context.Context) ([]models.GetAgentResponse, error)
+	DeleteAgent(ctx context.Context, guid string) error
 	DeleteItems(ctx context.Context, req models.ItemGuidsRequest) error
 	RestoreItems(ctx context.Context, req models.ItemGuidsRequest) ([]models.GetItemResponse, error)
 }

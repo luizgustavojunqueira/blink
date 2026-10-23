@@ -3,7 +3,6 @@ package agent
 
 import (
 	"context"
-	"crypto/subtle"
 	"errors"
 	"net/http"
 
@@ -56,7 +55,11 @@ type itemOutput struct {
 	Item models.GetItemResponse `json:"item"`
 }
 
-func NewHandler(svc ItemService, token string) http.Handler {
+type TokenVerifier interface {
+	VerifyAgentToken(ctx context.Context, token string) (bool, error)
+}
+
+func NewHandler(svc ItemService, tokens TokenVerifier) http.Handler {
 	server := newServer(svc)
 
 	handler := mcp.NewStreamableHTTPHandler(
@@ -64,8 +67,12 @@ func NewHandler(svc ItemService, token string) http.Handler {
 		&mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true},
 	)
 
-	verify := func(_ context.Context, got string, _ *http.Request) (*auth.TokenInfo, error) {
-		if subtle.ConstantTimeCompare([]byte(got), []byte(token)) != 1 {
+	verify := func(ctx context.Context, got string, _ *http.Request) (*auth.TokenInfo, error) {
+		valid, err := tokens.VerifyAgentToken(ctx, got)
+		if err != nil {
+			return nil, err
+		}
+		if !valid {
 			return nil, auth.ErrInvalidToken
 		}
 		return &auth.TokenInfo{}, nil

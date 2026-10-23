@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS agents (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    guid         TEXT UNIQUE NOT NULL,
+    name         TEXT UNIQUE NOT NULL,
+    token_hash   TEXT UNIQUE NOT NULL,
+    created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at DATETIME
+);

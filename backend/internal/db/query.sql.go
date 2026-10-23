@@ -10,6 +10,35 @@ import (
 	"database/sql"
 )
 
+const createAgent = `-- name: CreateAgent :one
+INSERT INTO agents (
+    guid, name, token_hash
+) VALUES (
+    ?, ?, ?
+)
+RETURNING id, guid, name, token_hash, created_at, last_used_at
+`
+
+type CreateAgentParams struct {
+	Guid      string
+	Name      string
+	TokenHash string
+}
+
+func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent, error) {
+	row := q.db.QueryRowContext(ctx, createAgent, arg.Guid, arg.Name, arg.TokenHash)
+	var i Agent
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.Name,
+		&i.TokenHash,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+	)
+	return i, err
+}
+
 const createItem = `-- name: CreateItem :one
 INSERT INTO items (
     guid, title, description, type, parent_id, status, priority, tags
@@ -58,6 +87,18 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const deleteAgent = `-- name: DeleteAgent :execrows
+DELETE FROM agents WHERE guid = ?
+`
+
+func (q *Queries) DeleteAgent(ctx context.Context, guid string) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteAgent, guid)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const deleteItem = `-- name: DeleteItem :exec
@@ -162,6 +203,52 @@ func (q *Queries) GetTags(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listAgents = `-- name: ListAgents :many
+SELECT id, guid, name, token_hash, created_at, last_used_at FROM agents ORDER BY created_at ASC, id ASC
+`
+
+func (q *Queries) ListAgents(ctx context.Context) ([]Agent, error) {
+	rows, err := q.db.QueryContext(ctx, listAgents)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Agent
+	for rows.Next() {
+		var i Agent
+		if err := rows.Scan(
+			&i.ID,
+			&i.Guid,
+			&i.Name,
+			&i.TokenHash,
+			&i.CreatedAt,
+			&i.LastUsedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const touchAgentByTokenHash = `-- name: TouchAgentByTokenHash :execrows
+UPDATE agents SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ?
+`
+
+func (q *Queries) TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error) {
+	result, err := q.db.ExecContext(ctx, touchAgentByTokenHash, tokenHash)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const updateItem = `-- name: UpdateItem :one

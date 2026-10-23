@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+type Agent struct {
+	ID         int64
+	Guid       string
+	Name       string
+	TokenHash  string
+	CreatedAt  time.Time
+	LastUsedAt sql.NullTime
+}
+
 type Item struct {
 	ID          int64
 	Guid        string

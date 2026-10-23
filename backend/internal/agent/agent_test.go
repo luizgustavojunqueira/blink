@@ -2,6 +2,9 @@ package agent
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/luizgustavojunqueira/blink/internal/models"
@@ -112,4 +115,54 @@ func TestUpdateItem_RejectsInvalidInputWithoutUpdating(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakeVerifier struct {
+	valid string
+	err   error
+}
+
+func (f fakeVerifier) VerifyAgentToken(_ context.Context, token string) (bool, error) {
+	return token == f.valid, f.err
+}
+
+func TestHandler_RequiresAValidAgentToken(t *testing.T) {
+	handler := NewHandler(&fakeService{}, fakeVerifier{valid: "blk_good"})
+
+	cases := []struct {
+		name   string
+		header string
+		want   int
+	}{
+		{"no token", "", http.StatusUnauthorized},
+		{"a revoked or unknown token", "Bearer blk_bad", http.StatusUnauthorized},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader("{}"))
+			if tc.header != "" {
+				req.Header.Set("Authorization", tc.header)
+			}
+			rec := httptest.NewRecorder()
+
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != tc.want {
+				t.Errorf("expected %d, got %d", tc.want, rec.Code)
+			}
+		})
+	}
+
+	t.Run("a valid token gets past the auth", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader("{}"))
+		req.Header.Set("Authorization", "Bearer blk_good")
+		rec := httptest.NewRecorder()
+
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code == http.StatusUnauthorized {
+			t.Errorf("expected the valid token to be accepted, got %d", rec.Code)
+		}
+	})
 }

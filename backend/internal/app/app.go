@@ -32,6 +32,9 @@ func (a *App) Start(port string) error {
 	mux.HandleFunc("POST /api/items/restore", a.api.RestoreItems)
 	mux.HandleFunc("GET /api/items", a.api.GetItems)
 	mux.HandleFunc("GET /api/tags", a.api.GetTags)
+	mux.HandleFunc("GET /api/agents", a.api.GetAgents)
+	mux.HandleFunc("POST /api/agents", a.api.CreateAgent)
+	mux.HandleFunc("DELETE /api/agents/{guid}", a.api.DeleteAgent)
 
 	if a.mcp != nil {
 		mux.Handle("/mcp", a.mcp)

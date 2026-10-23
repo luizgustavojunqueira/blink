@@ -25,7 +25,7 @@ func newTestStore(t *testing.T) *db.SQLStore {
 		}
 	})
 
-	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql"} {
+	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql", "000003_create_agents_table.up.sql"} {
 		schema, err := migrations.FS.ReadFile(name)
 		if err != nil {
 			t.Fatalf("failed to read migration: %v", err)
@@ -542,5 +542,41 @@ func TestGetItemsDynamic_Recursive(t *testing.T) {
 	}
 	if !slices.Contains(guidsOf(all), "child-a") {
 		t.Errorf("expected children to be listed, got %v", guidsOf(all))
+	}
+}
+
+func TestAgents(t *testing.T) {
+	ctx := context.Background()
+	store := newTestStore(t)
+
+	agent, err := store.CreateAgent(ctx, db.CreateAgentParams{Guid: "g1", Name: "claude", TokenHash: "hash-1"})
+	if err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if agent.LastUsedAt.Valid {
+		t.Error("expected a new agent to have never been used")
+	}
+
+	if _, err := store.CreateAgent(ctx, db.CreateAgentParams{Guid: "g2", Name: "claude", TokenHash: "hash-2"}); err == nil {
+		t.Error("expected a duplicate name to be refused")
+	}
+
+	if touched, _ := store.TouchAgentByTokenHash(ctx, "nope"); touched != 0 {
+		t.Errorf("expected an unknown hash to touch nothing, got %d", touched)
+	}
+	if touched, _ := store.TouchAgentByTokenHash(ctx, "hash-1"); touched != 1 {
+		t.Errorf("expected the known hash to be touched, got %d", touched)
+	}
+
+	agents, err := store.ListAgents(ctx)
+	if err != nil || len(agents) != 1 || !agents[0].LastUsedAt.Valid {
+		t.Fatalf("expected one used agent, got %+v (%v)", agents, err)
+	}
+
+	if removed, _ := store.DeleteAgent(ctx, "g1"); removed != 1 {
+		t.Errorf("expected one agent removed, got %d", removed)
+	}
+	if touched, _ := store.TouchAgentByTokenHash(ctx, "hash-1"); touched != 0 {
+		t.Error("expected a removed agent to stop matching")
 	}
 }

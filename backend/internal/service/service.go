@@ -18,6 +18,10 @@ type Repository interface {
 	GetItemByGuid(ctx context.Context, guid string) (db.Item, error)
 	GetItem(ctx context.Context, id int64) (db.Item, error)
 	BulkUpdateItems(ctx context.Context, arg db.BulkUpdateItemsParams) ([]db.ItemWithParent, error)
+	CreateAgent(ctx context.Context, arg db.CreateAgentParams) (db.Agent, error)
+	ListAgents(ctx context.Context) ([]db.Agent, error)
+	DeleteAgent(ctx context.Context, guid string) (int64, error)
+	TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error)
 	IsInTree(ctx context.Context, rootGuids []string, guid string) (bool, error)
 	DeleteItems(ctx context.Context, guids []string) error
 	RestoreItems(ctx context.Context, guids []string) ([]db.ItemWithParent, error)

@@ -13,6 +13,7 @@ import (
 )
 
 type MockRepository struct {
+	agentsByHash             map[string]db.Agent
 	simulateErr              error
 	getItemByGuidErr         error
 	getItemErr               error
@@ -110,6 +111,57 @@ func (m *MockRepository) GetItem(ctx context.Context, id int64) (db.Item, error)
 		return item, nil
 	}
 	return db.Item{}, sql.ErrNoRows
+}
+
+func (m *MockRepository) CreateAgent(ctx context.Context, arg db.CreateAgentParams) (db.Agent, error) {
+	if m.simulateErr != nil {
+		return db.Agent{}, m.simulateErr
+	}
+	if m.agentsByHash == nil {
+		m.agentsByHash = map[string]db.Agent{}
+	}
+	for _, agent := range m.agentsByHash {
+		if agent.Name == arg.Name {
+			return db.Agent{}, errors.New("constraint failed: UNIQUE constraint failed: agents.name")
+		}
+	}
+	agent := db.Agent{ID: int64(len(m.agentsByHash) + 1), Guid: arg.Guid, Name: arg.Name, TokenHash: arg.TokenHash}
+	m.agentsByHash[arg.TokenHash] = agent
+	return agent, nil
+}
+
+func (m *MockRepository) ListAgents(ctx context.Context) ([]db.Agent, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+	agents := make([]db.Agent, 0, len(m.agentsByHash))
+	for _, agent := range m.agentsByHash {
+		agents = append(agents, agent)
+	}
+	return agents, nil
+}
+
+func (m *MockRepository) DeleteAgent(ctx context.Context, guid string) (int64, error) {
+	if m.simulateErr != nil {
+		return 0, m.simulateErr
+	}
+	for hash, agent := range m.agentsByHash {
+		if agent.Guid == guid {
+			delete(m.agentsByHash, hash)
+			return 1, nil
+		}
+	}
+	return 0, nil
+}
+
+func (m *MockRepository) TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error) {
+	if m.simulateErr != nil {
+		return 0, m.simulateErr
+	}
+	if _, ok := m.agentsByHash[tokenHash]; ok {
+		return 1, nil
+	}
+	return 0, nil
 }
 
 func (m *MockRepository) IsInTree(ctx context.Context, rootGuids []string, guid string) (bool, error) {

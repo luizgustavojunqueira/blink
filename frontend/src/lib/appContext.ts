@@ -211,6 +211,7 @@ function createConfigActions(client: QueryClient): AppContext["config"] {
       client.invalidateQueries({ queryKey: ["agents"] });
     },
     setTheme: (name) => store().setTheme(name),
+    setAnimations: (value) => store().setAnimations(value),
     setKeys: (bindingId, input) => store().setKeys(bindingId, input),
     resetKeys: (bindingId) => store().resetKeys(bindingId),
     duplicateTheme: (from) => store().duplicateTheme(from),

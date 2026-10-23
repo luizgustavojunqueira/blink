@@ -1,9 +1,10 @@
-import { Fragment, memo, useCallback, useMemo } from "react";
+import { Fragment, memo, useCallback, useMemo, useRef } from "react";
 import { availableKeys, type AvailableBinding, type Keymap } from "../../lib/keymap/registry";
 import { useConfigStore } from "../../lib/config/store";
 import { queryContext } from "../../lib/keymap/context";
 import { useUiStore, type UiState } from "../../stores/ui";
 import { useCachedSelector } from "../../hooks/usePane";
+import { useResizeAnimation } from "../../hooks/useResizeAnimation";
 import KeySequenceIndicator from "./keySequenceIndicator";
 
 const NO_HINTS: AvailableBinding[] = [];
@@ -66,11 +67,14 @@ function HintComponent() {
   const hintsGrouped = useMemo(() => groupBy(hints, "group"), [hints]);
   const currentKeySeq = useUiStore((s) => s.currentKeySeq);
 
+  const boxRef = useRef<HTMLDivElement>(null);
+  useResizeAnimation(boxRef, [hints, showHint]);
+
   if (!showHint) return null;
 
   return (
-    <div className="absolute bottom-0 right-2.5 flex flex-row items-end justify-end p-2 animate-fade-in">
-      <div className="flex flex-col w-fit bg-bg-soft/90 px-2 rounded-md border border-accent/20">
+    <div className="absolute bottom-0 right-2.5 flex flex-row items-end justify-end p-2">
+      <div ref={boxRef} className="flex flex-col w-fit bg-bg-soft/90 px-2 rounded-md border border-accent/20 animate-hint-in">
         <KeySequenceIndicator />
         {Object.keys(hintsGrouped).map((g) => (
           <Fragment key={g}>

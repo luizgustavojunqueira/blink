@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useResizeAnimation } from "../../hooks/useResizeAnimation";
 import type { PromptHelper } from "../../hooks/promptHelper/usePromptHelper";
 
 export default function Helper({
@@ -7,9 +9,13 @@ export default function Helper({
   setSelectedIndex,
   isOpen,
 }: PromptHelper) {
+  const ref = useRef<HTMLDivElement>(null);
+  useResizeAnimation(ref, [options, isOpen]);
   if (!isOpen) return;
   return (
-    <div className="absolute top-full mt-2 z-50 w-[99%] bg-bg border border-border flex flex-col gap-1 shadow-lg animate-fade-in">
+    <div
+      ref={ref}
+      className="absolute top-full mt-2 z-50 w-[99%] bg-bg border border-border flex flex-col gap-1 shadow-lg animate-helper-in">
       {options.map((opt, idx) => (
         <div
           key={opt.value}

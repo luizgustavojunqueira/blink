@@ -12,6 +12,12 @@ import {
 } from "../theme";
 import { applyKeymap, keyBindings, type Keymap } from "../keymap/registry";
 import { findConflict, isValidKeymapEntry, parseKeys } from "./keys";
+import {
+  applyMotion,
+  isAnimationSetting,
+  onReducedMotionChange,
+  type AnimationSetting,
+} from "../motion";
 
 export const STORAGE_KEY = "blink-config";
 export const LEGACY_THEME_KEY = "blink-theme";
@@ -22,9 +28,11 @@ export type Config = {
   theme: string;
   keymap: Keymap;
   themes: Record<string, ThemeColors>;
+  animations: AnimationSetting;
 };
 
 export type ConfigActions = {
+  setAnimations: (value: string) => string | null;
   setTheme: (name: string) => string | null;
   setKeys: (bindingId: string, input: string) => string | null;
   resetKeys: (bindingId: string) => void;
@@ -48,6 +56,7 @@ export const defaultConfig = (): Config => ({
   theme: DEFAULT_THEME,
   keymap: {},
   themes: {},
+  animations: "auto",
 });
 
 export const themeNames = (themes: Record<string, ThemeColors>) => [
@@ -90,6 +99,8 @@ export function sanitizeConfig(
     }
   }
 
+  if (isAnimationSetting(input.animations)) config.animations = input.animations;
+
   const theme = typeof input.theme === "string" ? input.theme : legacyTheme;
   if (theme && themeNames(config.themes).includes(theme)) config.theme = theme;
 
@@ -114,11 +125,11 @@ export function loadConfig(): Config {
   return sanitizeConfig(raw, read(LEGACY_THEME_KEY));
 }
 
-function saveConfig({ theme, keymap, themes }: Config) {
+function saveConfig({ theme, keymap, themes, animations }: Config) {
   try {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ theme, keymap, themes }),
+      JSON.stringify({ theme, keymap, themes, animations }),
     );
   } catch {
     return;
@@ -158,6 +169,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     if (!themeNames(get().themes).includes(name))
       return `unknown theme "${name}"`;
     if (get().theme !== name) set({ theme: name });
+    return null;
+  },
+
+  setAnimations: (value) => {
+    if (!isAnimationSetting(value)) return `use auto, on or off`;
+    if (get().animations !== value) set({ animations: value });
     return null;
   },
 
@@ -252,10 +269,12 @@ useConfigStore.subscribe((s, prev) => {
   if (s.themes !== prev.themes) renderCustomThemes(s.themes);
   if (s.theme !== prev.theme) applyTheme(s.theme);
   if (s.keymap !== prev.keymap) applyKeymap(s.keymap);
+  if (s.animations !== prev.animations) applyMotion(s.animations);
   if (
     s.themes !== prev.themes ||
     s.theme !== prev.theme ||
-    s.keymap !== prev.keymap
+    s.keymap !== prev.keymap ||
+    s.animations !== prev.animations
   ) {
     saveConfig(s);
   }
@@ -266,4 +285,6 @@ export function bootConfig() {
   renderCustomThemes(s.themes);
   applyTheme(s.theme);
   applyKeymap(s.keymap);
+  applyMotion(s.animations);
+  onReducedMotionChange(() => applyMotion(useConfigStore.getState().animations));
 }

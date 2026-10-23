@@ -3,7 +3,8 @@ import { keyBindings } from "../keymap/registry";
 import type { KeyBinding } from "../keymap/types";
 import { effectiveKeys } from "./keys";
 import type { GetAgentResponse } from "../../types/backend";
-import { AGENT_NEW_ROW_ID, agentRowId, colorRowId, keyRowId, themeRowId } from "./rowId";
+import type { AnimationSetting } from "../motion";
+import { AGENT_NEW_ROW_ID, ANIMATIONS_ROW_ID, agentRowId, colorRowId, keyRowId, themeRowId } from "./rowId";
 import { themeNames, type Config } from "./store";
 
 export type ThemeRow = {
@@ -35,7 +36,19 @@ export type AgentRow = {
   agent: GetAgentResponse;
 };
 
-export type ConfigRow = ThemeRow | ColorRow | KeyRow | AgentNewRow | AgentRow;
+export type AnimationsRow = {
+  id: string;
+  kind: "animations";
+  value: AnimationSetting;
+};
+
+export type ConfigRow =
+  | ThemeRow
+  | ColorRow
+  | KeyRow
+  | AgentNewRow
+  | AgentRow
+  | AnimationsRow;
 
 export const sectionOf = (row: ConfigRow) => (row.kind === "agentNew" ? "agent" : row.kind);
 
@@ -46,7 +59,7 @@ export const remappableBindings = SCOPE_ORDER.flatMap((scope) =>
 );
 
 export function configRows(
-  { theme, themes, keymap }: Config,
+  { theme, themes, keymap, animations }: Config,
   agents: GetAgentResponse[] = [],
 ): ConfigRow[] {
   const rows: ConfigRow[] = themeNames(themes).map((name) => ({
@@ -69,6 +82,8 @@ export function configRows(
       });
     }
   }
+
+  rows.push({ id: ANIMATIONS_ROW_ID, kind: "animations", value: animations });
 
   for (const binding of remappableBindings) {
     rows.push({

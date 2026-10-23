@@ -11,6 +11,7 @@ import { AGENT_NAME_MAX } from "../../lib/config/agentName";
 import type {
   AgentNewRow,
   AgentRow,
+  AnimationsRow,
   ColorRow,
   ConfigRow,
   KeyRow,
@@ -223,6 +224,19 @@ function KeyRowView({ paneId, row }: { paneId: string; row: KeyRow }) {
   );
 }
 
+function AnimationsRowView({ paneId, row }: { paneId: string; row: AnimationsRow }) {
+  return (
+    <RowShell paneId={paneId} rowId={row.id}>
+      <span className="w-14 shrink-0 text-xs text-fg-muted">motion</span>
+      <span
+        className={`flex-1 truncate text-lg leading-normal ${row.value === "auto" ? "text-fg" : "text-accent"}`}
+      >
+        {row.value}
+      </span>
+    </RowShell>
+  );
+}
+
 function AgentNewRowView({ paneId, row }: { paneId: string; row: AgentNewRow }) {
   const selectRow = useUiStore((s) => s.selectRow);
   const [failure, setFailure] = useState<string | null>(null);
@@ -316,6 +330,8 @@ function ConfigRowComponent({
       return <ColorRowView paneId={paneId} row={row} />;
     case "key":
       return <KeyRowView paneId={paneId} row={row} />;
+    case "animations":
+      return <AnimationsRowView paneId={paneId} row={row} />;
     case "agentNew":
       return <AgentNewRowView paneId={paneId} row={row} />;
     case "agent":

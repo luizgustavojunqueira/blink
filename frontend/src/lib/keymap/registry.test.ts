@@ -121,6 +121,7 @@ describe("keymap registry: resolve", () => {
       configCtx("key:list:down"),
       configCtx("agent:a1"),
       configCtx("agent:new"),
+      configCtx("animations:motion"),
     ];
 
     useAgentsStore.getState().reveal("a1", "blk_token");

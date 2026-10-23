@@ -5,6 +5,7 @@ import {
   bootConfig,
   defaultConfig,
   loadConfig,
+  sanitizeConfig,
   useConfigStore,
 } from "./store";
 import { configRows } from "./rows";
@@ -190,6 +191,38 @@ describe("config store: keys", () => {
   });
 });
 
+describe("config store: animations", () => {
+  it("defaults to auto", () => {
+    expect(store().animations).toBe("auto");
+  });
+
+  it("accepts auto, on and off, and saves the choice", () => {
+    for (const value of ["on", "off", "auto"]) {
+      expect(store().setAnimations(value)).toBeNull();
+      expect(store().animations).toBe(value);
+      expect(saved().animations).toBe(value);
+    }
+  });
+
+  it("refuses anything else", () => {
+    expect(store().setAnimations("fast")).toMatch(/auto, on or off/);
+    expect(store().animations).toBe("auto");
+  });
+
+  it("marks the page with the effective motion", () => {
+    store().setAnimations("off");
+    expect(document.documentElement.dataset.motion).toBe("off");
+
+    store().setAnimations("on");
+    expect(document.documentElement.dataset.motion).toBe("on");
+  });
+
+  it("falls back to auto when the saved value is invalid", () => {
+    expect(sanitizeConfig({ animations: "sometimes" }).animations).toBe("auto");
+    expect(sanitizeConfig({ animations: "off" }).animations).toBe("off");
+  });
+});
+
 describe("config store: rows", () => {
   it("lists themes, then the colors of the active custom theme, then the keys", () => {
     useConfigStore.setState({ themes: { mine: colors() }, theme: "mine" });
@@ -224,6 +257,7 @@ describe("config store: persistence", () => {
       theme: store().theme,
       themes: store().themes,
       keymap: store().keymap,
+      animations: "auto",
     });
   });
 
@@ -253,6 +287,7 @@ describe("config store: persistence", () => {
       theme: "gruvbox",
       keymap: { "list:down": ["n"] },
       themes: { mine: colors() },
+      animations: "auto",
     });
   });
 

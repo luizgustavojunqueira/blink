@@ -2,6 +2,7 @@ import { isBuiltinTheme } from "../../theme";
 import { parseRowId, themeRowId, type RowRef } from "../../config/rowId";
 import { useAgentsStore } from "../../config/agents";
 import { AGENT_NEW_ROW_ID } from "../../config/rowId";
+import { ANIMATION_SETTINGS } from "../../motion";
 import type { AppContext } from "../../types";
 import type { Pane } from "../../pane/types";
 import type { KeyBinding, KeyQueryContext } from "../types";
@@ -82,6 +83,21 @@ export const configPaneBindings: KeyBinding[] = [
     run: ({ app, pane }) => {
       const row = rowOf(pane);
       if (row?.kind === "theme") app.config.setTheme(row.name);
+    },
+  },
+  {
+    id: "config:cycleAnimations",
+    keys: ["enter", "space"],
+    modes: ["normal"],
+    scope: "config",
+    description: "Switch animations",
+    hint: { group: "item" },
+    fixed: true,
+    when: onRow((row) => row.kind === "animations"),
+    run: ({ app }) => {
+      const current = app.config.get().animations;
+      const next = ANIMATION_SETTINGS[(ANIMATION_SETTINGS.indexOf(current) + 1) % ANIMATION_SETTINGS.length];
+      app.config.setAnimations(next);
     },
   },
   {

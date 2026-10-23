@@ -47,6 +47,13 @@ function header(row: ConfigRow, theme: string) {
           note="i or enter to edit · r resets to default"
         />
       );
+    case "animations":
+      return (
+        <SectionHeader
+          title="animations"
+          note="enter to switch · auto follows the system's reduced motion setting"
+        />
+      );
     case "agent":
     case "agentNew":
       return (
@@ -65,17 +72,18 @@ export default function ConfigPane({ paneId }: IConfigPane) {
   const theme = useConfigStore((s) => s.theme);
   const themes = useConfigStore((s) => s.themes);
   const keymap = useConfigStore((s) => s.keymap);
+  const animations = useConfigStore((s) => s.animations);
 
   const { data: agents = NO_AGENTS } = useAgents();
 
   const rows = useMemo(
-    () => configRows({ theme, themes, keymap }, agents),
-    [theme, themes, keymap, agents],
+    () => configRows({ theme, themes, keymap, animations }, agents),
+    [theme, themes, keymap, animations, agents],
   );
 
   return (
     <div
-      className={`w-full h-full flex flex-col border p-4 text-sm animate-fade-in transition-colors duration-75 ${
+      className={`w-full h-full flex flex-col border p-4 text-sm transition-colors duration-75 ${
         isActive ? "border-b-accent" : "border-bg"
       }`}
     >

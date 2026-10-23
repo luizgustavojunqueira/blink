@@ -36,7 +36,7 @@ function Main() {
         return (
           <div
             key={pane.id}
-            className={`${pane.id === activePaneId ? "..." : "..."} min-w-0 overflow-hidden`}
+            className={`${pane.id === activePaneId ? "..." : "..."} min-w-0 overflow-hidden animate-pane-in`}
           >
             <Component paneId={pane.id} />
           </div>

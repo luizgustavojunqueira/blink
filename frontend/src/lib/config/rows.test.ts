@@ -26,3 +26,14 @@ describe("configRows agents", () => {
     expect(sectionOf(newRow)).toBe(sectionOf(agent));
   });
 });
+
+describe("configRows animations", () => {
+  it("has one animations row between the colors and the keys", () => {
+    const rows = configRows({ ...defaultConfig(), animations: "off" });
+    const index = rows.findIndex((r) => r.kind === "animations");
+
+    expect(rows[index]).toEqual({ id: "animations:motion", kind: "animations", value: "off" });
+    expect(rows[index - 1].kind).toBe("theme");
+    expect(rows[index + 1].kind).toBe("key");
+  });
+});

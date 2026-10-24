@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"strings"
@@ -62,7 +63,7 @@ func (s *Service) CreateAgent(ctx context.Context, req models.CreateAgentRequest
 		TokenHash: hashToken(token),
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed: agents.name") {
+		if msg := err.Error(); strings.Contains(msg, "UNIQUE constraint failed") && strings.Contains(msg, "agents.name") {
 			return nil, ErrAgentNameTaken
 		}
 		return nil, err
@@ -98,15 +99,18 @@ func (s *Service) DeleteAgent(ctx context.Context, guid string) error {
 	return nil
 }
 
-func (s *Service) VerifyAgentToken(ctx context.Context, token string) (bool, error) {
+func (s *Service) VerifyAgentToken(ctx context.Context, token string) (int64, bool, error) {
 	if !strings.HasPrefix(token, tokenPrefix) {
-		return false, nil
+		return 0, false, nil
 	}
 
-	touched, err := s.repo.TouchAgentByTokenHash(ctx, hashToken(token))
+	owner, err := s.repo.TouchAgentByTokenHash(ctx, hashToken(token))
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, nil
+	}
 	if err != nil {
-		return false, err
+		return 0, false, err
 	}
 
-	return touched > 0, nil
+	return owner.Int64, owner.Valid, nil
 }

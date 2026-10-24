@@ -6,19 +6,36 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
 type Querier interface {
+	AdoptOrphanAgents(ctx context.Context, userID sql.NullInt64) error
+	AdoptOrphanItems(ctx context.Context, userID sql.NullInt64) error
+	CountUsers(ctx context.Context) (int64, error)
 	CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent, error)
 	CreateItem(ctx context.Context, arg CreateItemParams) (Item, error)
-	DeleteAgent(ctx context.Context, guid string) (int64, error)
-	DeleteItem(ctx context.Context, guid string) error
-	GetItem(ctx context.Context, id int64) (Item, error)
-	GetItemByGuid(ctx context.Context, guid string) (Item, error)
-	GetTags(ctx context.Context) ([]string, error)
-	ListAgents(ctx context.Context) ([]Agent, error)
-	TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) error
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteAgent(ctx context.Context, arg DeleteAgentParams) (int64, error)
+	DeleteExpiredSessions(ctx context.Context, expiresAt time.Time) error
+	DeleteItem(ctx context.Context, arg DeleteItemParams) error
+	DeleteSession(ctx context.Context, tokenHash string) error
+	DeleteUser(ctx context.Context, id int64) error
+	DeleteUserAgents(ctx context.Context, userID sql.NullInt64) error
+	DeleteUserItems(ctx context.Context, userID sql.NullInt64) error
+	DeleteUserSessions(ctx context.Context, userID int64) error
+	GetItem(ctx context.Context, arg GetItemParams) (Item, error)
+	GetItemByGuid(ctx context.Context, arg GetItemByGuidParams) (Item, error)
+	GetSessionUser(ctx context.Context, tokenHash string) (GetSessionUserRow, error)
+	GetTags(ctx context.Context, userID sql.NullInt64) ([]string, error)
+	GetUserByID(ctx context.Context, id int64) (User, error)
+	GetUserByUsername(ctx context.Context, username string) (User, error)
+	ListAgents(ctx context.Context, userID sql.NullInt64) ([]Agent, error)
+	TouchAgentByTokenHash(ctx context.Context, tokenHash string) (sql.NullInt64, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 }
 
 var _ Querier = (*Queries)(nil)

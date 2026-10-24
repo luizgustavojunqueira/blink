@@ -8,15 +8,19 @@ import (
 	"testing"
 
 	"github.com/luizgustavojunqueira/blink/internal/models"
+	"github.com/luizgustavojunqueira/blink/internal/userctx"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type fakeService struct {
-	created []models.CreateItemRequest
-	updated []models.UpdateItemRequest
+	created  []models.CreateItemRequest
+	updated  []models.UpdateItemRequest
+	listedAs []int64
 }
 
-func (f *fakeService) GetItems(context.Context, models.GetItemRequest) ([]models.GetItemResponse, error) {
+func (f *fakeService) GetItems(ctx context.Context, _ models.GetItemRequest) ([]models.GetItemResponse, error) {
+	id, _ := userctx.ID(ctx)
+	f.listedAs = append(f.listedAs, id)
 	return nil, nil
 }
 
@@ -122,8 +126,8 @@ type fakeVerifier struct {
 	err   error
 }
 
-func (f fakeVerifier) VerifyAgentToken(_ context.Context, token string) (bool, error) {
-	return token == f.valid, f.err
+func (f fakeVerifier) VerifyAgentToken(_ context.Context, token string) (int64, bool, error) {
+	return 1, token == f.valid, f.err
 }
 
 func TestHandler_RequiresAValidAgentToken(t *testing.T) {
@@ -165,4 +169,22 @@ func TestHandler_RequiresAValidAgentToken(t *testing.T) {
 			t.Errorf("expected the valid token to be accepted, got %d", rec.Code)
 		}
 	})
+}
+
+func TestHandler_ToolsRunAsTheTokenOwner(t *testing.T) {
+	svc := &fakeService{}
+	handler := NewHandler(svc, fakeVerifier{valid: "blk_good"})
+
+	body := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_projects","arguments":{}}}`
+	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer blk_good")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if len(svc.listedAs) != 1 || svc.listedAs[0] != 1 {
+		t.Fatalf("expected the tool to run as user 1, got %v (status %d: %s)", svc.listedAs, rec.Code, rec.Body.String())
+	}
 }

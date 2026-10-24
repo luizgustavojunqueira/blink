@@ -8,29 +8,66 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
+
+const adoptOrphanAgents = `-- name: AdoptOrphanAgents :exec
+UPDATE agents SET user_id = ? WHERE user_id IS NULL
+`
+
+func (q *Queries) AdoptOrphanAgents(ctx context.Context, userID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, adoptOrphanAgents, userID)
+	return err
+}
+
+const adoptOrphanItems = `-- name: AdoptOrphanItems :exec
+UPDATE items SET user_id = ? WHERE user_id IS NULL
+`
+
+func (q *Queries) AdoptOrphanItems(ctx context.Context, userID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, adoptOrphanItems, userID)
+	return err
+}
+
+const countUsers = `-- name: CountUsers :one
+SELECT COUNT(*) FROM users
+`
+
+func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const createAgent = `-- name: CreateAgent :one
 INSERT INTO agents (
-    guid, name, token_hash
+    guid, name, token_hash, user_id
 ) VALUES (
-    ?, ?, ?
+    ?, ?, ?, ?
 )
-RETURNING id, guid, name, token_hash, created_at, last_used_at
+RETURNING id, guid, user_id, name, token_hash, created_at, last_used_at
 `
 
 type CreateAgentParams struct {
 	Guid      string
 	Name      string
 	TokenHash string
+	UserID    sql.NullInt64
 }
 
 func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent, error) {
-	row := q.db.QueryRowContext(ctx, createAgent, arg.Guid, arg.Name, arg.TokenHash)
+	row := q.db.QueryRowContext(ctx, createAgent,
+		arg.Guid,
+		arg.Name,
+		arg.TokenHash,
+		arg.UserID,
+	)
 	var i Agent
 	err := row.Scan(
 		&i.ID,
 		&i.Guid,
+		&i.UserID,
 		&i.Name,
 		&i.TokenHash,
 		&i.CreatedAt,
@@ -41,11 +78,11 @@ func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent
 
 const createItem = `-- name: CreateItem :one
 INSERT INTO items (
-    guid, title, description, type, parent_id, status, priority, tags
+    guid, title, description, type, parent_id, status, priority, tags, user_id
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at
+RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id
 `
 
 type CreateItemParams struct {
@@ -57,6 +94,7 @@ type CreateItemParams struct {
 	Status      string
 	Priority    string
 	Tags        sql.NullString
+	UserID      sql.NullInt64
 }
 
 func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, error) {
@@ -69,6 +107,7 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 		arg.Status,
 		arg.Priority,
 		arg.Tags,
+		arg.UserID,
 	)
 	var i Item
 	err := row.Scan(
@@ -85,37 +124,146 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 		&i.UpdatedAt,
 		&i.CompletedAt,
 		&i.DeletedAt,
+		&i.UserID,
+	)
+	return i, err
+}
+
+const createSession = `-- name: CreateSession :exec
+INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)
+`
+
+type CreateSessionParams struct {
+	UserID    int64
+	TokenHash string
+	ExpiresAt time.Time
+}
+
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
+	_, err := q.db.ExecContext(ctx, createSession, arg.UserID, arg.TokenHash, arg.ExpiresAt)
+	return err
+}
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (guid, username, password_hash) VALUES (?, ?, ?)
+RETURNING id, guid, username, password_hash, created_at
+`
+
+type CreateUserParams struct {
+	Guid         string
+	Username     string
+	PasswordHash string
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, arg.Guid, arg.Username, arg.PasswordHash)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.Username,
+		&i.PasswordHash,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const deleteAgent = `-- name: DeleteAgent :execrows
-DELETE FROM agents WHERE guid = ?
+DELETE FROM agents WHERE guid = ?1 AND user_id = ?2
 `
 
-func (q *Queries) DeleteAgent(ctx context.Context, guid string) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteAgent, guid)
+type DeleteAgentParams struct {
+	Guid   string
+	UserID sql.NullInt64
+}
+
+func (q *Queries) DeleteAgent(ctx context.Context, arg DeleteAgentParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteAgent, arg.Guid, arg.UserID)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected()
 }
 
-const deleteItem = `-- name: DeleteItem :exec
-DELETE FROM items WHERE guid = ?
+const deleteExpiredSessions = `-- name: DeleteExpiredSessions :exec
+DELETE FROM sessions WHERE expires_at <= ?
 `
 
-func (q *Queries) DeleteItem(ctx context.Context, guid string) error {
-	_, err := q.db.ExecContext(ctx, deleteItem, guid)
+func (q *Queries) DeleteExpiredSessions(ctx context.Context, expiresAt time.Time) error {
+	_, err := q.db.ExecContext(ctx, deleteExpiredSessions, expiresAt)
+	return err
+}
+
+const deleteItem = `-- name: DeleteItem :exec
+DELETE FROM items WHERE guid = ?1 AND user_id = ?2
+`
+
+type DeleteItemParams struct {
+	Guid   string
+	UserID sql.NullInt64
+}
+
+func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) error {
+	_, err := q.db.ExecContext(ctx, deleteItem, arg.Guid, arg.UserID)
+	return err
+}
+
+const deleteSession = `-- name: DeleteSession :exec
+DELETE FROM sessions WHERE token_hash = ?
+`
+
+func (q *Queries) DeleteSession(ctx context.Context, tokenHash string) error {
+	_, err := q.db.ExecContext(ctx, deleteSession, tokenHash)
+	return err
+}
+
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users WHERE id = ?
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
+	return err
+}
+
+const deleteUserAgents = `-- name: DeleteUserAgents :exec
+DELETE FROM agents WHERE user_id = ?
+`
+
+func (q *Queries) DeleteUserAgents(ctx context.Context, userID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, deleteUserAgents, userID)
+	return err
+}
+
+const deleteUserItems = `-- name: DeleteUserItems :exec
+DELETE FROM items WHERE user_id = ?
+`
+
+func (q *Queries) DeleteUserItems(ctx context.Context, userID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, deleteUserItems, userID)
+	return err
+}
+
+const deleteUserSessions = `-- name: DeleteUserSessions :exec
+DELETE FROM sessions WHERE user_id = ?
+`
+
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUserSessions, userID)
 	return err
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at FROM items WHERE id = ?
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id FROM items WHERE id = ?1 AND user_id = ?2
 `
 
-func (q *Queries) GetItem(ctx context.Context, id int64) (Item, error) {
-	row := q.db.QueryRowContext(ctx, getItem, id)
+type GetItemParams struct {
+	ID     int64
+	UserID sql.NullInt64
+}
+
+func (q *Queries) GetItem(ctx context.Context, arg GetItemParams) (Item, error) {
+	row := q.db.QueryRowContext(ctx, getItem, arg.ID, arg.UserID)
 	var i Item
 	err := row.Scan(
 		&i.ID,
@@ -131,16 +279,22 @@ func (q *Queries) GetItem(ctx context.Context, id int64) (Item, error) {
 		&i.UpdatedAt,
 		&i.CompletedAt,
 		&i.DeletedAt,
+		&i.UserID,
 	)
 	return i, err
 }
 
 const getItemByGuid = `-- name: GetItemByGuid :one
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at FROM items WHERE guid = ?
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id FROM items WHERE guid = ?1 AND user_id = ?2
 `
 
-func (q *Queries) GetItemByGuid(ctx context.Context, guid string) (Item, error) {
-	row := q.db.QueryRowContext(ctx, getItemByGuid, guid)
+type GetItemByGuidParams struct {
+	Guid   string
+	UserID sql.NullInt64
+}
+
+func (q *Queries) GetItemByGuid(ctx context.Context, arg GetItemByGuidParams) (Item, error) {
+	row := q.db.QueryRowContext(ctx, getItemByGuid, arg.Guid, arg.UserID)
 	var i Item
 	err := row.Scan(
 		&i.ID,
@@ -156,6 +310,31 @@ func (q *Queries) GetItemByGuid(ctx context.Context, guid string) (Item, error) 
 		&i.UpdatedAt,
 		&i.CompletedAt,
 		&i.DeletedAt,
+		&i.UserID,
+	)
+	return i, err
+}
+
+const getSessionUser = `-- name: GetSessionUser :one
+SELECT u.id, u.guid, u.username, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id
+WHERE s.token_hash = ?
+`
+
+type GetSessionUserRow struct {
+	ID        int64
+	Guid      string
+	Username  string
+	ExpiresAt time.Time
+}
+
+func (q *Queries) GetSessionUser(ctx context.Context, tokenHash string) (GetSessionUserRow, error) {
+	row := q.db.QueryRowContext(ctx, getSessionUser, tokenHash)
+	var i GetSessionUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.Username,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
@@ -171,6 +350,7 @@ WITH all_tags AS (
         tags IS NOT NULL
         AND tags != ''
         AND deleted_at IS NULL
+        AND user_id = ?1
 )
 SELECT DISTINCT
     tag
@@ -182,8 +362,8 @@ ORDER BY
     tag ASC
 `
 
-func (q *Queries) GetTags(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, getTags)
+func (q *Queries) GetTags(ctx context.Context, userID sql.NullInt64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getTags, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -205,12 +385,46 @@ func (q *Queries) GetTags(ctx context.Context) ([]string, error) {
 	return items, nil
 }
 
-const listAgents = `-- name: ListAgents :many
-SELECT id, guid, name, token_hash, created_at, last_used_at FROM agents ORDER BY created_at ASC, id ASC
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, guid, username, password_hash, created_at FROM users WHERE id = ?
 `
 
-func (q *Queries) ListAgents(ctx context.Context) ([]Agent, error) {
-	rows, err := q.db.QueryContext(ctx, listAgents)
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.Username,
+		&i.PasswordHash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, guid, username, password_hash, created_at FROM users WHERE username = ?
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Guid,
+		&i.Username,
+		&i.PasswordHash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listAgents = `-- name: ListAgents :many
+SELECT id, guid, user_id, name, token_hash, created_at, last_used_at FROM agents WHERE user_id = ? ORDER BY created_at ASC, id ASC
+`
+
+func (q *Queries) ListAgents(ctx context.Context, userID sql.NullInt64) ([]Agent, error) {
+	rows, err := q.db.QueryContext(ctx, listAgents, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +435,7 @@ func (q *Queries) ListAgents(ctx context.Context) ([]Agent, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Guid,
+			&i.UserID,
 			&i.Name,
 			&i.TokenHash,
 			&i.CreatedAt,
@@ -239,16 +454,16 @@ func (q *Queries) ListAgents(ctx context.Context) ([]Agent, error) {
 	return items, nil
 }
 
-const touchAgentByTokenHash = `-- name: TouchAgentByTokenHash :execrows
-UPDATE agents SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ?
+const touchAgentByTokenHash = `-- name: TouchAgentByTokenHash :one
+UPDATE agents SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ? AND user_id IS NOT NULL
+RETURNING user_id
 `
 
-func (q *Queries) TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error) {
-	result, err := q.db.ExecContext(ctx, touchAgentByTokenHash, tokenHash)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
+func (q *Queries) TouchAgentByTokenHash(ctx context.Context, tokenHash string) (sql.NullInt64, error) {
+	row := q.db.QueryRowContext(ctx, touchAgentByTokenHash, tokenHash)
+	var user_id sql.NullInt64
+	err := row.Scan(&user_id)
+	return user_id, err
 }
 
 const updateItem = `-- name: UpdateItem :one
@@ -262,8 +477,8 @@ SET
     parent_id = COALESCE(?6, parent_id),
     updated_at = CURRENT_TIMESTAMP,
     completed_at = COALESCE(?7, completed_at)
-WHERE guid = ?8
-RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at
+WHERE guid = ?8 AND user_id = ?9
+RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id
 `
 
 type UpdateItemParams struct {
@@ -275,6 +490,7 @@ type UpdateItemParams struct {
 	ParentID    sql.NullInt64
 	CompletedAt sql.NullTime
 	Guid        string
+	UserID      sql.NullInt64
 }
 
 func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) {
@@ -287,6 +503,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		arg.ParentID,
 		arg.CompletedAt,
 		arg.Guid,
+		arg.UserID,
 	)
 	var i Item
 	err := row.Scan(
@@ -303,6 +520,21 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		&i.UpdatedAt,
 		&i.CompletedAt,
 		&i.DeletedAt,
+		&i.UserID,
 	)
 	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users SET password_hash = ? WHERE id = ?
+`
+
+type UpdateUserPasswordParams struct {
+	PasswordHash string
+	ID           int64
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.PasswordHash, arg.ID)
+	return err
 }

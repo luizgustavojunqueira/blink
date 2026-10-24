@@ -3,16 +3,29 @@ package db_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/luizgustavojunqueira/blink/internal/db"
 	"github.com/luizgustavojunqueira/blink/internal/db/migrations"
+	"github.com/luizgustavojunqueira/blink/internal/userctx"
 	_ "modernc.org/sqlite"
 )
 
+func userCtx() context.Context {
+	return userctx.With(context.Background(), 1)
+}
+
 func newTestStore(t *testing.T) *db.SQLStore {
+	t.Helper()
+
+	store, _ := newTestStoreConn(t)
+	return store
+}
+
+func newTestStoreConn(t *testing.T) (*db.SQLStore, *sql.DB) {
 	t.Helper()
 
 	conn, err := sql.Open("sqlite", ":memory:?_pragma=foreign_keys(1)")
@@ -25,7 +38,7 @@ func newTestStore(t *testing.T) *db.SQLStore {
 		}
 	})
 
-	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql", "000003_create_agents_table.up.sql"} {
+	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql", "000003_create_agents_table.up.sql", "000004_create_users.up.sql", "000005_add_items_user_id.up.sql", "000006_scope_agents_by_user.up.sql"} {
 		schema, err := migrations.FS.ReadFile(name)
 		if err != nil {
 			t.Fatalf("failed to read migration: %v", err)
@@ -34,6 +47,10 @@ func newTestStore(t *testing.T) *db.SQLStore {
 		if _, err := conn.Exec(string(schema)); err != nil {
 			t.Fatalf("failed to apply migration: %v", err)
 		}
+	}
+
+	if _, err := conn.Exec(`INSERT INTO users (id, guid, username, password_hash) VALUES (1, 'u1', 'tester', 'x'), (2, 'u2', 'other', 'x')`); err != nil {
+		t.Fatalf("failed to insert users: %v", err)
 	}
 
 	items := []struct {
@@ -51,7 +68,7 @@ func newTestStore(t *testing.T) *db.SQLStore {
 
 	for _, i := range items {
 		_, err := conn.Exec(
-			`INSERT INTO items (guid, title, type, status, priority, created_at) VALUES (?, ?, 'TASK', ?, ?, ?)`,
+			`INSERT INTO items (guid, title, type, status, priority, created_at, user_id) VALUES (?, ?, 'TASK', ?, ?, ?, 1)`,
 			i.guid, i.title, i.status, i.priority, i.createdAt,
 		)
 		if err != nil {
@@ -59,13 +76,13 @@ func newTestStore(t *testing.T) *db.SQLStore {
 		}
 	}
 
-	return db.NewRepository(conn)
+	return db.NewRepository(conn), conn
 }
 
 func seedGroups(t *testing.T, store *db.SQLStore) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := userCtx()
 
 	group, err := store.CreateItem(ctx, db.CreateItemParams{
 		Guid: "group", Title: "with children", Type: "GROUP", Status: "TODO", Priority: "NORMAL",
@@ -112,7 +129,7 @@ func TestGetItemsDynamic_Parent(t *testing.T) {
 		store := newTestStore(t)
 		seedGroups(t, store)
 
-		items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{})
+		items, err := store.GetItemsDynamic(userCtx(), db.GetIemsFilter{})
 		if err != nil {
 			t.Fatalf("Didn't expect error but got: %v", err)
 		}
@@ -136,7 +153,7 @@ func TestGetItemsDynamic_Parent(t *testing.T) {
 
 		parent := "group"
 		items, err := store.GetItemsDynamic(
-			context.Background(),
+			userCtx(),
 			db.GetIemsFilter{ParentID: &parent, Order: byTitle},
 		)
 		if err != nil {
@@ -154,7 +171,7 @@ func TestGetItemsDynamic_Parent(t *testing.T) {
 		seedGroups(t, store)
 
 		parent := "empty"
-		items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{ParentID: &parent})
+		items, err := store.GetItemsDynamic(userCtx(), db.GetIemsFilter{ParentID: &parent})
 		if err != nil {
 			t.Fatalf("Didn't expect error but got: %v", err)
 		}
@@ -169,7 +186,7 @@ func TestGetItemsDynamic_Parent(t *testing.T) {
 		seedGroups(t, store)
 
 		parent := "does-not-exist"
-		items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{ParentID: &parent})
+		items, err := store.GetItemsDynamic(userCtx(), db.GetIemsFilter{ParentID: &parent})
 		if err != nil {
 			t.Fatalf("Didn't expect error but got: %v", err)
 		}
@@ -185,7 +202,7 @@ func TestGetItemsDynamic_Parent(t *testing.T) {
 
 		parent := "group"
 		children, err := store.GetItemsDynamic(
-			context.Background(),
+			userCtx(),
 			db.GetIemsFilter{ParentID: &parent, Order: byTitle},
 		)
 		if err != nil {
@@ -198,7 +215,7 @@ func TestGetItemsDynamic_Parent(t *testing.T) {
 			}
 		}
 
-		roots, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{})
+		roots, err := store.GetItemsDynamic(userCtx(), db.GetIemsFilter{})
 		if err != nil {
 			t.Fatalf("Didn't expect error but got: %v", err)
 		}
@@ -258,7 +275,7 @@ func TestGetItemsDynamic_Order(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newTestStore(t)
 
-			items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{Order: tt.order})
+			items, err := store.GetItemsDynamic(userCtx(), db.GetIemsFilter{Order: tt.order})
 			if err != nil {
 				t.Fatalf("Didn't expect error but got: %v", err)
 			}
@@ -279,7 +296,7 @@ func itemsByGuid(items []db.ItemWithParent) map[string]db.ItemWithParent {
 }
 
 func TestBulkUpdateItems(t *testing.T) {
-	ctx := context.Background()
+	ctx := userCtx()
 
 	t.Run("Only the given columns and the given guids are touched", func(t *testing.T) {
 		store := newTestStore(t)
@@ -377,7 +394,7 @@ func TestBulkUpdateItems(t *testing.T) {
 }
 
 func TestDeleteAndRestoreItems(t *testing.T) {
-	ctx := context.Background()
+	ctx := userCtx()
 
 	listed := func(t *testing.T, store *db.SQLStore, parent *string) []string {
 		t.Helper()
@@ -493,7 +510,7 @@ func TestDeleteAndRestoreItems(t *testing.T) {
 }
 
 func TestIsInTree(t *testing.T) {
-	ctx := context.Background()
+	ctx := userCtx()
 	store := newTestStore(t)
 	seedGroups(t, store)
 
@@ -527,7 +544,7 @@ func TestGetItemsDynamic_Recursive(t *testing.T) {
 	store := newTestStore(t)
 	seedGroups(t, store)
 
-	items, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{Type: []string{"GROUP"}, Recursive: true})
+	items, err := store.GetItemsDynamic(userCtx(), db.GetIemsFilter{Type: []string{"GROUP"}, Recursive: true})
 	if err != nil {
 		t.Fatalf("Didn't expect error but got: %v", err)
 	}
@@ -536,7 +553,7 @@ func TestGetItemsDynamic_Recursive(t *testing.T) {
 		t.Errorf("expected both groups, got %v", got)
 	}
 
-	all, err := store.GetItemsDynamic(context.Background(), db.GetIemsFilter{Recursive: true})
+	all, err := store.GetItemsDynamic(userCtx(), db.GetIemsFilter{Recursive: true})
 	if err != nil {
 		t.Fatalf("Didn't expect error but got: %v", err)
 	}
@@ -546,7 +563,7 @@ func TestGetItemsDynamic_Recursive(t *testing.T) {
 }
 
 func TestAgents(t *testing.T) {
-	ctx := context.Background()
+	ctx := userCtx()
 	store := newTestStore(t)
 
 	agent, err := store.CreateAgent(ctx, db.CreateAgentParams{Guid: "g1", Name: "claude", TokenHash: "hash-1"})
@@ -561,11 +578,11 @@ func TestAgents(t *testing.T) {
 		t.Error("expected a duplicate name to be refused")
 	}
 
-	if touched, _ := store.TouchAgentByTokenHash(ctx, "nope"); touched != 0 {
-		t.Errorf("expected an unknown hash to touch nothing, got %d", touched)
+	if _, err := store.TouchAgentByTokenHash(ctx, "nope"); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("expected an unknown hash to touch nothing, got %v", err)
 	}
-	if touched, _ := store.TouchAgentByTokenHash(ctx, "hash-1"); touched != 1 {
-		t.Errorf("expected the known hash to be touched, got %d", touched)
+	if owner, err := store.TouchAgentByTokenHash(ctx, "hash-1"); err != nil || owner.Int64 != 1 {
+		t.Errorf("expected the known hash to be touched and return its owner, got %v (%v)", owner, err)
 	}
 
 	agents, err := store.ListAgents(ctx)
@@ -576,7 +593,175 @@ func TestAgents(t *testing.T) {
 	if removed, _ := store.DeleteAgent(ctx, "g1"); removed != 1 {
 		t.Errorf("expected one agent removed, got %d", removed)
 	}
-	if touched, _ := store.TouchAgentByTokenHash(ctx, "hash-1"); touched != 0 {
+	if _, err := store.TouchAgentByTokenHash(ctx, "hash-1"); !errors.Is(err, sql.ErrNoRows) {
 		t.Error("expected a removed agent to stop matching")
+	}
+}
+
+func otherCtx() context.Context {
+	return userctx.With(context.Background(), 2)
+}
+
+func TestRepository_RequiresAUser(t *testing.T) {
+	store := newTestStore(t)
+	ctx := context.Background()
+
+	if _, err := store.GetItemsDynamic(ctx, db.GetIemsFilter{Recursive: true}); !errors.Is(err, userctx.ErrNoUser) {
+		t.Errorf("expected ErrNoUser listing without a user, got %v", err)
+	}
+	if _, err := store.GetItemByGuid(ctx, "a"); !errors.Is(err, userctx.ErrNoUser) {
+		t.Errorf("expected ErrNoUser reading without a user, got %v", err)
+	}
+	if _, err := store.CreateItem(ctx, db.CreateItemParams{Guid: "x", Title: "x", Type: "TASK", Status: "TODO", Priority: "NORMAL"}); !errors.Is(err, userctx.ErrNoUser) {
+		t.Errorf("expected ErrNoUser creating without a user, got %v", err)
+	}
+	if err := store.DeleteItems(ctx, []string{"a"}); !errors.Is(err, userctx.ErrNoUser) {
+		t.Errorf("expected ErrNoUser deleting without a user, got %v", err)
+	}
+}
+
+func TestRepository_IsolatesUsers(t *testing.T) {
+	store := newTestStore(t)
+	mine := userCtx()
+	theirs := otherCtx()
+
+	items, err := store.GetItemsDynamic(theirs, db.GetIemsFilter{Recursive: true})
+	if err != nil || len(items) != 0 {
+		t.Fatalf("expected the other user to see nothing, got %d (%v)", len(items), err)
+	}
+
+	if _, err := store.GetItemByGuid(theirs, "a"); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("expected another user's item to be not found, got %v", err)
+	}
+
+	title := "hacked"
+	if _, err := store.UpdateItem(theirs, db.UpdateItemParams{Guid: "a", Title: sql.NullString{String: title, Valid: true}}); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("expected updating another user's item to fail, got %v", err)
+	}
+
+	changed, err := store.BulkUpdateItems(theirs, db.BulkUpdateItemsParams{Guids: []string{"a", "b"}, Title: &title})
+	if err != nil || len(changed) != 0 {
+		t.Errorf("expected a bulk update of another user's items to change nothing, got %d (%v)", len(changed), err)
+	}
+
+	if err := store.DeleteItems(theirs, []string{"a", "b", "c"}); err != nil {
+		t.Fatalf("delete returned an error: %v", err)
+	}
+	restored, err := store.RestoreItems(theirs, []string{"a"})
+	if err != nil || len(restored) != 0 {
+		t.Errorf("expected nothing to restore, got %d (%v)", len(restored), err)
+	}
+
+	inTree, err := store.IsInTree(theirs, []string{"a"}, "a")
+	if err != nil || inTree {
+		t.Errorf("expected another user's tree to be empty, got %v (%v)", inTree, err)
+	}
+
+	still, err := store.GetItemsDynamic(mine, db.GetIemsFilter{Recursive: true})
+	if err != nil || len(still) != 4 {
+		t.Fatalf("expected the owner to keep all 4 items, got %d (%v)", len(still), err)
+	}
+	for _, i := range still {
+		if i.Title == title {
+			t.Errorf("item %s was modified by another user", i.Guid)
+		}
+	}
+
+	created, err := store.CreateItem(theirs, db.CreateItemParams{Guid: "mine-now", Title: "t", Type: "TASK", Status: "TODO", Priority: "NORMAL", Tags: sql.NullString{String: "secret", Valid: true}})
+	if err != nil || created.UserID.Int64 != 2 {
+		t.Fatalf("expected the item to belong to user 2, got %+v (%v)", created, err)
+	}
+
+	tags, err := store.GetTags(mine)
+	if err != nil || slices.Contains(tags, "secret") {
+		t.Errorf("expected tags to be private, got %v (%v)", tags, err)
+	}
+
+	if _, err := store.GetItem(mine, created.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("expected another user's item id to be not found, got %v", err)
+	}
+}
+
+func TestRepository_IsolatesAgents(t *testing.T) {
+	store := newTestStore(t)
+	mine := userCtx()
+	theirs := otherCtx()
+
+	if _, err := store.CreateAgent(mine, db.CreateAgentParams{Guid: "g1", Name: "claude", TokenHash: "h1"}); err != nil {
+		t.Fatalf("failed to create: %v", err)
+	}
+	if _, err := store.CreateAgent(theirs, db.CreateAgentParams{Guid: "g2", Name: "claude", TokenHash: "h2"}); err != nil {
+		t.Fatalf("expected the same name to be allowed for another user: %v", err)
+	}
+
+	agents, err := store.ListAgents(theirs)
+	if err != nil || len(agents) != 1 || agents[0].Guid != "g2" {
+		t.Fatalf("expected only their own agent, got %+v (%v)", agents, err)
+	}
+
+	if removed, _ := store.DeleteAgent(theirs, "g1"); removed != 0 {
+		t.Errorf("expected another user's agent to survive, removed %d", removed)
+	}
+}
+
+func TestRepository_FirstUserAdoptsOrphans(t *testing.T) {
+	store, rawConn := newTestStoreConn(t)
+	conn := func(q string, args ...any) {
+		t.Helper()
+		if _, err := rawConn.Exec(q, args...); err != nil {
+			t.Fatalf("exec failed: %v", err)
+		}
+	}
+	conn(`UPDATE items SET user_id = NULL`)
+	conn(`INSERT INTO agents (guid, name, token_hash) VALUES ('old', 'old-agent', 'old-hash')`)
+
+	user, err := store.CreateUserAdoptingOrphans(context.Background(), db.CreateUserParams{Guid: "u3", Username: "first", PasswordHash: "x"})
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	ctx := userctx.With(context.Background(), user.ID)
+	items, err := store.GetItemsDynamic(ctx, db.GetIemsFilter{Recursive: true})
+	if err != nil || len(items) != 4 {
+		t.Errorf("expected the new user to adopt 4 items, got %d (%v)", len(items), err)
+	}
+	agents, err := store.ListAgents(ctx)
+	if err != nil || len(agents) != 1 {
+		t.Errorf("expected the new user to adopt the agent, got %+v (%v)", agents, err)
+	}
+}
+
+func TestRepository_DeleteUserData(t *testing.T) {
+	store, rawConn := newTestStoreConn(t)
+	seedGroups(t, store)
+	ctx := userCtx()
+
+	if _, err := store.CreateAgent(ctx, db.CreateAgentParams{Guid: "g1", Name: "claude", TokenHash: "h1"}); err != nil {
+		t.Fatalf("failed to create agent: %v", err)
+	}
+	if err := store.CreateSession(context.Background(), db.CreateSessionParams{UserID: 1, TokenHash: "s1", ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
+		t.Fatalf("failed to create session: %v", err)
+	}
+	if _, err := store.CreateItem(otherCtx(), db.CreateItemParams{Guid: "keep", Title: "keep", Type: "TASK", Status: "TODO", Priority: "NORMAL"}); err != nil {
+		t.Fatalf("failed to create other item: %v", err)
+	}
+
+	if err := store.DeleteUserData(context.Background(), 1); err != nil {
+		t.Fatalf("failed to delete user data: %v", err)
+	}
+
+	if _, err := store.GetUserByID(context.Background(), 1); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("expected the user to be gone, got %v", err)
+	}
+	if _, err := store.GetSessionUser(context.Background(), "s1"); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("expected the session to be gone, got %v", err)
+	}
+	var left int
+	if err := rawConn.QueryRow(`SELECT COUNT(*) FROM items WHERE user_id = 1`).Scan(&left); err != nil || left != 0 {
+		t.Errorf("expected no items left for the deleted user, got %d (%v)", left, err)
+	}
+	kept, err := store.GetItemsDynamic(otherCtx(), db.GetIemsFilter{Recursive: true})
+	if err != nil || len(kept) != 1 {
+		t.Errorf("expected the other user's item to survive, got %d (%v)", len(kept), err)
 	}
 }

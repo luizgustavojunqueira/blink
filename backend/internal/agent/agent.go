@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/luizgustavojunqueira/blink/internal/models"
+	"github.com/luizgustavojunqueira/blink/internal/userctx"
 	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -56,7 +58,7 @@ type itemOutput struct {
 }
 
 type TokenVerifier interface {
-	VerifyAgentToken(ctx context.Context, token string) (bool, error)
+	VerifyAgentToken(ctx context.Context, token string) (int64, bool, error)
 }
 
 func NewHandler(svc ItemService, tokens TokenVerifier) http.Handler {
@@ -68,17 +70,31 @@ func NewHandler(svc ItemService, tokens TokenVerifier) http.Handler {
 	)
 
 	verify := func(ctx context.Context, got string, _ *http.Request) (*auth.TokenInfo, error) {
-		valid, err := tokens.VerifyAgentToken(ctx, got)
+		userID, valid, err := tokens.VerifyAgentToken(ctx, got)
 		if err != nil {
 			return nil, err
 		}
 		if !valid {
 			return nil, auth.ErrInvalidToken
 		}
-		return &auth.TokenInfo{}, nil
+		return &auth.TokenInfo{UserID: strconv.FormatInt(userID, 10)}, nil
 	}
 
-	return auth.RequireBearerToken(verify, &auth.RequireBearerTokenOptions{AllowMissingExpiration: true})(handler)
+	withUser := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		info := auth.TokenInfoFromContext(r.Context())
+		if info == nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		userID, err := strconv.ParseInt(info.UserID, 10, 64)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		handler.ServeHTTP(w, r.WithContext(userctx.With(r.Context(), userID)))
+	})
+
+	return auth.RequireBearerToken(verify, &auth.RequireBearerTokenOptions{AllowMissingExpiration: true})(withUser)
 }
 
 func newServer(svc ItemService) *mcp.Server {

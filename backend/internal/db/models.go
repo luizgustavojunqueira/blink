@@ -12,6 +12,7 @@ import (
 type Agent struct {
 	ID         int64
 	Guid       string
+	UserID     sql.NullInt64
 	Name       string
 	TokenHash  string
 	CreatedAt  time.Time
@@ -32,4 +33,21 @@ type Item struct {
 	UpdatedAt   time.Time
 	CompletedAt sql.NullTime
 	DeletedAt   sql.NullTime
+	UserID      sql.NullInt64
+}
+
+type Session struct {
+	ID        int64
+	UserID    int64
+	TokenHash string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+}
+
+type User struct {
+	ID           int64
+	Guid         string
+	Username     string
+	PasswordHash string
+	CreatedAt    time.Time
 }

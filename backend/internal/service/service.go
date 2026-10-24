@@ -21,7 +21,7 @@ type Repository interface {
 	CreateAgent(ctx context.Context, arg db.CreateAgentParams) (db.Agent, error)
 	ListAgents(ctx context.Context) ([]db.Agent, error)
 	DeleteAgent(ctx context.Context, guid string) (int64, error)
-	TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error)
+	TouchAgentByTokenHash(ctx context.Context, tokenHash string) (sql.NullInt64, error)
 	IsInTree(ctx context.Context, rootGuids []string, guid string) (bool, error)
 	DeleteItems(ctx context.Context, guids []string) error
 	RestoreItems(ctx context.Context, guids []string) ([]db.ItemWithParent, error)

@@ -154,14 +154,14 @@ func (m *MockRepository) DeleteAgent(ctx context.Context, guid string) (int64, e
 	return 0, nil
 }
 
-func (m *MockRepository) TouchAgentByTokenHash(ctx context.Context, tokenHash string) (int64, error) {
+func (m *MockRepository) TouchAgentByTokenHash(ctx context.Context, tokenHash string) (sql.NullInt64, error) {
 	if m.simulateErr != nil {
-		return 0, m.simulateErr
+		return sql.NullInt64{}, m.simulateErr
 	}
 	if _, ok := m.agentsByHash[tokenHash]; ok {
-		return 1, nil
+		return sql.NullInt64{Int64: 1, Valid: true}, nil
 	}
-	return 0, nil
+	return sql.NullInt64{}, sql.ErrNoRows
 }
 
 func (m *MockRepository) IsInTree(ctx context.Context, rootGuids []string, guid string) (bool, error) {

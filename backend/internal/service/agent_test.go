@@ -82,7 +82,7 @@ func TestService_VerifyAgentToken(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := svc.VerifyAgentToken(ctx, tc.token)
+			_, got, err := svc.VerifyAgentToken(ctx, tc.token)
 			if err != nil {
 				t.Fatalf("Didn't expect error but got: %v", err)
 			}
@@ -97,7 +97,7 @@ func TestService_VerifyAgentToken(t *testing.T) {
 			t.Fatalf("Didn't expect error but got: %v", err)
 		}
 
-		got, _ := svc.VerifyAgentToken(ctx, created.Token)
+		_, got, _ := svc.VerifyAgentToken(ctx, created.Token)
 		if got {
 			t.Error("expected the revoked token to be rejected")
 		}

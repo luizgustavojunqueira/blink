@@ -70,7 +70,13 @@ func run() error {
 	svc := service.NewService(repo)
 	myAPI := api.NewAPI(svc)
 
-	application := app.New(myAPI, agent.NewHandler(svc, svc))
+	authSvc, err := service.NewAuthService(repo)
+	if err != nil {
+		return fmt.Errorf("could not create auth service: %w", err)
+	}
+	authAPI := api.NewAuthAPI(authSvc, api.AuthConfig{TrustProxy: os.Getenv("TRUST_PROXY") == "true"})
+
+	application := app.New(myAPI, authAPI, agent.NewHandler(svc, svc))
 
 	if err := application.Start(port); err != nil {
 		return fmt.Errorf("could not start app: %w", err)

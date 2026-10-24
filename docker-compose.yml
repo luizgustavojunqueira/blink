@@ -10,5 +10,6 @@ services:
     environment:
       - PORT=8080
       - DB_PATH=/app/data/blink.db
+      - TRUST_PROXY=${TRUST_PROXY:-false}
     profiles:
       - prod

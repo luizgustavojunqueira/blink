@@ -11,7 +11,11 @@ export default function BreadcrumbItem({ type, guid, isLast }: IBreadcrumbItem) 
   const item = useItem(guid ?? "");
 
   const label =
-    type === "config" ? "Config" : (item?.title ?? (type === "list" && !guid ? "Home" : "..."));
+    type === "config"
+      ? "Config"
+      : type === "profile"
+        ? "Profile"
+        : (item?.title ?? (type === "list" && !guid ? "Home" : "..."));
 
   return (
     <span title={label} className={`truncate max-w-40 ${isLast ? "text-fg font-medium" : ""}`}>

@@ -98,7 +98,7 @@ export function serializePanes(
       if (parent.type !== "list" || !parent.selectedGuid) break;
     }
 
-    if (pane.type === "config") break;
+    if (pane.type === "config" || pane.type === "profile") break;
 
     if (pane.type === "detail") {
       saved.push({ t: "d", k: pane.selectedField });

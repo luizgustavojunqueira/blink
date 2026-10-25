@@ -4,6 +4,7 @@ import {
   detailStatusKeyBindings,
 } from "./implementations/detailPane";
 import { configPaneBindings } from "./implementations/configPane";
+import { profilePaneBindings } from "./implementations/profilePane";
 import { deleteBindings } from "./implementations/delete";
 import { escapeBind } from "./implementations/escape";
 import { toggleHintBind } from "./implementations/hint";
@@ -30,6 +31,7 @@ export const keyBindings: KeyBinding[] = [
   ...deleteBindings,
   ...visualMode,
   ...configPaneBindings,
+  ...profilePaneBindings,
 ];
 
 export type KeyMapId = keyof typeof keyBindings;

@@ -10,11 +10,13 @@ import {
 } from "../lib/pane/types";
 import {
   createConfigPane,
+  createProfilePane,
   createDetailPane,
   createListPane,
   createRootPane,
 } from "../lib/pane/factories";
 import type { Mode } from "../lib/keymap/types";
+import { PROFILE_ACCOUNT_ROW_ID } from "../lib/profile/rows";
 
 export type FieldState = { status: "saving" } | { status: "error"; message: string };
 
@@ -55,6 +57,7 @@ export type UiActions = {
   toggleMarked: (paneId: string, itemGuid: string) => void;
   toggleVisual: (anchorGuid: string) => void;
   openConfig: (selectedRow?: string | null) => void;
+  openProfile: () => void;
   selectRow: (paneId: string, rowId: string) => void;
 };
 
@@ -89,7 +92,7 @@ const commitVisualSelection =(pane: ListPane, fallbackAnchor?: string | null) =>
 };
 
 const syncChild = (parent: Pane, child: Pane): Pane => {
-  if (parent.type !== "list" || child.type === "config") return child;
+  if (parent.type !== "list" || child.type === "config" || child.type === "profile") return child;
 
   const target = parent.selectedGuid;
   const targetType = target ? parent.renderedTypes[target] : undefined;
@@ -541,10 +544,20 @@ export const useUiStore = create<UiStore>(
         return { panes: [...s.panes.slice(0, idx + 1), pane], activePaneId: pane.id };
       }),
 
+    openProfile: () =>
+      set((s) => {
+        const existing = s.panes.find((p) => p.type === "profile");
+        if (existing) return { activePaneId: existing.id };
+
+        const idx = s.panes.findIndex((p) => p.id === s.activePaneId);
+        const pane = createProfilePane(newId(), PROFILE_ACCOUNT_ROW_ID);
+        return { panes: [...s.panes.slice(0, idx + 1), pane], activePaneId: pane.id };
+      }),
+
     selectRow: (paneId, rowId) =>
       set((s) => {
         const pane = findPane(s.panes, paneId);
-        if (!pane || pane.type !== "config") return {};
+        if (!pane || (pane.type !== "config" && pane.type !== "profile")) return {};
         if (pane.selectedRow === rowId && s.activePaneId === paneId) return {};
         return {
           activePaneId: paneId,

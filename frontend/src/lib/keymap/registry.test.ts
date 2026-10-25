@@ -80,6 +80,14 @@ const configCtx = (selectedRow: string): KeyQueryContext => {
   } as KeyQueryContext;
 };
 
+const profileCtx = (selectedRow: string): KeyQueryContext => {
+  const pane = { id: "profile-0", type: "profile" as const, selectedRow };
+  return {
+    ui: { mode: "normal", panes: [pane], activePaneId: pane.id },
+    pane,
+  } as KeyQueryContext;
+};
+
 describe("keymap registry: resolve", () => {
   it("keeps the item bindings out of reach while nothing is selected", () => {
     expect(resolve("3", ctx("normal", { selectedGuid: null }))).toBeUndefined();
@@ -122,6 +130,9 @@ describe("keymap registry: resolve", () => {
       configCtx("agent:a1"),
       configCtx("agent:new"),
       configCtx("animations:motion"),
+      profileCtx("profile:account"),
+      profileCtx("profile:password"),
+      profileCtx("profile:logout"),
     ];
 
     useAgentsStore.getState().reveal("a1", "blk_token");
@@ -134,6 +145,24 @@ describe("keymap registry: resolve", () => {
     }
 
     useAgentsStore.getState().hide();
+  });
+});
+
+describe("keymap registry: profile pane", () => {
+  it("opens a form on the password and delete rows only", () => {
+    expect(resolve("enter", profileCtx("profile:password"))?.id).toBe("profile:edit");
+    expect(resolve("enter", profileCtx("profile:delete"))?.id).toBe("profile:edit");
+    expect(resolve("enter", profileCtx("profile:account"))).toBeUndefined();
+  });
+
+  it("logs out from the logout row", () => {
+    expect(resolve("enter", profileCtx("profile:logout"))?.id).toBe("profile:logout");
+    expect(resolve("space", profileCtx("profile:logout"))?.id).toBe("profile:logout");
+  });
+
+  it("navigates rows with j and k", () => {
+    expect(resolve("j", profileCtx("profile:account"))?.id).toBe("profile:down");
+    expect(resolve("k", profileCtx("profile:account"))?.id).toBe("profile:up");
   });
 });
 

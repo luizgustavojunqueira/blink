@@ -945,3 +945,49 @@ describe("ui store: config pane", () => {
     expect(state().activePaneId).toBe("root");
   });
 });
+
+describe("ui store: profile pane", () => {
+  const profile = () => state().panes.find((p) => p.type === "profile");
+
+  it("opens next to the active pane on the account row", () => {
+    seedRoot(["a"], "a");
+
+    state().openProfile();
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "profile"]);
+    expect(state().activePaneId).toBe(profile()?.id);
+    expect((profile() as { selectedRow: string | null }).selectedRow).toBe("profile:account");
+  });
+
+  it("focuses the open profile pane instead of opening another", () => {
+    state().openProfile();
+    const id = profile()?.id;
+    state().selectPane("root", "normal");
+
+    state().openProfile();
+
+    expect(state().panes.filter((p) => p.type === "profile")).toHaveLength(1);
+    expect(state().activePaneId).toBe(id);
+  });
+
+  it("selects a row and focuses the pane", () => {
+    state().openProfile();
+    const id = profile()!.id;
+    state().selectPane("root", "normal");
+
+    state().selectRow(id, "profile:logout");
+
+    expect(state().activePaneId).toBe(id);
+    expect((profile() as { selectedRow: string | null }).selectedRow).toBe("profile:logout");
+  });
+
+  it("stays open when the selection of the list behind it moves", () => {
+    seedRoot(["a", "b"], "a");
+    state().openProfile();
+    state().selectPane("root", "normal");
+
+    state().moveDown(1);
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "profile"]);
+  });
+});

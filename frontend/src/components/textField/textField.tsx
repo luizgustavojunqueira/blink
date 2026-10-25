@@ -14,6 +14,7 @@ import { TextOverlay, type Token } from "./textOverlay";
 
 const DEFAULT_MAX_HEIGHT = 120;
 const IDLE_DELAY = 600;
+const MASK_CHAR = "•";
 
 export interface TextFieldProps {
   value: string;
@@ -25,6 +26,7 @@ export interface TextFieldProps {
   tokenize?: (text: string) => Token[];
   maxHeight?: number;
   singleLine?: boolean;
+  mask?: boolean;
   placeholder?: string;
   testId?: string;
   className?: string;
@@ -43,6 +45,7 @@ export default function TextField({
   tokenize,
   maxHeight = DEFAULT_MAX_HEIGHT,
   singleLine = false,
+  mask = false,
   placeholder,
   testId,
   className = "",
@@ -137,8 +140,8 @@ export default function TextField({
   return (
     <div className={`relative w-full ${wrapperClassName ?? ""}`}>
       <TextOverlay
-        text={value}
-        tokenize={tokenize}
+        text={mask ? MASK_CHAR.repeat(value.length) : value}
+        tokenize={mask ? undefined : tokenize}
         ref={overlayRef}
         cursor={showCursor ? selection.start : null}
         cursorIdle={isIdle}
@@ -167,6 +170,8 @@ export default function TextField({
         placeholder={placeholder}
         spellCheck={false}
         autoComplete="off"
+        autoCapitalize="off"
+        autoCorrect="off"
         data-testid={testId}
       />
       {children}

@@ -149,4 +149,14 @@ describe("TextField", () => {
 
     expect(onBlur).toHaveBeenCalled();
   });
+
+  it("shows a bullet per character instead of the value when masked", () => {
+    const { container } = render(
+      <TextField value="secret" onChange={vi.fn()} editing={false} mask testId="field" />,
+    );
+
+    const overlay = container.querySelector("[aria-hidden='true']");
+    expect(overlay?.textContent).toBe("••••••");
+    expect(overlay?.textContent).not.toContain("secret");
+  });
 });

@@ -95,3 +95,22 @@ export interface GetItemResponse {
 export interface GetTagsResponse {
   tags?: string[];
 }
+export interface Credentials {
+  username: string;
+  password: string;
+}
+export interface UserResponse {
+  guid: string;
+  username: string;
+}
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+export interface DeleteAccountRequest {
+  password: string;
+}
+export const UsernameMin = 3;
+export const UsernameMax = 32;
+export const PasswordMin = 8;
+export const PasswordMax = 128;

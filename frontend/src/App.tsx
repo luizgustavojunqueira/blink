@@ -9,6 +9,8 @@ import { paneRegistry } from "./lib/pane/registry";
 import Hint from "./components/hint/hint";
 import Loading from "./components/loading";
 import { bootUrlState, hasUrlState } from "./lib/urlState";
+import { useAuthStore } from "./lib/auth/store";
+import AuthScreen from "./components/auth/authScreen";
 
 function Main() {
   useKeyMap(getAppContext());
@@ -47,10 +49,23 @@ function Main() {
   );
 }
 
+function Gate() {
+  const status = useAuthStore((s) => s.status);
+
+  useEffect(() => {
+    void useAuthStore.getState().boot();
+  }, []);
+
+  if (status === "loading") return <Loading />;
+  if (status === "anonymous") return <AuthScreen />;
+
+  return <Main />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Main />
+      <Gate />
     </QueryClientProvider>
   );
 }

@@ -1,5 +1,11 @@
 const BASE_URL = "/api";
 
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
 export async function api<T>(
   endpoint: string,
   options?: RequestInit,
@@ -11,6 +17,8 @@ export async function api<T>(
     },
     ...options,
   });
+
+  if (res.status === 401 && !endpoint.startsWith("/auth/")) onUnauthorized?.();
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api } from "./client";
+import { api, setUnauthorizedHandler } from "./client";
 
 function respond(body: string, init: ResponseInit) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body || null, init)));
@@ -38,5 +38,27 @@ describe("api()", () => {
     respond(JSON.stringify({ message: "nope" }), { status: 422 });
 
     await expect(api("/items")).rejects.toThrow(/nope/);
+  });
+
+  it("tells the unauthorized handler about a 401", async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    respond("unauthorized", { status: 401 });
+
+    await expect(api("/items")).rejects.toThrow("unauthorized");
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    setUnauthorizedHandler(null);
+  });
+
+  it("does not treat a failed login as an expired session", async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    respond("invalid username or password", { status: 401 });
+
+    await expect(api("/auth/login", { method: "POST" })).rejects.toThrow("invalid username or password");
+    expect(handler).not.toHaveBeenCalled();
+
+    setUnauthorizedHandler(null);
   });
 });

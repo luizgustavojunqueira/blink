@@ -10,7 +10,7 @@ dev-ui:
 	cd frontend && bun run dev
 
 build:
-	cd frontend && bun run build && cp -r dist ../backend/cmd/dist
+	cd frontend && bun run build && cp -r dist/. ../backend/ui/dist/
 	cd backend && go build -o ../bin/blink ./cmd
 
 generate:

@@ -25,6 +25,7 @@ type Repository interface {
 	IsInTree(ctx context.Context, rootGuids []string, guid string) (bool, error)
 	DeleteItems(ctx context.Context, guids []string) error
 	RestoreItems(ctx context.Context, guids []string) ([]db.ItemWithParent, error)
+	ListItemHistory(ctx context.Context, guid string) ([]db.ListItemHistoryRow, error)
 }
 
 type Service struct {

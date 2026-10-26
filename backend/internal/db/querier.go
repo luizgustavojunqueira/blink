@@ -33,6 +33,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	ListAgents(ctx context.Context, userID sql.NullInt64) ([]Agent, error)
+	ListItemHistory(ctx context.Context, arg ListItemHistoryParams) ([]ListItemHistoryRow, error)
 	TouchAgentByTokenHash(ctx context.Context, tokenHash string) (sql.NullInt64, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

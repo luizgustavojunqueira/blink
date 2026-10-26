@@ -60,6 +60,7 @@ func (a *App) Start(port string) error {
 	mux.Handle("DELETE /api/items", protected(a.api.DeleteItems))
 	mux.Handle("POST /api/items/restore", protected(a.api.RestoreItems))
 	mux.Handle("GET /api/items", protected(a.api.GetItems))
+	mux.Handle("GET /api/items/{guid}/history", protected(a.api.GetItemHistory))
 	mux.Handle("GET /api/tags", protected(a.api.GetTags))
 	mux.Handle("GET /api/agents", protected(a.api.GetAgents))
 	mux.Handle("POST /api/agents", protected(a.api.CreateAgent))

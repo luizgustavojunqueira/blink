@@ -32,21 +32,72 @@ func (s *SQLStore) GetItemByGuid(ctx context.Context, guid string) (Item, error)
 }
 
 func (s *SQLStore) CreateItem(ctx context.Context, arg CreateItemParams) (Item, error) {
-	user, err := nullUser(ctx)
+	userID, err := userctx.ID(ctx)
 	if err != nil {
 		return Item{}, err
 	}
-	arg.UserID = user
-	return s.Queries.CreateItem(ctx, arg)
+	arg.UserID = sql.NullInt64{Int64: userID, Valid: true}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Item{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	item, err := s.WithTx(tx).CreateItem(ctx, arg)
+	if err != nil {
+		return Item{}, err
+	}
+
+	created := historyEntry{itemID: item.ID, field: "created", newValue: sql.NullString{String: item.Title, Valid: true}}
+	if err := insertHistory(ctx, tx, userID, []historyEntry{created}); err != nil {
+		return Item{}, err
+	}
+
+	return item, tx.Commit()
 }
 
 func (s *SQLStore) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) {
-	user, err := nullUser(ctx)
+	userID, err := userctx.ID(ctx)
 	if err != nil {
 		return Item{}, err
 	}
-	arg.UserID = user
-	return s.Queries.UpdateItem(ctx, arg)
+	arg.UserID = sql.NullInt64{Int64: userID, Valid: true}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Item{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	before, err := loadStates(ctx, tx, userID, []string{arg.Guid})
+	if err != nil {
+		return Item{}, err
+	}
+
+	item, err := s.WithTx(tx).UpdateItem(ctx, arg)
+	if err != nil {
+		return Item{}, err
+	}
+
+	after, err := loadStates(ctx, tx, userID, []string{arg.Guid})
+	if err != nil {
+		return Item{}, err
+	}
+
+	if err := insertHistory(ctx, tx, userID, diffAll(before, mapValues(after))); err != nil {
+		return Item{}, err
+	}
+
+	return item, tx.Commit()
+}
+
+func (s *SQLStore) ListItemHistory(ctx context.Context, guid string) ([]ListItemHistoryRow, error) {
+	user, err := nullUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.Queries.ListItemHistory(ctx, ListItemHistoryParams{Guid: guid, UserID: user})
 }
 
 func (s *SQLStore) GetTags(ctx context.Context) ([]string, error) {

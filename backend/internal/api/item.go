@@ -207,3 +207,17 @@ func parseQueryValue[T ~string](val string) *T {
 	v := T(val)
 	return &v
 }
+
+func (a *API) GetItemHistory(w http.ResponseWriter, r *http.Request) {
+	history, err := a.itemService.GetItemHistory(r.Context(), r.PathValue("guid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(history); err != nil {
+		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		return
+	}
+}

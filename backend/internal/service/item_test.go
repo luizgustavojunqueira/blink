@@ -884,3 +884,44 @@ func TestService_BulkUpdateItem_MoveIntoGroup(t *testing.T) {
 		}
 	})
 }
+
+func (m *MockRepository) ListItemHistory(ctx context.Context, guid string) ([]db.ListItemHistoryRow, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+	return []db.ListItemHistoryRow{
+		{Actor: sql.NullString{String: "tester", Valid: true}, Field: "status", OldValue: sql.NullString{String: "TODO", Valid: true}, NewValue: sql.NullString{String: "DONE", Valid: true}},
+		{Field: "created"},
+	}, nil
+}
+
+func TestGetItemHistory(t *testing.T) {
+	t.Run("Maps nullable columns to pointers", func(t *testing.T) {
+		svc := service.NewService(&MockRepository{})
+
+		got, err := svc.GetItemHistory(context.Background(), "abc")
+		if err != nil {
+			t.Fatalf("Didn't expect error but got: %v", err)
+		}
+
+		if len(got) != 2 {
+			t.Fatalf("Expected 2 entries but got %d", len(got))
+		}
+
+		if got[0].Actor == nil || *got[0].Actor != "tester" || *got[0].OldValue != "TODO" || *got[0].NewValue != "DONE" {
+			t.Errorf("Unexpected first entry: %+v", got[0])
+		}
+
+		if got[1].Actor != nil || got[1].OldValue != nil || got[1].NewValue != nil {
+			t.Errorf("Expected null columns to map to nil: %+v", got[1])
+		}
+	})
+
+	t.Run("Repository errors are returned", func(t *testing.T) {
+		svc := service.NewService(&MockRepository{simulateErr: errors.New("boom")})
+
+		if _, err := svc.GetItemHistory(context.Background(), "abc"); err == nil {
+			t.Error("Expected an error")
+		}
+	})
+}

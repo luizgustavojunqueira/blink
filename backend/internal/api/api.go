@@ -18,6 +18,7 @@ type ItemService interface {
 	DeleteAgent(ctx context.Context, guid string) error
 	DeleteItems(ctx context.Context, req models.ItemGuidsRequest) error
 	RestoreItems(ctx context.Context, req models.ItemGuidsRequest) ([]models.GetItemResponse, error)
+	GetItemHistory(ctx context.Context, guid string) ([]models.ItemHistoryEntry, error)
 }
 
 type API struct {

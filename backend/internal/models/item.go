@@ -4,6 +4,7 @@ package models
 import (
 	"errors"
 	"strings"
+	"time"
 )
 
 type (
@@ -100,6 +101,14 @@ type GetItemResponse struct {
 	Status      ItemStatus   `json:"status"`
 	Priority    ItemPriority `json:"priority"`
 	Tags        []string     `json:"tags"`
+}
+
+type ItemHistoryEntry struct {
+	At       time.Time `json:"at"`
+	Actor    *string   `json:"actor"`
+	OldValue *string   `json:"old_value"`
+	NewValue *string   `json:"new_value"`
+	Field    string    `json:"field"`
 }
 
 type GetTagsResponse struct {

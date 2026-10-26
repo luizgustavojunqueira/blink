@@ -38,7 +38,7 @@ func newTestStoreConn(t *testing.T) (*db.SQLStore, *sql.DB) {
 		}
 	})
 
-	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql", "000003_create_agents_table.up.sql", "000004_create_users.up.sql", "000005_add_items_user_id.up.sql", "000006_scope_agents_by_user.up.sql"} {
+	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql", "000003_create_agents_table.up.sql", "000004_create_users.up.sql", "000005_add_items_user_id.up.sql", "000006_scope_agents_by_user.up.sql", "000007_create_item_history.up.sql"} {
 		schema, err := migrations.FS.ReadFile(name)
 		if err != nil {
 			t.Fatalf("failed to read migration: %v", err)

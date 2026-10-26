@@ -268,3 +268,24 @@ func (s *Service) RestoreItems(ctx context.Context, req models.ItemGuidsRequest)
 
 	return itemsResponse, nil
 }
+
+func (s *Service) GetItemHistory(ctx context.Context, guid string) ([]models.ItemHistoryEntry, error) {
+	rows, err := s.repo.ListItemHistory(ctx, guid)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := make([]models.ItemHistoryEntry, 0, len(rows))
+
+	for _, row := range rows {
+		entries = append(entries, models.ItemHistoryEntry{
+			At:       row.At,
+			Actor:    nullStringToPointer(row.Actor),
+			Field:    row.Field,
+			OldValue: nullStringToPointer(row.OldValue),
+			NewValue: nullStringToPointer(row.NewValue),
+		})
+	}
+
+	return entries, nil
+}

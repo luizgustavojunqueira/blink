@@ -201,12 +201,37 @@ func (s *SQLStore) BulkUpdateItems(ctx context.Context, arg BulkUpdateItemsParam
 		return nil, err
 	}
 
-	rows, err := s.db.QueryContext(ctx, sql, args...)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	before, err := loadStates(ctx, tx, userID, arg.Guids)
 	if err != nil {
 		return nil, err
 	}
 
-	return scanItemsWithParent(rows)
+	rows, err := tx.QueryContext(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := scanItemsWithParent(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	after := make([]itemState, 0, len(items))
+	for _, i := range items {
+		after = append(after, stateOf(i))
+	}
+
+	if err := insertHistory(ctx, tx, userID, diffAll(before, after)); err != nil {
+		return nil, err
+	}
+
+	return items, tx.Commit()
 }
 
 const deleteItemsQuery = `WITH RECURSIVE tree(id) AS (
@@ -214,7 +239,7 @@ const deleteItemsQuery = `WITH RECURSIVE tree(id) AS (
 	UNION ALL
 	SELECT i.id FROM items i JOIN tree t ON i.parent_id = t.id WHERE i.deleted_at IS NULL
 )
-UPDATE items SET deleted_at = strftime('%%Y-%%m-%%d %%H:%%M:%%f', 'now') WHERE id IN (SELECT id FROM tree)`
+UPDATE items SET deleted_at = strftime('%%Y-%%m-%%d %%H:%%M:%%f', 'now') WHERE id IN (SELECT id FROM tree) RETURNING id`
 
 const restoreItemsQuery = `WITH RECURSIVE tree(id) AS (
 	SELECT id FROM items WHERE guid IN (%s) AND user_id = ? AND deleted_at IS NOT NULL
@@ -262,9 +287,27 @@ func (s *SQLStore) DeleteItems(ctx context.Context, guids []string) error {
 
 	placeholders, args := guidPlaceholders(guids)
 
-	_, err = s.db.ExecContext(ctx, fmt.Sprintf(deleteItemsQuery, placeholders), append(args, userID)...)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
 
-	return err
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(deleteItemsQuery, placeholders), append(args, userID)...)
+	if err != nil {
+		return err
+	}
+
+	ids, err := scanIDs(rows)
+	if err != nil {
+		return err
+	}
+
+	if err := insertHistory(ctx, tx, userID, marker("deleted", ids)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *SQLStore) RestoreItems(ctx context.Context, guids []string) ([]ItemWithParent, error) {
@@ -275,12 +318,49 @@ func (s *SQLStore) RestoreItems(ctx context.Context, guids []string) ([]ItemWith
 
 	placeholders, args := guidPlaceholders(guids)
 
-	rows, err := s.db.QueryContext(ctx, fmt.Sprintf(restoreItemsQuery, placeholders), append(args, userID)...)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(restoreItemsQuery, placeholders), append(args, userID)...)
 	if err != nil {
 		return nil, err
 	}
 
-	return scanItemsWithParent(rows)
+	items, err := scanItemsWithParent(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]int64, 0, len(items))
+	for _, i := range items {
+		ids = append(ids, i.ID)
+	}
+
+	if err := insertHistory(ctx, tx, userID, marker("restored", ids)); err != nil {
+		return nil, err
+	}
+
+	return items, tx.Commit()
+}
+
+func scanIDs(rows *sql.Rows) ([]int64, error) {
+	var ids []int64
+
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return ids, rows.Err()
 }
 
 func scanItemsWithParent(rows *sql.Rows) ([]ItemWithParent, error) {

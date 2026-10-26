@@ -515,3 +515,48 @@ func TestBulkUpdateItem_RespondsWithTheUpdatedItems(t *testing.T) {
 		}
 	}
 }
+
+func (m *MockItemService) GetItemHistory(ctx context.Context, guid string) ([]models.ItemHistoryEntry, error) {
+	if m.simulateErr != nil {
+		return nil, m.simulateErr
+	}
+
+	actor := "tester"
+
+	return []models.ItemHistoryEntry{{Actor: &actor, Field: "title"}}, nil
+}
+
+func TestGetItemHistory(t *testing.T) {
+	t.Run("Responds with the entries of the guid in the path", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("GET /api/items/{guid}/history", api.NewAPI(&MockItemService{}).GetItemHistory)
+
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/items/abc/history", nil))
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected status %d but got %d", http.StatusOK, rec.Code)
+		}
+
+		var got []models.ItemHistoryEntry
+		if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+			t.Fatalf("failed to decode the response: %v", err)
+		}
+
+		if len(got) != 1 || got[0].Field != "title" || got[0].Actor == nil || *got[0].Actor != "tester" {
+			t.Errorf("Unexpected history: %+v", got)
+		}
+	})
+
+	t.Run("Service errors respond with 500", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("GET /api/items/{guid}/history", api.NewAPI(&MockItemService{simulateErr: errors.New("boom")}).GetItemHistory)
+
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/items/abc/history", nil))
+
+		if rec.Code != http.StatusInternalServerError {
+			t.Errorf("Expected status %d but got %d", http.StatusInternalServerError, rec.Code)
+		}
+	})
+}

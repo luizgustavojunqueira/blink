@@ -36,6 +36,16 @@ type Item struct {
 	UserID      sql.NullInt64
 }
 
+type ItemHistory struct {
+	ID       int64
+	ItemID   int64
+	ActorID  sql.NullInt64
+	Field    string
+	OldValue sql.NullString
+	NewValue sql.NullString
+	At       time.Time
+}
+
 type Session struct {
 	ID        int64
 	UserID    int64

@@ -115,3 +115,18 @@ DELETE FROM agents WHERE user_id = ?;
 
 -- name: DeleteUser :exec
 DELETE FROM users WHERE id = ?;
+
+-- name: ListItemHistory :many
+SELECT
+    h.id,
+    u.username AS actor,
+    h.field,
+    h.old_value,
+    h.new_value,
+    h.at
+FROM item_history h
+JOIN items i ON i.id = h.item_id
+LEFT JOIN users u ON u.id = h.actor_id
+WHERE i.guid = sqlc.arg('guid') AND i.user_id = sqlc.arg('user_id')
+ORDER BY h.id DESC
+LIMIT 200;

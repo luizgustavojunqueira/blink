@@ -454,6 +454,66 @@ func (q *Queries) ListAgents(ctx context.Context, userID sql.NullInt64) ([]Agent
 	return items, nil
 }
 
+const listItemHistory = `-- name: ListItemHistory :many
+SELECT
+    h.id,
+    u.username AS actor,
+    h.field,
+    h.old_value,
+    h.new_value,
+    h.at
+FROM item_history h
+JOIN items i ON i.id = h.item_id
+LEFT JOIN users u ON u.id = h.actor_id
+WHERE i.guid = ?1 AND i.user_id = ?2
+ORDER BY h.id DESC
+LIMIT 200
+`
+
+type ListItemHistoryParams struct {
+	Guid   string
+	UserID sql.NullInt64
+}
+
+type ListItemHistoryRow struct {
+	ID       int64
+	Actor    sql.NullString
+	Field    string
+	OldValue sql.NullString
+	NewValue sql.NullString
+	At       time.Time
+}
+
+func (q *Queries) ListItemHistory(ctx context.Context, arg ListItemHistoryParams) ([]ListItemHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listItemHistory, arg.Guid, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListItemHistoryRow
+	for rows.Next() {
+		var i ListItemHistoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Actor,
+			&i.Field,
+			&i.OldValue,
+			&i.NewValue,
+			&i.At,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const touchAgentByTokenHash = `-- name: TouchAgentByTokenHash :one
 UPDATE agents SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ? AND user_id IS NOT NULL
 RETURNING user_id

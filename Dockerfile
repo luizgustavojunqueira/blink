@@ -15,7 +15,9 @@ COPY --from=frontend-builder /app/dist ./ui/dist
 RUN CGO_ENABLED=1 go build -o blink ./cmd/main.go
 
 FROM alpine:latest
+ARG PORT=8081
+ENV PORT=${PORT}
 WORKDIR /app
 COPY --from=backend-builder /app/blink .
-EXPOSE 8080
+EXPOSE ${PORT}
 CMD ["./blink"]

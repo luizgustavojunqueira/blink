@@ -29,7 +29,7 @@ func main() {
 func run() error {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8081"
 	}
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {

@@ -6,9 +6,9 @@ services:
     volumes:
       - ./data:/app/data
     ports:
-      - "8080:8080"
+      - "${PORT:-8081}:${PORT:-8081}"
     environment:
-      - PORT=8080
+      - PORT=${PORT:-8081}
       - DB_PATH=/app/data/blink.db
       - TRUST_PROXY=${TRUST_PROXY:-false}
     profiles:

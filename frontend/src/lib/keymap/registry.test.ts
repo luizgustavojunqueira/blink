@@ -80,6 +80,14 @@ const configCtx = (selectedRow: string): KeyQueryContext => {
   } as KeyQueryContext;
 };
 
+const historyCtx = (selectedRow: string | null): KeyQueryContext => {
+  const pane = { id: "history-0", type: "history" as const, itemGuid: "item-1", selectedRow };
+  return {
+    ui: { mode: "normal", panes: [pane], activePaneId: pane.id },
+    pane,
+  } as KeyQueryContext;
+};
+
 const profileCtx = (selectedRow: string): KeyQueryContext => {
   const pane = { id: "profile-0", type: "profile" as const, selectedRow };
   return {
@@ -133,6 +141,8 @@ describe("keymap registry: resolve", () => {
       profileCtx("profile:account"),
       profileCtx("profile:password"),
       profileCtx("profile:logout"),
+      historyCtx(null),
+      historyCtx("0"),
     ];
 
     useAgentsStore.getState().reveal("a1", "blk_token");
@@ -276,5 +286,21 @@ describe("keymap registry: applyKeymap", () => {
 
     expect(resolve("j", ctx("normal"))?.id).toBe("list:down");
     expect(getKeyBinding("list:down")).toBe(keyBindings.find((b) => b.id === "list:down"));
+  });
+});
+
+describe("keymap registry: history pane", () => {
+  it("navigates entries with j and k", () => {
+    expect(resolve("j", historyCtx("0"))?.id).toBe("history:down");
+    expect(resolve("k", historyCtx("0"))?.id).toBe("history:up");
+  });
+
+  it("opens from the detail pane with l and the right arrow", () => {
+    expect(resolve("l", detailCtx("normal", "title"))?.id).toBe("detail:history");
+    expect(resolve("arrowright", detailCtx("normal", "status"))?.id).toBe("detail:history");
+  });
+
+  it("does not bind l in the history pane", () => {
+    expect(resolve("l", historyCtx("0"))).toBeUndefined();
   });
 });

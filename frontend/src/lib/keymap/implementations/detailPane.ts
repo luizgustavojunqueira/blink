@@ -61,6 +61,16 @@ export const detailPageNavigation: KeyBinding[] = [
       app.ui.moveField(-1);
     },
   },
+  {
+    id: "detail:history",
+    keys: ["l", "arrowright"],
+    modes: ["normal"],
+    scope: "detail",
+    hint: { group: "nav" },
+    description: "History",
+    when: ({ pane }) => pane.type === "detail",
+    run: ({ app }) => app.ui.openHistory(),
+  },
 ];
 
 const statusToKey = {

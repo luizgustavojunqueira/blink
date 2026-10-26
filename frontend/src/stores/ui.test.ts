@@ -991,3 +991,69 @@ describe("ui store: profile pane", () => {
     expect(state().panes.map((p) => p.type)).toEqual(["list", "profile"]);
   });
 });
+
+describe("ui store: history pane", () => {
+  const history = () => state().panes.find((p) => p.type === "history");
+
+  it("opens next to a list for the selected item", () => {
+    seedRoot(["a", "b"], "b");
+
+    state().openHistory();
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "history"]);
+    expect(state().activePaneId).toBe(history()?.id);
+    expect((history() as { itemGuid: string }).itemGuid).toBe("b");
+  });
+
+  it("opens for the item of a detail pane", () => {
+    seedRoot(["a"], "a");
+    state().openChildPane("a", "detail");
+
+    state().openHistory();
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "detail", "history"]);
+    expect((history() as { itemGuid: string }).itemGuid).toBe("a");
+  });
+
+  it("does nothing without a selected item", () => {
+    seedRoot([], null);
+
+    state().openHistory();
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list"]);
+  });
+
+  it("focuses the pane already open for the item instead of opening another", () => {
+    seedRoot(["a"], "a");
+    state().openHistory();
+    const id = history()!.id;
+    state().selectPane("root", "normal");
+
+    state().openHistory();
+
+    expect(state().panes.filter((p) => p.type === "history")).toHaveLength(1);
+    expect(state().activePaneId).toBe(id);
+  });
+
+  it("selects an entry and focuses the pane", () => {
+    seedRoot(["a"], "a");
+    state().openHistory();
+    const id = history()!.id;
+    state().selectPane("root", "normal");
+
+    state().selectRow(id, "2");
+
+    expect(state().activePaneId).toBe(id);
+    expect((history() as { selectedRow: string | null }).selectedRow).toBe("2");
+  });
+
+  it("stays open when the selection of the list behind it moves", () => {
+    seedRoot(["a", "b"], "a");
+    state().openHistory();
+    state().selectPane("root", "normal");
+
+    state().moveDown(1);
+
+    expect(state().panes.map((p) => p.type)).toEqual(["list", "history"]);
+  });
+});

@@ -76,6 +76,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
       old?.map((i) => (i.guid === updated.guid ? { ...i, ...changed } : i)),
     );
 
+    client.invalidateQueries({ queryKey: ["history", updated.guid] });
     if (req.tags !== undefined) client.invalidateQueries({ queryKey: ["tags"] });
     if (req.title !== undefined && updated.type === Group) {
       client.invalidateQueries({ queryKey: ["groups"] });
@@ -91,6 +92,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
       old?.map((oldItem) => updated.find((u) => u.guid === oldItem.guid) ?? oldItem),
     );
 
+    client.invalidateQueries({ queryKey: ["history"] });
     client.invalidateQueries({ queryKey: ["tags"] });
     if (patch.parent_guid !== undefined) client.invalidateQueries({ queryKey: ["groups"] });
 
@@ -163,6 +165,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
       throw err;
     }
 
+    client.invalidateQueries({ queryKey: ["history"] });
     client.invalidateQueries({ queryKey: ["tags"] });
     client.invalidateQueries({ queryKey: ["groups"] });
   };
@@ -174,6 +177,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     try {
       const restored = await restoreItems({ guids });
       client.invalidateQueries({ queryKey: ["items"] });
+      client.invalidateQueries({ queryKey: ["history"] });
       client.invalidateQueries({ queryKey: ["tags"] });
       client.invalidateQueries({ queryKey: ["groups"] });
       return restored.length;

@@ -5,6 +5,7 @@ import {
 } from "./implementations/detailPane";
 import { configPaneBindings } from "./implementations/configPane";
 import { profilePaneBindings } from "./implementations/profilePane";
+import { historyPaneBindings } from "./implementations/historyPane";
 import { deleteBindings } from "./implementations/delete";
 import { escapeBind } from "./implementations/escape";
 import { toggleHintBind } from "./implementations/hint";
@@ -32,6 +33,7 @@ export const keyBindings: KeyBinding[] = [
   ...visualMode,
   ...configPaneBindings,
   ...profilePaneBindings,
+  ...historyPaneBindings,
 ];
 
 export type KeyMapId = keyof typeof keyBindings;

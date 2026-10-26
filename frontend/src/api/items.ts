@@ -4,6 +4,7 @@ import type {
   GetItemRequest,
   GetItemResponse,
   GetTagsResponse,
+  ItemHistoryEntry,
   ItemGuidsRequest,
   UpdateItemRequest,
 } from "../types/backend";
@@ -65,4 +66,8 @@ export function restoreItems(req: ItemGuidsRequest) {
     method: "POST",
     body: JSON.stringify(req),
   });
+}
+
+export function getItemHistory(guid: string) {
+  return api<ItemHistoryEntry[]>(`/items/${encodeURIComponent(guid)}/history`);
 }

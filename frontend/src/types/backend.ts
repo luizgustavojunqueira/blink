@@ -114,3 +114,10 @@ export const UsernameMin = 3;
 export const UsernameMax = 32;
 export const PasswordMin = 8;
 export const PasswordMax = 128;
+export interface ItemHistoryEntry {
+  at: string;
+  actor: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  field: string;
+}

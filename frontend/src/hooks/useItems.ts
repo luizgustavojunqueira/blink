@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useSyncExternalStore } from "react";
 import type { GetItemRequest, GetItemResponse } from "../types/backend";
 import { getAgents } from "../api/agents";
-import { getItems, getTags } from "../api/items";
+import { getItemHistory, getItems, getTags } from "../api/items";
 import { generateMockItems } from "../utils/mockItems";
 
 const USE_MOCK_ITEMS = import.meta.env.VITE_USE_MOCK_ITEMS === "true";
@@ -74,4 +74,14 @@ export function useItem(guid: string) {
   }, [queryClient, guid]);
 
   return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export const itemHistoryQuery = (guid: string) => ({
+  queryKey: ["history", guid] as const,
+  queryFn: () => getItemHistory(guid),
+  enabled: guid !== "",
+});
+
+export function useItemHistory(guid: string) {
+  return useQuery(itemHistoryQuery(guid));
 }

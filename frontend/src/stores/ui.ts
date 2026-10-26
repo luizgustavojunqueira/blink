@@ -11,6 +11,7 @@ import {
 import {
   createConfigPane,
   createProfilePane,
+  createHistoryPane,
   createDetailPane,
   createListPane,
   createRootPane,
@@ -58,6 +59,7 @@ export type UiActions = {
   toggleVisual: (anchorGuid: string) => void;
   openConfig: (selectedRow?: string | null) => void;
   openProfile: () => void;
+  openHistory: () => void;
   selectRow: (paneId: string, rowId: string) => void;
 };
 
@@ -92,7 +94,13 @@ const commitVisualSelection =(pane: ListPane, fallbackAnchor?: string | null) =>
 };
 
 const syncChild = (parent: Pane, child: Pane): Pane => {
-  if (parent.type !== "list" || child.type === "config" || child.type === "profile") return child;
+  if (
+    parent.type !== "list" ||
+    child.type === "config" ||
+    child.type === "profile" ||
+    child.type === "history"
+  )
+    return child;
 
   const target = parent.selectedGuid;
   const targetType = target ? parent.renderedTypes[target] : undefined;
@@ -554,10 +562,30 @@ export const useUiStore = create<UiStore>(
         return { panes: [...s.panes.slice(0, idx + 1), pane], activePaneId: pane.id };
       }),
 
+    openHistory: () =>
+      set((s) => {
+        const idx = s.panes.findIndex((p) => p.id === s.activePaneId);
+        const active = s.panes[idx];
+        const guid =
+          active?.type === "list"
+            ? active.selectedGuid
+            : active?.type === "detail"
+              ? active.itemGuid
+              : null;
+        if (!guid) return {};
+
+        const child = s.panes[idx + 1];
+        if (child?.type === "history" && child.itemGuid === guid) return { activePaneId: child.id };
+
+        const pane = createHistoryPane(newId(), guid);
+        return { panes: [...s.panes.slice(0, idx + 1), pane], activePaneId: pane.id };
+      }),
+
     selectRow: (paneId, rowId) =>
       set((s) => {
         const pane = findPane(s.panes, paneId);
-        if (!pane || (pane.type !== "config" && pane.type !== "profile")) return {};
+        if (!pane || (pane.type !== "config" && pane.type !== "profile" && pane.type !== "history"))
+          return {};
         if (pane.selectedRow === rowId && s.activePaneId === paneId) return {};
         return {
           activePaneId: paneId,

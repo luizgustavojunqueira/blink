@@ -1,6 +1,6 @@
 import type { GetItemRequest, GetItemResponse, ItemType } from "../../types/backend";
 
-export type PaneType = "list" | "detail" | "config" | "profile";
+export type PaneType = "list" | "detail" | "config" | "profile" | "history";
 
 export type ListPane = {
   id: string;
@@ -34,7 +34,14 @@ export type ProfilePane = {
   selectedRow: string | null;
 };
 
-export type Pane = ListPane | DetailPane | ConfigPane | ProfilePane;
+export type HistoryPane = {
+  id: string;
+  type: "history";
+  itemGuid: string;
+  selectedRow: string | null;
+};
+
+export type Pane = ListPane | DetailPane | ConfigPane | ProfilePane | HistoryPane;
 
 type EditableField = keyof Omit<GetItemResponse, "guid" | "type">;
 

@@ -1,7 +1,7 @@
 import { newId } from "../../lib/id";
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { useUiStore } from "../../stores/ui";
-import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
+import { ROW_IN_RANGE, ROW_MARKED, ROW_SELECTED, useRowState } from "../../hooks/useRowState";
 import { createDetailPane } from "../../lib/pane/factories";
 import type { GetItemResponse } from "../../types/backend";
 import { priorityColor, priorityMapper, statusColor, statusMapper } from "../../utils/status";
@@ -25,36 +25,10 @@ interface IItem {
 function ItemComponent({ item, paneId }: IItem) {
   const isDone = item.status === "DONE" || item.status === "CANCELED";
 
-  const selectIsSelected = useCallback<PaneSelector<boolean>>(
-    (pane) => pane?.type === "list" && pane.selectedGuid === item.guid,
-    [item.guid],
-  );
-
-  const selectIsMarked = useCallback<PaneSelector<boolean>>(
-    (pane) => pane?.type === "list" && pane.markedGuids.has(item.guid),
-    [item.guid],
-  );
-
-  const selectIsInVisualRange = useCallback<PaneSelector<boolean>>(
-    (pane, ui) => {
-      if (ui.mode !== "visual" || pane?.type !== "list" || !pane.anchorGuid || !pane.selectedGuid) {
-        return false;
-      }
-      const a = pane.renderedGuids.indexOf(pane.anchorGuid);
-      const b = pane.renderedGuids.indexOf(pane.selectedGuid);
-      const i = pane.renderedGuids.indexOf(item.guid);
-      return a !== -1 && b !== -1 && i >= Math.min(a, b) && i <= Math.max(a, b);
-    },
-    [item.guid],
-  );
-
-  const isSelected = usePaneValue(paneId, selectIsSelected);
-  const isMarked = usePaneValue(paneId, selectIsMarked);
-  const isInVisualRange = usePaneValue(paneId, selectIsInVisualRange);
-
-  const select = useUiStore((s) => s.select);
-  const pushPane = useUiStore((s) => s.pushPane);
-  const toggleMark = useUiStore((s) => s.toggleMarked);
+  const state = useRowState(paneId, item.guid);
+  const isSelected = (state & ROW_SELECTED) !== 0;
+  const isMarked = (state & ROW_MARKED) !== 0;
+  const isInVisualRange = (state & ROW_IN_RANGE) !== 0;
 
   return (
     <li
@@ -75,7 +49,7 @@ function ItemComponent({ item, paneId }: IItem) {
         tabIndex={-1}
         aria-pressed={isMarked}
         aria-label={`Toggle marked: ${item.title}`}
-        onClick={() => toggleMark(paneId, item.guid)}
+        onClick={() => useUiStore.getState().toggleMarked(paneId, item.guid)}
         className={[
           "ml-2 flex size-4 shrink-0 items-center justify-center",
           "rounded-[3px] border bg-transparent",
@@ -104,10 +78,11 @@ function ItemComponent({ item, paneId }: IItem) {
       </button>
 
       <div
-        onClick={() => select(paneId, item.guid)}
+        onClick={() => useUiStore.getState().select(paneId, item.guid)}
         onDoubleClick={() => {
-          select(paneId, item.guid);
-          pushPane(createDetailPane(newId(), item.guid));
+          const ui = useUiStore.getState();
+          ui.select(paneId, item.guid);
+          ui.pushPane(createDetailPane(newId(), item.guid));
         }}
         className="flex min-w-0 flex-1 items-center gap-3 px-4 py-1.5"
       >

@@ -136,6 +136,11 @@ body {
   transition: none !important;
 }
 
+:root[data-bulk] [data-item-guid],
+:root[data-bulk] [data-item-guid] * {
+  transition: none !important;
+}
+
 /* Scrollbar - Firefox */
 * {
   scrollbar-width: thin;

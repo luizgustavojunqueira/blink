@@ -6,6 +6,8 @@ export const ROW_SELECTED = 1;
 export const ROW_MARKED = 2;
 export const ROW_IN_RANGE = 4;
 
+const BULK_ROWS = 50;
+
 type Listener = () => void;
 type Rows = Map<string, Set<Listener>>;
 type Range = [number, number] | null;
@@ -13,6 +15,8 @@ type Range = [number, number] | null;
 const listeners = new Map<string, Rows>();
 const indexCache = new WeakMap<string[], Map<string, number>>();
 let unsubscribeStore: (() => void) | null = null;
+let notified = 0;
+let bulkFrame = 0;
 
 export function guidIndex(guids: string[], guid: string): number {
   let index = indexCache.get(guids);
@@ -53,11 +57,17 @@ export function rowState(s: UiState, paneId: string, guid: string): number {
   return state;
 }
 
-const notify = (rows: Rows, guid: string | null | undefined) => {
-  if (guid) rows.get(guid)?.forEach((l) => l());
+const notifySet = (set: Set<Listener> | undefined) => {
+  if (!set) return;
+  notified++;
+  set.forEach((l) => l());
 };
 
-const notifyAll = (rows: Rows) => rows.forEach((set) => set.forEach((l) => l()));
+const notify = (rows: Rows, guid: string | null | undefined) => {
+  if (guid) notifySet(rows.get(guid));
+};
+
+const notifyAll = (rows: Rows) => rows.forEach(notifySet);
 
 const notifyIndexes = (rows: Rows, guids: string[], from: number, to: number) => {
   for (let i = from; i <= to; i++) notify(rows, guids[i]);
@@ -70,7 +80,22 @@ const notifyRangeDiff = (rows: Rows, guids: string[], a: Range, b: Range) => {
   notifyIndexes(rows, guids, Math.max(a[0], b[1] + 1), a[1]);
 };
 
+function suppressTransitions() {
+  const root = document.documentElement;
+  root.dataset.bulk = "";
+  cancelAnimationFrame(bulkFrame);
+  bulkFrame = requestAnimationFrame(() => {
+    bulkFrame = requestAnimationFrame(() => delete root.dataset.bulk);
+  });
+}
+
 function onStoreChange(next: UiState, prev: UiState) {
+  notified = 0;
+  notifyPanes(next, prev);
+  if (notified > BULK_ROWS) suppressTransitions();
+}
+
+function notifyPanes(next: UiState, prev: UiState) {
   for (const [paneId, rows] of listeners) {
     const after = findListPane(next, paneId);
     const before = findListPane(prev, paneId);

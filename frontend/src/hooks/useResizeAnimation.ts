@@ -4,6 +4,7 @@ const RESIZE_MS = 90;
 
 export function useResizeAnimation(ref: RefObject<HTMLElement | null>, deps: DependencyList) {
   const lastSize = useRef<{ w: number; h: number } | null>(null);
+  const animation = useRef<Animation | null>(null);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -17,15 +18,15 @@ export function useResizeAnimation(ref: RefObject<HTMLElement | null>, deps: Dep
     lastSize.current = { w, h };
     if (!prev || (prev.w === w && prev.h === h)) return;
     if (document.documentElement.dataset.motion === "off") return;
-    el.getAnimations().forEach((a) => a.cancel());
+    animation.current?.cancel();
     el.style.overflow = "hidden";
-    const anim = el.animate(
+    const anim = (animation.current = el.animate(
       [
         { width: `${prev.w}px`, height: `${prev.h}px` },
         { width: `${w}px`, height: `${h}px` },
       ],
       { duration: RESIZE_MS, easing: "ease-out" },
-    );
+    ));
     anim.onfinish = anim.oncancel = () => {
       el.style.overflow = "";
     };

@@ -12,6 +12,7 @@ beforeEach(() => {
   useUiStore.setState({ mode: "normal", panes: [root], activePaneId: root.id, showHint: true });
   state().setRendered(root.id, GUIDS, Object.fromEntries(GUIDS.map((g) => [g, "TASK"])));
   state().select(root.id, "a");
+  delete document.documentElement.dataset.bulk;
 });
 
 const renderRows = () => {
@@ -112,5 +113,22 @@ describe("useRowState", () => {
     act(() => state().moveDown(1));
 
     expect(rows.rendered()).toEqual([]);
+  });
+
+  it("suppresses row transitions only when many rows change at once", () => {
+    const paneId = state().activePaneId;
+    const many = Array.from({ length: 60 }, (_, i) => `g${i}`);
+    act(() => state().setRendered(paneId, many, Object.fromEntries(many.map((g) => [g, "TASK"]))));
+    act(() => state().select(paneId, "g0"));
+    const hooks = many.map((g) => renderHook(() => useRowState(paneId, g)));
+
+    act(() => state().moveDown(1));
+    expect(document.documentElement.dataset.bulk).toBeUndefined();
+
+    act(() => state().toggleVisual("g1"));
+    act(() => state().moveDown(58));
+    expect(document.documentElement.dataset.bulk).toBe("");
+
+    hooks.forEach((h) => h.unmount());
   });
 });

@@ -48,7 +48,8 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
     })) {
       if (list) allItems.push(...list);
     }
-    return allItems.filter((i) => guids.includes(i.guid));
+    const wanted = new Set(guids);
+    return allItems.filter((i) => wanted.has(i.guid));
   };
 
   const patchItem = (guid: string, patch: Partial<GetItemResponse>) =>
@@ -87,9 +88,10 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
 
   const bulkUpdate = async (guids: string[], patch: ItemPatch) => {
     const updated = await bulkUpdateItem({ guids, ...patch });
+    const byGuid = new Map(updated.map((u) => [u.guid, u]));
 
     client.setQueriesData<GetItemResponse[]>({ queryKey: ["items"] }, (old) =>
-      old?.map((oldItem) => updated.find((u) => u.guid === oldItem.guid) ?? oldItem),
+      old?.map((oldItem) => byGuid.get(oldItem.guid) ?? oldItem),
     );
 
     client.invalidateQueries({ queryKey: ["history"] });

@@ -33,15 +33,20 @@ function ItemComponent({ item, paneId }: IItem) {
   return (
     <li
       data-item-guid={item.guid}
+      onClick={() => useUiStore.getState().select(paneId, item.guid)}
+      onDoubleClick={() => {
+        const ui = useUiStore.getState();
+        ui.select(paneId, item.guid);
+        ui.pushPane(createDetailPane(newId(), item.guid));
+      }}
       className={[
-        "group flex w-full flex-row items-center gap-1",
+        "group flex w-full flex-row items-center gap-3 py-1.5 pr-4",
         "transition-colors",
         isSelected
           ? "bg-bg-lighter duration-0"
           : isInVisualRange
             ? "bg-accent/10 duration-200"
             : "hover:bg-bg-soft duration-200",
-        "[content-visibility:auto] [contain-intrinsic-size:auto_2rem]",
       ].join(" ")}
     >
       <button
@@ -49,9 +54,13 @@ function ItemComponent({ item, paneId }: IItem) {
         tabIndex={-1}
         aria-pressed={isMarked}
         aria-label={`Toggle marked: ${item.title}`}
-        onClick={() => useUiStore.getState().toggleMarked(paneId, item.guid)}
+        onClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().toggleMarked(paneId, item.guid);
+        }}
+        onDoubleClick={(e) => e.stopPropagation()}
         className={[
-          "ml-2 flex size-4 shrink-0 items-center justify-center",
+          "mx-2 flex size-4 shrink-0 items-center justify-center",
           "rounded-[3px] border bg-transparent",
           "transition-[opacity,border-color] duration-150 ease-out",
           markedBoxState(isMarked, isSelected, isInVisualRange),
@@ -77,45 +86,33 @@ function ItemComponent({ item, paneId }: IItem) {
         </svg>
       </button>
 
-      <div
-        onClick={() => useUiStore.getState().select(paneId, item.guid)}
-        onDoubleClick={() => {
-          const ui = useUiStore.getState();
-          ui.select(paneId, item.guid);
-          ui.pushPane(createDetailPane(newId(), item.guid));
-        }}
-        className="flex min-w-0 flex-1 items-center gap-3 px-4 py-1.5"
-      >
-        <span className={`w-20 shrink-0 text-sm ${statusColor[item.status] ?? "text-fg-dim"}`}>
-          {statusMapper[item.status]}
-        </span>
+      <span className={`w-20 shrink-0 text-sm ${statusColor[item.status] ?? "text-fg-dim"}`}>
+        {statusMapper[item.status]}
+      </span>
 
-        <span className={`w-16 shrink-0 text-sm ${priorityColor[item.priority] ?? "text-fg-dim"}`}>
-          {item.priority !== "NORMAL" && priorityMapper[item.priority]}
-        </span>
+      <span className={`w-16 shrink-0 text-sm ${priorityColor[item.priority] ?? "text-fg-dim"}`}>
+        {item.priority !== "NORMAL" && priorityMapper[item.priority]}
+      </span>
 
-        <span className={`flex-3 truncate ${isDone ? "text-fg-muted line-through" : "text-fg"}`}>
-          {item.type === "GROUP" && <span className="mr-1 text-group">▸</span>}
-          {item.title}
-        </span>
+      <span className={`flex-3 truncate ${isDone ? "text-fg-muted line-through" : "text-fg"}`}>
+        {item.type === "GROUP" && <span className="mr-1 text-group">▸</span>}
+        {item.title}
+      </span>
 
-        <div className="flex flex-1 flex-row truncate">
-          {item.tags?.length > 0 && (
-            <div className="mr-4 flex gap-1.5">
-              {item.tags.map((tag, index) => (
-                <span key={`${tag}-${index}`} className="text-sm text-tag align-left">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+      <div className="flex flex-1 flex-row gap-1.5 truncate">
+        {item.tags?.map((tag, index) => (
+          <span key={`${tag}-${index}`} className="text-sm text-tag align-left">
+            #{tag}
+          </span>
+        ))}
 
-          {item.description && (
-            <span className="hidden truncate text-xs text-fg-muted sm:block">
-              {item.description}
-            </span>
-          )}
-        </div>
+        {item.description && (
+          <span
+            className={`hidden truncate text-xs text-fg-muted sm:block ${item.tags?.length > 0 ? "ml-2.5" : ""}`}
+          >
+            {item.description}
+          </span>
+        )}
       </div>
     </li>
   );

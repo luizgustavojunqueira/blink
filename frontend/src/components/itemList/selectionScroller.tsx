@@ -6,10 +6,16 @@ const selectSelectedGuid: PaneSelector<string | null> = (pane) =>
 
 interface ISelectionScroller {
   paneId: string;
-  listRef: RefObject<HTMLUListElement | null>;
+  listRef: RefObject<HTMLElement | null>;
 }
 
 const SCROLLOFF: number = 3;
+
+const previousRow = (row: HTMLElement) =>
+  (row.previousElementSibling ?? row.parentElement?.previousElementSibling?.lastElementChild) as HTMLElement | null;
+
+const nextRow = (row: HTMLElement) =>
+  (row.nextElementSibling ?? row.parentElement?.nextElementSibling?.firstElementChild) as HTMLElement | null;
 
 export default function SelectionScroller({ paneId, listRef }: ISelectionScroller) {
   const selectedGuid = usePaneValue(paneId, selectSelectedGuid);
@@ -28,8 +34,8 @@ export default function SelectionScroller({ paneId, listRef }: ISelectionScrolle
 
     // walks SCROLLOFF siblings up and down
     for (let i = 0; i < SCROLLOFF; i++) {
-      top = (top.previousElementSibling as HTMLElement | null) ?? top;
-      bottom = (bottom.nextElementSibling as HTMLElement | null) ?? bottom;
+      top = previousRow(top) ?? top;
+      bottom = nextRow(bottom) ?? bottom;
     }
 
     // gets list rect

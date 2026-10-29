@@ -11,6 +11,8 @@ import type { GetItemRequest, ItemType } from "../../types/backend";
 import Breadcrumb from "../breadcrumb/breadcrumb";
 
 const EMPTY_FILTER: GetItemRequest = {};
+const CHUNK_ROWS = 100;
+const ROW_REM = 2.25;
 
 const selectFilter: PaneSelector<GetItemRequest> = (pane) =>
   pane?.type === "list" ? pane.filter : EMPTY_FILTER;
@@ -42,7 +44,23 @@ export function ItemList({ paneId }: IItemList) {
     setRendered(paneId, guids, types);
   }, [renderedKey, paneId, setRendered]);
 
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const chunks = [];
+  for (let start = 0; start < items.length; start += CHUNK_ROWS) {
+    const rows = items.slice(start, start + CHUNK_ROWS);
+    chunks.push(
+      <ul
+        key={start}
+        className="[content-visibility:auto]"
+        style={{ containIntrinsicSize: `auto ${rows.length * ROW_REM}rem` }}
+      >
+        {rows.map((item) => (
+          <Item key={item.guid} item={item} paneId={paneId} />
+        ))}
+      </ul>,
+    );
+  }
 
   return (
     <div
@@ -59,11 +77,7 @@ export function ItemList({ paneId }: IItemList) {
 
         {isError && <div className="px-4 py-2 text-urgent text-sm">could not load items</div>}
 
-        <ul ref={listRef} className="flex flex-col">
-          {items.map((item) => (
-            <Item key={item.guid} item={item} paneId={paneId} />
-          ))}
-        </ul>
+        <div ref={listRef}>{chunks}</div>
 
         <SelectionScroller paneId={paneId} listRef={listRef} />
 

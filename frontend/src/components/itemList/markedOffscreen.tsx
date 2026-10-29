@@ -1,5 +1,6 @@
 import { useEffect, useState, type RefObject } from "react";
 import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
+import { guidIndex } from "../../hooks/useRowState";
 
 const EMPTY_GUIDS: string[] = [];
 const EMPTY_MARKED = new Set<string>();
@@ -21,9 +22,18 @@ const firstIndexWhere = (rows: HTMLCollection, test: (row: Element) => boolean) 
   return lo;
 };
 
+const firstRowIndex = (list: Element, guids: string[], test: (row: Element) => boolean) => {
+  const chunks = list.children;
+  const chunk = chunks[firstIndexWhere(chunks, test)];
+  if (!chunk) return guids.length;
+  const row = chunk.children[firstIndexWhere(chunk.children, test)];
+  const guid = row?.getAttribute("data-item-guid");
+  return guid ? guidIndex(guids, guid) : guids.length;
+};
+
 interface IMarkedOffscreen {
   paneId: string;
-  listRef: RefObject<HTMLUListElement | null>;
+  listRef: RefObject<HTMLElement | null>;
 }
 
 export default function MarkedOffscreen({ paneId, listRef }: IMarkedOffscreen) {
@@ -37,10 +47,12 @@ export default function MarkedOffscreen({ paneId, listRef }: IMarkedOffscreen) {
     if (!list || !container) return;
 
     const measure = () => {
-      const rows = list.children;
       const box = container.getBoundingClientRect();
-      const first = firstIndexWhere(rows, (r) => r.getBoundingClientRect().bottom > box.top);
-      const last = firstIndexWhere(rows, (r) => r.getBoundingClientRect().top >= box.bottom) - 1;
+      const first = firstRowIndex(list, renderedGuids, (r) => r.getBoundingClientRect().bottom > box.top);
+      const last = Math.min(
+        firstRowIndex(list, renderedGuids, (r) => r.getBoundingClientRect().bottom >= box.bottom),
+        renderedGuids.length - 1,
+      );
 
       let above = 0;
       let below = 0;

@@ -5,7 +5,6 @@ import { deleteCommand } from "./implementations/delete";
 import { editCommand } from "./implementations/edit";
 import { filterCommand } from "./implementations/filter";
 import { groupCommand } from "./implementations/group";
-import { historyCommand } from "./implementations/history";
 import { moveCommand } from "./implementations/move";
 import { profileCommand } from "./implementations/profile";
 import { themeCommand } from "./implementations/theme";
@@ -26,7 +25,6 @@ export const commands = {
   archive: archiveCommand,
   config: configCommand,
   profile: profileCommand,
-  history: historyCommand,
 } as const satisfies Record<string, CommandDefinition>;
 
 export type CommandId = keyof typeof commands;

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { useUiStore } from "./ui";
+import { HINT_STORAGE_KEY, loadShowHint, useUiStore } from "./ui";
 import {
   createConfigPane,
   createDetailPane,
@@ -1055,5 +1055,29 @@ describe("ui store: history pane", () => {
     state().moveDown(1);
 
     expect(state().panes.map((p) => p.type)).toEqual(["list", "history"]);
+  });
+});
+
+describe("ui store: toggleHint", () => {
+  beforeEach(() => {
+    localStorage.removeItem(HINT_STORAGE_KEY);
+    useUiStore.setState({ showHint: true });
+  });
+
+  it("shows the hint when nothing was saved", () => {
+    expect(loadShowHint()).toBe(true);
+  });
+
+  it("saves the choice so a reload keeps it", () => {
+    useUiStore.getState().toggleHint();
+
+    expect(useUiStore.getState().showHint).toBe(false);
+    expect(localStorage.getItem(HINT_STORAGE_KEY)).toBe("off");
+    expect(loadShowHint()).toBe(false);
+
+    useUiStore.getState().toggleHint();
+
+    expect(useUiStore.getState().showHint).toBe(true);
+    expect(loadShowHint()).toBe(true);
   });
 });

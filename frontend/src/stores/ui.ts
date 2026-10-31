@@ -144,6 +144,24 @@ const syncChildPanes = (prev: Pane[], next: Pane[]): Pane[] => {
 
 type UiStore = UiState & UiActions;
 
+export const HINT_STORAGE_KEY = "blink-hint";
+
+export function loadShowHint(): boolean {
+  try {
+    return localStorage.getItem(HINT_STORAGE_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function saveShowHint(show: boolean) {
+  try {
+    localStorage.setItem(HINT_STORAGE_KEY, show ? "on" : "off");
+  } catch {
+    return;
+  }
+}
+
 const withPaneSync =
   (config: StateCreator<UiStore>): StateCreator<UiStore> =>
   (set, get, api) =>
@@ -180,11 +198,11 @@ const withPaneSync =
 const rootPane = createRootPane();
 
 export const useUiStore = create<UiStore>(
-  withPaneSync((set) => ({
+  withPaneSync((set, get) => ({
     mode: "normal",
     panes: [rootPane],
     activePaneId: rootPane.id,
-    showHint: true,
+    showHint: loadShowHint(),
     currentKeySeq: "",
     fieldStates: {},
 
@@ -200,10 +218,11 @@ export const useUiStore = create<UiStore>(
         return { fieldStates: { ...s.fieldStates, [key]: state } };
       }),
 
-    toggleHint: () =>
-      set((s) => {
-        return { showHint: !s.showHint };
-      }),
+    toggleHint: () => {
+      const showHint = !get().showHint;
+      saveShowHint(showHint);
+      set({ showHint });
+    },
 
     setRendered: (paneId, newGuids, newTypes) =>
       set((s) => {

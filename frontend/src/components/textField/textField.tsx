@@ -82,8 +82,7 @@ export default function TextField({
 
   const fitToContent = useCallback(() => {
     const el = inputRef.current;
-    const overlay = overlayRef.current;
-    if (!el || !overlay) return;
+    if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
 
@@ -94,6 +93,8 @@ export default function TextField({
       el.scrollLeft = el.scrollWidth;
     }
 
+    const overlay = overlayRef.current;
+    if (!overlay) return;
     overlay.scrollTop = el.scrollTop;
     overlay.scrollLeft = caretAtEnd ? overlay.scrollWidth : el.scrollLeft;
   }, [maxHeight, singleLine]);

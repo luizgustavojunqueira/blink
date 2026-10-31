@@ -159,4 +159,23 @@ describe("TextField", () => {
     expect(overlay?.textContent).toBe("••••••");
     expect(overlay?.textContent).not.toContain("secret");
   });
+
+  it("shrinks back to one line when the text is cleared and editing ends", () => {
+    const lineHeight = 27;
+    const height = vi
+      .spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get")
+      .mockImplementation(function (this: HTMLTextAreaElement) {
+        return lineHeight * Math.max(1, Math.ceil(this.value.length / 20));
+      });
+
+    const long = "a long prompt that wraps over several lines of text";
+    const { rerender } = render(<TextField value={long} onChange={vi.fn()} editing={true} testId="field" />);
+    expect(screen.getByTestId("field").style.height).toBe(`${lineHeight * 3}px`);
+
+    rerender(<TextField value="" onChange={vi.fn()} editing={false} testId="field" />);
+    expect(screen.getByTestId("field").style.height).toBe(`${lineHeight}px`);
+
+    height.mockRestore();
+  });
 });
+

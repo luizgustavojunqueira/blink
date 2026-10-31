@@ -58,20 +58,16 @@ export function useConfigEdit({
       e.stopPropagation();
 
       const err = submit();
-      if (err) {
-        setError(err);
-        return;
-      }
+      setError(err);
+      if (err) return;
       setMode("normal");
     },
     [submit, value, setMode],
   );
 
   const onBlur = useCallback(() => {
-    if (submit()) {
-      setDraft(value);
-      setError(null);
-    }
+    if (submit()) setDraft(value);
+    setError(null);
   }, [submit, value]);
 
   const requestEdit = useCallback(() => {

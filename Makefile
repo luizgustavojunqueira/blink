@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: dev-api dev-ui build generate test test-back test-front
+.PHONY: dev-api dev-ui build generate test test-back test-front perf perf-back perf-ui
 
 dev-api:
 	cd backend && air
@@ -23,3 +23,11 @@ test-back:
 
 test-front:
 	cd frontend && bun run test
+
+perf: perf-back perf-ui
+
+perf-back:
+	cd backend && go test -run '^$$' -bench . -benchmem ./internal/api/
+
+perf-ui:
+	cd frontend && bun run perf

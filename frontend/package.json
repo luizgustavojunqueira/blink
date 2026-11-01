@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "perf": "bun perf/run.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.6.0",

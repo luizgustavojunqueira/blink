@@ -3,6 +3,7 @@ node_modules/
 
 # Build artifacts
 frontend/dist/
+frontend/perf/results/
 backend/ui/dist/*
 !backend/ui/dist/index.html
 

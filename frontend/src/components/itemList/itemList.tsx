@@ -4,6 +4,7 @@ import Prompt from "../prompt/prompt";
 import Item from "./item";
 import SelectionScroller from "./selectionScroller";
 import MarkedOffscreen from "./markedOffscreen";
+import GroupPrefetcher from "./groupPrefetcher";
 import { useEffect, useRef } from "react";
 import { paneIsActive, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useUiStore } from "../../stores/ui";
@@ -80,6 +81,7 @@ export function ItemList({ paneId }: IItemList) {
         <div ref={listRef}>{chunks}</div>
 
         <SelectionScroller paneId={paneId} listRef={listRef} />
+        <GroupPrefetcher paneId={paneId} />
 
         {!isFetching && items.length === 0 && (
           <div className="px-4 py-6 text-fg-muted text-sm">no items</div>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -38,7 +39,7 @@ func newTestStoreConn(t *testing.T) (*db.SQLStore, *sql.DB) {
 		}
 	})
 
-	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql", "000003_create_agents_table.up.sql", "000004_create_users.up.sql", "000005_add_items_user_id.up.sql", "000006_scope_agents_by_user.up.sql", "000007_create_item_history.up.sql"} {
+	for _, name := range []string{"000001_create_items_table.up.sql", "000002_add_items_deleted_at.up.sql", "000003_create_agents_table.up.sql", "000004_create_users.up.sql", "000005_add_items_user_id.up.sql", "000006_scope_agents_by_user.up.sql", "000007_create_item_history.up.sql", "000008_index_items_parent_deleted.up.sql"} {
 		schema, err := migrations.FS.ReadFile(name)
 		if err != nil {
 			t.Fatalf("failed to read migration: %v", err)
@@ -507,6 +508,44 @@ func TestDeleteAndRestoreItems(t *testing.T) {
 			t.Errorf("Expected %v to leave gone out", tags)
 		}
 	})
+}
+
+func TestDeleteAndRestoreItems_ScaleLinearly(t *testing.T) {
+	const count = 8000
+	store, conn := newTestStoreConn(t)
+	ctx := userCtx()
+
+	tx, err := conn.Begin()
+	if err != nil {
+		t.Fatalf("failed to begin: %v", err)
+	}
+	guids := make([]string, count)
+	for i := range count {
+		guids[i] = fmt.Sprintf("bulk-%d", i)
+		if _, err := tx.Exec(`INSERT INTO items (guid, title, type, status, priority, user_id) VALUES (?, 'bulk', 'TASK', 'TODO', 'NORMAL', 1)`, guids[i]); err != nil {
+			t.Fatalf("failed to insert: %v", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	start := time.Now()
+	if err := store.DeleteItems(ctx, guids); err != nil {
+		t.Fatalf("failed to delete: %v", err)
+	}
+	restored, err := store.RestoreItems(ctx, guids)
+	if err != nil {
+		t.Fatalf("failed to restore: %v", err)
+	}
+	elapsed := time.Since(start)
+
+	if len(restored) != count {
+		t.Fatalf("Expected %d restored items, got %d", count, len(restored))
+	}
+	if elapsed > 3*time.Second {
+		t.Errorf("Expected deleting and restoring %d items to take well under 3s, took %v", count, elapsed)
+	}
 }
 
 func TestIsInTree(t *testing.T) {

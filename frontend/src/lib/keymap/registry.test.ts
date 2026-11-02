@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAgentsStore } from "../config/agents";
 import {
   applyKeymap,
@@ -302,5 +302,26 @@ describe("keymap registry: history pane", () => {
 
   it("does not bind l in the history pane", () => {
     expect(resolve("l", historyCtx("0"))).toBeUndefined();
+  });
+});
+
+describe("keymap registry: / starts a new filter", () => {
+  it("is bound in the list's normal mode only", () => {
+    expect(resolve("/", ctx("normal"))?.id).toBe("insertSearch");
+    expect(resolve("/", ctx("insert"))).toBeUndefined();
+  });
+
+  it("clears the prompt before entering insert mode", () => {
+    const order: string[] = [];
+    const app = {
+      ui: {
+        setPrompt: vi.fn((value: string) => order.push(`prompt:${value}`)),
+        enterInsert: vi.fn(() => order.push("insert")),
+      },
+    };
+
+    getKeyBinding("insertSearch")!.run({ ...ctx("normal"), app } as never, "/");
+
+    expect(order).toEqual(["prompt:", "insert"]);
   });
 });

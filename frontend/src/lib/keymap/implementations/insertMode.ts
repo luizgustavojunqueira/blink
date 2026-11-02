@@ -11,6 +11,18 @@ export const prefixKeyBindings: KeyBinding[] = [
     run: ({ app }) => app.ui.enterInsert(),
   },
   {
+    id: "insertSearch",
+    keys: ["/"],
+    modes: ["normal"],
+    scope: "list",
+    description: "Clear the prompt and start filtering",
+    when: () => true,
+    run: ({ app }) => {
+      app.ui.setPrompt("");
+      app.ui.enterInsert();
+    },
+  },
+  {
     id: "insertPrefix",
     keys: ["#", "!", "@", ":"],
     modes: ["normal"],

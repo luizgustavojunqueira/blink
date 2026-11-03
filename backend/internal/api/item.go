@@ -161,6 +161,8 @@ func (a *API) GetItems(w http.ResponseWriter, r *http.Request) {
 	req.Order = parseQueryList[string](queryParams["order"])
 	req.ParentID = parseQueryValue[string](r.URL.Query().Get("parent_id"))
 	req.Recursive = r.URL.Query().Get("recursive") == "true"
+	req.DueFrom = parseQueryValue[string](r.URL.Query().Get("due_from"))
+	req.DueTo = parseQueryValue[string](r.URL.Query().Get("due_to"))
 
 	if err := req.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

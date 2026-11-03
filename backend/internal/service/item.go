@@ -25,6 +25,7 @@ func (s *Service) UpdateItem(ctx context.Context, req models.UpdateItemRequest) 
 		Status:      pointerToNullString(req.Status),
 		Priority:    pointerToNullString(req.Priority),
 		Tags:        pointerToNullString(tagsStr),
+		DueDate:     optionalString(req.DueDate),
 	})
 	if err != nil {
 		return nil, err
@@ -49,6 +50,7 @@ func (s *Service) UpdateItem(ctx context.Context, req models.UpdateItemRequest) 
 		Status:      models.ItemStatus(item.Status),
 		Priority:    models.ItemPriority(item.Priority),
 		Tags:        tags,
+		DueDate:     nullStringToPointer(item.DueDate),
 		ParentGUID:  parentGuid,
 	}, nil
 }
@@ -85,6 +87,7 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		Priority:    string(req.Priority),
 		Tags:        pointerToNullString(tagsStr),
 		ParentID:    parentId,
+		DueDate:     pointerToNullString(req.DueDate),
 	})
 	if err != nil {
 		return nil, err
@@ -100,6 +103,7 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		Status:      models.ItemStatus(item.Status),
 		Priority:    models.ItemPriority(item.Priority),
 		Tags:        tags,
+		DueDate:     nullStringToPointer(item.DueDate),
 		ParentGUID:  req.ParentGUID,
 	}, nil
 }
@@ -121,6 +125,8 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 		Order:       toDBOrders(models.ParseOrders(req.Order)),
 		ParentID:    req.ParentID,
 		Recursive:   req.Recursive,
+		DueFrom:     req.DueFrom,
+		DueTo:       req.DueTo,
 	}
 
 	if filter.Title != nil {
@@ -152,6 +158,7 @@ func (s *Service) GetItems(ctx context.Context, req models.GetItemRequest) ([]mo
 			Status:      models.ItemStatus(item.Status),
 			Priority:    models.ItemPriority(item.Priority),
 			Tags:        tags,
+			DueDate:     nullStringToPointer(item.DueDate),
 			ParentGUID:  nullStringToPointer(item.ParentGuid),
 		}
 
@@ -213,6 +220,7 @@ func (s *Service) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemR
 		Priority:    pointerToString(req.Priority),
 		Tags:        tagsStr,
 		ParentID:    parentId,
+		DueDate:     req.DueDate,
 	})
 	if err != nil {
 		return nil, err
@@ -232,6 +240,7 @@ func (s *Service) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemR
 			Status:      models.ItemStatus(item.Status),
 			Priority:    models.ItemPriority(item.Priority),
 			Tags:        tags,
+			DueDate:     nullStringToPointer(item.DueDate),
 			ParentGUID:  nullStringToPointer(item.ParentGuid),
 		}
 
@@ -262,6 +271,7 @@ func (s *Service) RestoreItems(ctx context.Context, req models.ItemGuidsRequest)
 			Status:      models.ItemStatus(item.Status),
 			Priority:    models.ItemPriority(item.Priority),
 			Tags:        tagsToStringSlice(item.Tags),
+			DueDate:     nullStringToPointer(item.DueDate),
 			ParentGUID:  nullStringToPointer(item.ParentGuid),
 		})
 	}
@@ -288,4 +298,11 @@ func (s *Service) GetItemHistory(ctx context.Context, guid string) ([]models.Ite
 	}
 
 	return entries, nil
+}
+
+func optionalString(value *string) any {
+	if value == nil {
+		return nil
+	}
+	return *value
 }

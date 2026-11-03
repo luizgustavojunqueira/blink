@@ -34,6 +34,7 @@ type Item struct {
 	CompletedAt sql.NullTime
 	DeletedAt   sql.NullTime
 	UserID      sql.NullInt64
+	DueDate     sql.NullString
 }
 
 type ItemHistory struct {

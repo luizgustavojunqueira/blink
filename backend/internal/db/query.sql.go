@@ -78,11 +78,11 @@ func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent
 
 const createItem = `-- name: CreateItem :one
 INSERT INTO items (
-    guid, title, description, type, parent_id, status, priority, tags, user_id
+    guid, title, description, type, parent_id, status, priority, tags, due_date, user_id
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id
+RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id, due_date
 `
 
 type CreateItemParams struct {
@@ -94,6 +94,7 @@ type CreateItemParams struct {
 	Status      string
 	Priority    string
 	Tags        sql.NullString
+	DueDate     sql.NullString
 	UserID      sql.NullInt64
 }
 
@@ -107,6 +108,7 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 		arg.Status,
 		arg.Priority,
 		arg.Tags,
+		arg.DueDate,
 		arg.UserID,
 	)
 	var i Item
@@ -125,6 +127,7 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 		&i.CompletedAt,
 		&i.DeletedAt,
 		&i.UserID,
+		&i.DueDate,
 	)
 	return i, err
 }
@@ -254,7 +257,7 @@ func (q *Queries) DeleteUserSessions(ctx context.Context, userID int64) error {
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id FROM items WHERE id = ?1 AND user_id = ?2
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id, due_date FROM items WHERE id = ?1 AND user_id = ?2
 `
 
 type GetItemParams struct {
@@ -280,12 +283,13 @@ func (q *Queries) GetItem(ctx context.Context, arg GetItemParams) (Item, error) 
 		&i.CompletedAt,
 		&i.DeletedAt,
 		&i.UserID,
+		&i.DueDate,
 	)
 	return i, err
 }
 
 const getItemByGuid = `-- name: GetItemByGuid :one
-SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id FROM items WHERE guid = ?1 AND user_id = ?2
+SELECT id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id, due_date FROM items WHERE guid = ?1 AND user_id = ?2
 `
 
 type GetItemByGuidParams struct {
@@ -311,6 +315,7 @@ func (q *Queries) GetItemByGuid(ctx context.Context, arg GetItemByGuidParams) (I
 		&i.CompletedAt,
 		&i.DeletedAt,
 		&i.UserID,
+		&i.DueDate,
 	)
 	return i, err
 }
@@ -535,10 +540,11 @@ SET
     priority = COALESCE(?4, priority),
     tags = COALESCE(?5, tags),
     parent_id = COALESCE(?6, parent_id),
+    due_date = CASE WHEN ?7 IS NULL THEN due_date ELSE NULLIF(?7, '') END,
     updated_at = CURRENT_TIMESTAMP,
-    completed_at = COALESCE(?7, completed_at)
-WHERE guid = ?8 AND user_id = ?9
-RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id
+    completed_at = COALESCE(?8, completed_at)
+WHERE guid = ?9 AND user_id = ?10
+RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, user_id, due_date
 `
 
 type UpdateItemParams struct {
@@ -548,6 +554,7 @@ type UpdateItemParams struct {
 	Priority    sql.NullString
 	Tags        sql.NullString
 	ParentID    sql.NullInt64
+	DueDate     interface{}
 	CompletedAt sql.NullTime
 	Guid        string
 	UserID      sql.NullInt64
@@ -561,6 +568,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		arg.Priority,
 		arg.Tags,
 		arg.ParentID,
+		arg.DueDate,
 		arg.CompletedAt,
 		arg.Guid,
 		arg.UserID,
@@ -581,6 +589,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		&i.CompletedAt,
 		&i.DeletedAt,
 		&i.UserID,
+		&i.DueDate,
 	)
 	return i, err
 }

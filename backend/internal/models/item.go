@@ -40,6 +40,7 @@ const (
 	OrderUpdated  OrderField = "updated"
 	OrderStatus   OrderField = "status"
 	OrderPriority OrderField = "priority"
+	OrderDue      OrderField = "due"
 )
 
 type CreateItemRequest struct {
@@ -50,6 +51,7 @@ type CreateItemRequest struct {
 	Status      ItemStatus   `json:"status"`
 	Priority    ItemPriority `json:"priority"`
 	Tags        []string     `json:"tags"`
+	DueDate     *string      `json:"due_date"`
 }
 
 type UpdateItemRequest struct {
@@ -59,6 +61,7 @@ type UpdateItemRequest struct {
 	Status      *ItemStatus   `json:"status"`
 	Priority    *ItemPriority `json:"priority"`
 	Tags        *[]string     `json:"tags,omitempty"`
+	DueDate     *string       `json:"due_date"`
 }
 
 type BulkUpdateItemRequest struct {
@@ -69,6 +72,7 @@ type BulkUpdateItemRequest struct {
 	Priority    *ItemPriority `json:"priority"`
 	Tags        *[]string     `json:"tags,omitempty"`
 	ParentGUID  *string       `json:"parent_guid"`
+	DueDate     *string       `json:"due_date"`
 }
 
 type ItemGuidsRequest struct {
@@ -85,6 +89,8 @@ type GetItemRequest struct {
 	Tags        []string       `json:"tags,omitempty"`
 	Order       []string       `json:"order,omitempty"`
 	Recursive   bool           `json:"recursive,omitempty"`
+	DueFrom     *string        `json:"due_from,omitempty"`
+	DueTo       *string        `json:"due_to,omitempty"`
 }
 
 type OrderBy struct {
@@ -101,6 +107,7 @@ type GetItemResponse struct {
 	Status      ItemStatus   `json:"status"`
 	Priority    ItemPriority `json:"priority"`
 	Tags        []string     `json:"tags"`
+	DueDate     *string      `json:"due_date"`
 }
 
 type ItemHistoryEntry struct {
@@ -134,6 +141,13 @@ func (req *GetItemRequest) Validate() error {
 		}
 	}
 
+	if err := validDueDate(req.DueFrom, false); err != nil {
+		return err
+	}
+	if err := validDueDate(req.DueTo, false); err != nil {
+		return err
+	}
+
 	parsedOrders := ParseOrders(req.Order)
 
 	for _, pO := range parsedOrders {
@@ -148,6 +162,10 @@ func (req *GetItemRequest) Validate() error {
 func (req *BulkUpdateItemRequest) Validate() error {
 	if len(req.GUIDS) == 0 {
 		return errors.New("guid is required")
+	}
+
+	if err := validDueDate(req.DueDate, true); err != nil {
+		return err
 	}
 
 	if req.Status != nil {
@@ -177,6 +195,10 @@ func (req *UpdateItemRequest) Validate() error {
 	if req.GUID == "" {
 		return errors.New("guid is required")
 	}
+
+	if err := validDueDate(req.DueDate, true); err != nil {
+		return err
+	}
 	if req.Status != nil {
 		if err := validStatus(*req.Status); err != nil {
 			return err
@@ -205,6 +227,10 @@ func (req *CreateItemRequest) Validate() error {
 		return errors.New("invalid item type")
 	}
 
+	if err := validDueDate(req.DueDate, false); err != nil {
+		return err
+	}
+
 	if err := validStatus(req.Status); err != nil {
 		return err
 	}
@@ -213,6 +239,16 @@ func (req *CreateItemRequest) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func validDueDate(date *string, allowEmpty bool) error {
+	if date == nil || (allowEmpty && *date == "") {
+		return nil
+	}
+	if _, err := time.Parse(time.DateOnly, *date); err != nil {
+		return errors.New("due date must be YYYY-MM-DD")
+	}
 	return nil
 }
 
@@ -228,7 +264,7 @@ func validStatus(s ItemStatus) error {
 
 func validField(field OrderField) error {
 	validFields := map[OrderField]bool{
-		OrderPriority: true, OrderTitle: true, OrderStatus: true, OrderCreated: true, OrderUpdated: true,
+		OrderPriority: true, OrderTitle: true, OrderStatus: true, OrderCreated: true, OrderUpdated: true, OrderDue: true,
 	}
 	if !validFields[field] {
 		return errors.New("invalid field")

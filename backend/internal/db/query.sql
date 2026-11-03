@@ -6,9 +6,9 @@ SELECT * FROM items WHERE guid = sqlc.arg('guid') AND user_id = sqlc.arg('user_i
 
 -- name: CreateItem :one
 INSERT INTO items (
-    guid, title, description, type, parent_id, status, priority, tags, user_id
+    guid, title, description, type, parent_id, status, priority, tags, due_date, user_id
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 RETURNING *;
 
@@ -21,6 +21,7 @@ SET
     priority = COALESCE(sqlc.narg('priority'), priority),
     tags = COALESCE(sqlc.narg('tags'), tags),
     parent_id = COALESCE(sqlc.narg('parent_id'), parent_id),
+    due_date = CASE WHEN sqlc.narg('due_date') IS NULL THEN due_date ELSE NULLIF(sqlc.narg('due_date'), '') END,
     updated_at = CURRENT_TIMESTAMP,
     completed_at = COALESCE(sqlc.narg('completed_at'), completed_at)
 WHERE guid = sqlc.arg('guid') AND user_id = sqlc.arg('user_id')

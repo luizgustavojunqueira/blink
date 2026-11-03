@@ -26,6 +26,7 @@ export const OrderCreated: OrderField = "created";
 export const OrderUpdated: OrderField = "updated";
 export const OrderStatus: OrderField = "status";
 export const OrderPriority: OrderField = "priority";
+export const OrderDue: OrderField = "due";
 export interface CreateItemRequest {
   parent_guid?: string;
   title: string;
@@ -34,6 +35,7 @@ export interface CreateItemRequest {
   status: ItemStatus;
   priority: ItemPriority;
   tags: string[];
+  due_date?: string;
 }
 export interface UpdateItemRequest {
   guid: string;
@@ -42,6 +44,7 @@ export interface UpdateItemRequest {
   status?: ItemStatus;
   priority?: ItemPriority;
   tags?: string[];
+  due_date?: string;
 }
 export interface BulkUpdateItemRequest {
   guids: string[];
@@ -51,6 +54,7 @@ export interface BulkUpdateItemRequest {
   priority?: ItemPriority;
   tags?: string[];
   parent_guid?: string;
+  due_date?: string;
 }
 export interface ItemGuidsRequest {
   guids: string[];
@@ -77,6 +81,8 @@ export interface GetItemRequest {
   priority?: ItemPriority[];
   tags?: string[];
   order?: string[];
+  due_from?: string;
+  due_to?: string;
 }
 export interface OrderBy {
   field: OrderField;
@@ -91,6 +97,7 @@ export interface GetItemResponse {
   status: ItemStatus;
   priority: ItemPriority;
   tags: string[];
+  due_date?: string;
 }
 export interface GetTagsResponse {
   tags?: string[];

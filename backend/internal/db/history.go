@@ -22,6 +22,7 @@ type itemState struct {
 	Priority    string
 	Tags        sql.NullString
 	ParentGuid  sql.NullString
+	DueDate     sql.NullString
 }
 
 type historyEntry struct {
@@ -40,6 +41,7 @@ func stateOf(i ItemWithParent) itemState {
 		Priority:    i.Priority,
 		Tags:        i.Tags,
 		ParentGuid:  i.ParentGuid,
+		DueDate:     i.DueDate,
 	}
 }
 
@@ -47,7 +49,7 @@ func loadStates(ctx context.Context, q execer, userID int64, guids []string) (ma
 	placeholders, args := guidPlaceholders(guids)
 	args = append(args, userID)
 
-	rows, err := q.QueryContext(ctx, fmt.Sprintf(`SELECT i.id, i.title, i.description, i.status, i.priority, i.tags, p.guid
+	rows, err := q.QueryContext(ctx, fmt.Sprintf(`SELECT i.id, i.title, i.description, i.status, i.priority, i.tags, p.guid, i.due_date
 FROM items i LEFT JOIN items p ON p.id = i.parent_id
 WHERE i.guid IN (%s) AND i.user_id = ?`, placeholders), args...)
 	if err != nil {
@@ -58,7 +60,7 @@ WHERE i.guid IN (%s) AND i.user_id = ?`, placeholders), args...)
 	states := make(map[int64]itemState, len(guids))
 	for rows.Next() {
 		var s itemState
-		if err := rows.Scan(&s.ID, &s.Title, &s.Description, &s.Status, &s.Priority, &s.Tags, &s.ParentGuid); err != nil {
+		if err := rows.Scan(&s.ID, &s.Title, &s.Description, &s.Status, &s.Priority, &s.Tags, &s.ParentGuid, &s.DueDate); err != nil {
 			return nil, err
 		}
 		states[s.ID] = s
@@ -83,6 +85,7 @@ func diffStates(before, after itemState) []historyEntry {
 	add("priority", text(before.Priority), text(after.Priority))
 	add("tags", before.Tags, after.Tags)
 	add("parent", before.ParentGuid, after.ParentGuid)
+	add("due", before.DueDate, after.DueDate)
 
 	return entries
 }

@@ -28,7 +28,7 @@ type listTasksInput struct {
 	Status    []models.ItemStatus   `json:"status,omitempty" jsonschema:"TODO, IN_PROGRESS, DONE, CANCELED or ARCHIVED; defaults to TODO"`
 	Priority  []models.ItemPriority `json:"priority,omitempty" jsonschema:"LOW, NORMAL, HIGH or URGENT"`
 	Tags      []string              `json:"tags,omitempty" jsonschema:"only tasks having these tags"`
-	Order     []string              `json:"order,omitempty" jsonschema:"title, created, updated, status or priority; prefix with - for descending; defaults to priority"`
+	Order     []string              `json:"order,omitempty" jsonschema:"title, created, updated, status, priority or due; prefix with - for descending; defaults to priority"`
 }
 
 type createTaskInput struct {
@@ -38,6 +38,7 @@ type createTaskInput struct {
 	Priority    *models.ItemPriority `json:"priority,omitempty" jsonschema:"LOW, NORMAL, HIGH or URGENT; defaults to NORMAL"`
 	Status      *models.ItemStatus   `json:"status,omitempty" jsonschema:"TODO, IN_PROGRESS, DONE, CANCELED or ARCHIVED; defaults to TODO"`
 	Tags        []string             `json:"tags,omitempty"`
+	DueDate     *string              `json:"due_date,omitempty" jsonschema:"YYYY-MM-DD"`
 }
 
 type updateItemInput struct {
@@ -47,6 +48,7 @@ type updateItemInput struct {
 	Title       *string              `json:"title,omitempty"`
 	Description *string              `json:"description,omitempty" jsonschema:"markdown notes; replaces the current description"`
 	Tags        *[]string            `json:"tags,omitempty" jsonschema:"replaces the current tags; an empty list clears them"`
+	DueDate     *string              `json:"due_date,omitempty" jsonschema:"YYYY-MM-DD; an empty string clears it"`
 }
 
 type itemsOutput struct {
@@ -144,6 +146,7 @@ func newServer(svc ItemService) *mcp.Server {
 			Status:      models.ToDo,
 			Priority:    models.Normal,
 			Tags:        in.Tags,
+			DueDate:     in.DueDate,
 		}
 		if in.Status != nil {
 			req.Status = *in.Status
@@ -166,7 +169,7 @@ func newServer(svc ItemService) *mcp.Server {
 		Name:        "update_item",
 		Description: "Update a task or project, e.g. set its status to IN_PROGRESS when starting it and DONE when finished. Only the given fields change.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in updateItemInput) (*mcp.CallToolResult, itemOutput, error) {
-		if in.Status == nil && in.Priority == nil && in.Title == nil && in.Description == nil && in.Tags == nil {
+		if in.Status == nil && in.Priority == nil && in.Title == nil && in.Description == nil && in.Tags == nil && in.DueDate == nil {
 			return nil, itemOutput{}, errors.New("nothing to update")
 		}
 		if in.Title != nil && *in.Title == "" {
@@ -180,6 +183,7 @@ func newServer(svc ItemService) *mcp.Server {
 			Status:      in.Status,
 			Priority:    in.Priority,
 			Tags:        in.Tags,
+			DueDate:     in.DueDate,
 		}
 		if err := req.Validate(); err != nil {
 			return nil, itemOutput{}, err

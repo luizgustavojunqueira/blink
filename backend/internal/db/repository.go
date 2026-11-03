@@ -21,6 +21,8 @@ type GetIemsFilter struct {
 	Order       []OrderBy
 	ParentID    *string
 	Recursive   bool
+	DueFrom     *string
+	DueTo       *string
 }
 
 type ItemWithParent struct {
@@ -36,6 +38,7 @@ type BulkUpdateItemsParams struct {
 	Priority    *string
 	Tags        *string
 	ParentID    *int64
+	DueDate     *string
 }
 
 type OrderBy struct {
@@ -63,7 +66,7 @@ const (
 
 var defaultOrder = []string{statusRankExpr + " ASC", "i.created_at DESC"}
 
-const bulkUpdateReturning = `RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, (SELECT p.guid FROM items p WHERE p.id = items.parent_id) AS parent_guid`
+const bulkUpdateReturning = `RETURNING id, guid, title, description, type, parent_id, status, priority, tags, created_at, updated_at, completed_at, deleted_at, due_date, (SELECT p.guid FROM items p WHERE p.id = items.parent_id) AS parent_guid`
 
 var orderColumns = map[string]string{
 	"title":    "i.title",
@@ -71,6 +74,7 @@ var orderColumns = map[string]string{
 	"updated":  "i.updated_at",
 	"priority": priorityRankExpr,
 	"status":   statusRankExpr,
+	"due":      "COALESCE(i.due_date, '9999-12-31')",
 }
 
 func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([]ItemWithParent, error) {
@@ -93,6 +97,7 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 		"i.updated_at",
 		"i.completed_at",
 		"i.deleted_at",
+		"i.due_date",
 		"p.guid AS parent_guid",
 	).
 		From("items i").
@@ -115,6 +120,12 @@ func (s *SQLStore) GetItemsDynamic(ctx context.Context, filter GetIemsFilter) ([
 	}
 	if filter.Description != nil {
 		query = query.Where(squirrel.Like{"i.description": "%" + *filter.Description + "%"})
+	}
+	if filter.DueFrom != nil {
+		query = query.Where(squirrel.GtOrEq{"i.due_date": *filter.DueFrom})
+	}
+	if filter.DueTo != nil {
+		query = query.Where(squirrel.LtOrEq{"i.due_date": *filter.DueTo})
 	}
 
 	switch {
@@ -192,6 +203,9 @@ func (s *SQLStore) BulkUpdateItems(ctx context.Context, arg BulkUpdateItemsParam
 	}
 	if arg.ParentID != nil {
 		query = query.Set("parent_id", *arg.ParentID)
+	}
+	if arg.DueDate != nil {
+		query = query.Set("due_date", squirrel.Expr("NULLIF(?, '')", *arg.DueDate))
 	}
 
 	query = query.Set("updated_at", squirrel.Expr("CURRENT_TIMESTAMP"))
@@ -382,6 +396,7 @@ func scanItemsWithParent(rows *sql.Rows) ([]ItemWithParent, error) {
 			&i.UpdatedAt,
 			&i.CompletedAt,
 			&i.DeletedAt,
+			&i.DueDate,
 			&i.ParentGuid,
 		); err != nil {
 			return nil, err

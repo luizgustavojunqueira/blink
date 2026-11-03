@@ -6,7 +6,8 @@ export type PromptOptionKind =
   | "TYPE"
   | "PRIORITY"
   | "TAG"
-  | "ORDER";
+  | "ORDER"
+  | "DUE";
 
 export type PromptOption = {
   name: string;

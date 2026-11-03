@@ -7,7 +7,9 @@ import {
   STATUS_MODIFIER,
   TAG_MODIFIER,
   TYPE_MODIFIER,
+  DUE_MODIFIER,
 } from "../../modifiers/delimiters";
+import { singleDue } from "../../modifiers/implementations/due";
 import { modifierOptions } from "../../modifiers/options";
 import { parseModifiers } from "../../modifiers/parse";
 import type { CommandDefinition } from "../types";
@@ -19,6 +21,7 @@ const CREATE_MODIFIERS = [
   TAG_MODIFIER,
   DESCRIPTION_MODIFIER,
   TYPE_MODIFIER,
+  DUE_MODIFIER,
   HELP_MODIFIER,
 ];
 
@@ -67,6 +70,9 @@ export function parseCreate(raw: string): ParseCreateResult {
   const type = only(values[TYPE_MODIFIER], invalid[TYPE_MODIFIER], "type");
   if (!type.ok) return type;
 
+  const due = singleDue(values[DUE_MODIFIER], invalid[DUE_MODIFIER]);
+  if (!due.ok) return due;
+
   return {
     ok: true,
     req: {
@@ -76,6 +82,7 @@ export function parseCreate(raw: string): ParseCreateResult {
       status: status.value ?? ToDo,
       priority: priority.value ?? Normal,
       type: type.value ?? Task,
+      due_date: due.value || undefined,
     },
   };
 }

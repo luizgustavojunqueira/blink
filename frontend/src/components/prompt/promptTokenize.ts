@@ -5,7 +5,9 @@ import {
   DESCRIPTION_MODIFIER,
   ORDER_MODIFIER,
   TYPE_MODIFIER,
+  DUE_MODIFIER,
 } from "../../lib/modifiers/delimiters.ts";
+import { parseDue } from "../../lib/dates/due";
 import { modifiersFor } from "../../lib/commands/registry";
 import { ORDER_FIELD_CLASS, PRIORITY_CLASS, STATUS_CLASS, TYPE_CLASS } from "../../lib/validator";
 import type { Token } from "../textField/textOverlay";
@@ -17,12 +19,13 @@ const MODIFIER_CHARS = new Set([
   DESCRIPTION_MODIFIER,
   ORDER_MODIFIER,
   TYPE_MODIFIER,
+  DUE_MODIFIER,
 ]);
 
 export function tokenizePrompt(text: string): Token[] {
   const allowed = new Set(modifiersFor(text));
   const regex = new RegExp(
-    `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}\\${ORDER_MODIFIER}\\${TYPE_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
+    `([\\${PRIORITY_MODIFIER}\\${TAG_MODIFIER}\\${STATUS_MODIFIER}\\${ORDER_MODIFIER}\\${TYPE_MODIFIER}\\${DUE_MODIFIER}]\\S+|\\${DESCRIPTION_MODIFIER})`,
     "g",
   );
   const parts = text.split(regex);
@@ -76,6 +79,15 @@ export function tokenizePrompt(text: string): Token[] {
       tokens.push({
         text: part,
         className: colorClass ? `${colorClass} font-medium` : "text-danger line-through font-bold",
+      });
+      continue;
+    }
+
+    if (part.startsWith(DUE_MODIFIER)) {
+      const valid = part.length > 1 && parseDue(part.slice(1)) !== null;
+      tokens.push({
+        text: part,
+        className: part.length === 1 || valid ? "text-accent font-medium" : "text-danger line-through font-bold",
       });
       continue;
     }

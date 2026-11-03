@@ -16,6 +16,7 @@ import {
 } from "../types/backend";
 
 function sameValue(current: unknown, next: unknown): boolean {
+  if (next === "" && (current === undefined || current === null || current === "")) return true;
   if (Array.isArray(current) && Array.isArray(next)) {
     if (current.length !== next.length) return false;
     const a = [...current].sort();

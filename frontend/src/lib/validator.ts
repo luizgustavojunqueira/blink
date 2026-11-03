@@ -13,6 +13,7 @@ import {
   OrderCreated,
   OrderPriority,
   OrderStatus,
+  OrderDue,
   Task,
   Group,
 } from "../types/backend";
@@ -38,6 +39,7 @@ export const ORDER_FIELD_CLASS: Record<string, string> = {
   [OrderCreated]: "text-low",
   [OrderPriority]: "text-high",
   [OrderStatus]: "text-status",
+  [OrderDue]: "text-accent",
 };
 
 export const TYPE_CLASS: Record<string, string> = {

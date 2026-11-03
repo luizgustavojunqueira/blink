@@ -1,6 +1,7 @@
 import type { CommandDefinition } from "../../commands/types";
 import { toPromptOption } from "../../promptOptions";
 import { descriptionModifier } from "./description";
+import { dueModifier } from "./due";
 import { orderModifier } from "./order";
 import { priorityModifier } from "./priority";
 import { statusModifier } from "./status";
@@ -11,6 +12,7 @@ const OTHER_MODIFIERS = [
   priorityModifier,
   tagModifier,
   descriptionModifier,
+  dueModifier,
   orderModifier,
 ];
 

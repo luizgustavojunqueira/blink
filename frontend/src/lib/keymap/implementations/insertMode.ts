@@ -24,7 +24,7 @@ export const prefixKeyBindings: KeyBinding[] = [
   },
   {
     id: "insertPrefix",
-    keys: ["#", "!", "@", ":"],
+    keys: ["#", "!", "@", ":", "^"],
     modes: ["normal"],
     scope: "list",
     description: "Enter insert mode with mod",

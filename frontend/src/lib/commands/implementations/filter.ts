@@ -8,6 +8,7 @@ import {
   STATUS_MODIFIER,
   TAG_MODIFIER,
   TYPE_MODIFIER,
+  DUE_MODIFIER,
 } from "../../modifiers/delimiters";
 import { modifierOptions } from "../../modifiers/options";
 import { parseModifiers } from "../../modifiers/parse";
@@ -20,6 +21,7 @@ const FILTER_MODIFIERS = [
   DESCRIPTION_MODIFIER,
   ORDER_MODIFIER,
   TYPE_MODIFIER,
+  DUE_MODIFIER,
   HELP_MODIFIER,
 ];
 
@@ -31,6 +33,7 @@ export function parseFilter(raw: string): GetItemRequest {
   const priority = values[PRIORITY_MODIFIER];
   const order = values[ORDER_MODIFIER];
   const type = values[TYPE_MODIFIER];
+  const due = values[DUE_MODIFIER].find((d) => d !== "");
 
   return {
     title: text || undefined,
@@ -40,8 +43,12 @@ export function parseFilter(raw: string): GetItemRequest {
     status: status.length ? status : undefined,
     order: order.length ? order : undefined,
     type: type.length ? type : undefined,
+    due_from: due,
+    due_to: due,
   };
 }
+
+export { FILTER_MODIFIERS };
 
 export const filterCommand: CommandDefinition = {
   id: "filter",

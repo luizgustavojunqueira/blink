@@ -8,6 +8,7 @@ import {
   OrderStatus,
   OrderTitle,
   OrderUpdated,
+  OrderDue,
 } from "../../../types/backend";
 import { VALID_ORDER_FIELDS } from "../../validator";
 
@@ -41,6 +42,12 @@ const BASE_ORDER_LIST: PromptOption[] = [
     name: "Updated",
     description: "Order by updated at",
     value: OrderUpdated,
+  },
+  {
+    kind: "ORDER",
+    name: "Due",
+    description: "Order by due date",
+    value: OrderDue,
   },
 ];
 

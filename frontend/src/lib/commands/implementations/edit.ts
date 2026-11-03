@@ -6,7 +6,9 @@ import {
   STATUS_MODIFIER,
   TAG_MODIFIER,
   TYPE_MODIFIER,
+  DUE_MODIFIER,
 } from "../../modifiers/delimiters";
+import { singleDue } from "../../modifiers/implementations/due";
 import { modifierOptions } from "../../modifiers/options";
 import { parseModifiers } from "../../modifiers/parse";
 import type { ItemPatch } from "../../types";
@@ -18,6 +20,7 @@ const EDIT_MODIFIERS = [
   PRIORITY_MODIFIER,
   TAG_MODIFIER,
   DESCRIPTION_MODIFIER,
+  DUE_MODIFIER,
   HELP_MODIFIER,
 ];
 
@@ -88,12 +91,16 @@ export function parseEdit(raw: string, numItems: number): ParseEditResult {
 
   const tags = values[TAG_MODIFIER];
 
+  const due = singleDue(values[DUE_MODIFIER], invalid[DUE_MODIFIER]);
+  if (!due.ok) return due;
+
   const patch: ItemPatch = {
     title: text || undefined,
     description,
     status: status.value,
     priority: priority.value,
     tags: tags.length > 0 ? tags : undefined,
+    due_date: due.value,
   };
 
   if (Object.values(patch).every((value) => value === undefined)) {

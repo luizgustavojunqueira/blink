@@ -613,12 +613,20 @@ describe("ui store: moveField", () => {
     expect(pane().selectedField).toBe("title");
   });
 
-  it("stops at the last field instead of wrapping around", () => {
+  it("moves from priority to the due date", () => {
     const pane = seedDetail("priority");
 
     state().moveField(1);
 
-    expect(pane().selectedField).toBe("priority");
+    expect(pane().selectedField).toBe("due_date");
+  });
+
+  it("stops at the last field instead of wrapping around", () => {
+    const pane = seedDetail("due_date");
+
+    state().moveField(1);
+
+    expect(pane().selectedField).toBe("due_date");
   });
 
   it("stops at the first field instead of wrapping around", () => {

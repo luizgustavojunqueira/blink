@@ -7,11 +7,12 @@ interface IDetailFieldRow {
   paneId: string;
   itemGuid: string;
   field: DetailField;
+  label?: string;
   dirty?: boolean;
   children: ReactNode;
 }
 
-function DetailFieldRowComponent({ paneId, itemGuid, field, dirty, children }: IDetailFieldRow) {
+function DetailFieldRowComponent({ paneId, itemGuid, field, label, dirty, children }: IDetailFieldRow) {
   const fieldState = useUiStore((s) => s.fieldStates[`${itemGuid}:${field}`]);
   const isSaving = fieldState?.status === "saving";
   const error = fieldState?.status === "error" ? fieldState.message : null;
@@ -25,7 +26,7 @@ function DetailFieldRowComponent({ paneId, itemGuid, field, dirty, children }: I
   return (
     <div className="flex flex-col p-2">
       <span className="font-medium p-1 text-fg-dim">
-        {field}
+        {label ?? field}
         {error ? (
           <span className="ml-2 text-xs text-danger">● failed: {error}</span>
         ) : (

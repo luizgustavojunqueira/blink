@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Item from "./item";
 import type { GetItemResponse } from "../../types/backend";
 
@@ -120,5 +120,42 @@ describe("Item", () => {
     );
 
     expect(screen.getByText("Test item")).toHaveClass("line-through");
+  });
+});
+
+describe("Item due date", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 10, 18, 9, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const dueLabel = (overrides: Partial<GetItemResponse>) => {
+    render(<Item item={makeItem(overrides)} paneId="root" />);
+    return screen.queryByTitle(overrides.due_date ?? "none");
+  };
+
+  it("shows nothing when the item has no due date", () => {
+    render(<Item item={makeItem()} paneId="root" />);
+    expect(screen.queryByText("today")).not.toBeInTheDocument();
+  });
+
+  it("shows a short relative label", () => {
+    expect(dueLabel({ due_date: "2026-11-19" })).toHaveTextContent("tomorrow");
+  });
+
+  it("highlights overdue items", () => {
+    expect(dueLabel({ due_date: "2026-11-10" })).toHaveClass("text-urgent");
+  });
+
+  it("highlights items due today", () => {
+    expect(dueLabel({ due_date: "2026-11-18" })).toHaveClass("text-high");
+  });
+
+  it("mutes the due date of finished items", () => {
+    expect(dueLabel({ due_date: "2026-11-10", status: "DONE" })).toHaveClass("text-fg-muted");
   });
 });

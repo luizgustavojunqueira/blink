@@ -51,6 +51,7 @@ export const DETAIL_FIELDS = [
   "tags",
   "status",
   "priority",
+  "due_date",
 ] as const satisfies readonly EditableField[];
 
 export type DetailField = (typeof DETAIL_FIELDS)[number];

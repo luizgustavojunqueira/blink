@@ -26,7 +26,8 @@ export const detailPageNavigation: KeyBinding[] = [
         pane.type === "detail" &&
         (pane.selectedField === "title" ||
           pane.selectedField === "description" ||
-          pane.selectedField === "tags")
+          pane.selectedField === "tags" ||
+          pane.selectedField === "due_date")
       );
     },
     run: ({ app }) => app.ui.enterInsert(),

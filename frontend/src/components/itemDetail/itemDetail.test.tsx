@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import ItemDetail from "./itemDetail";
 import { useUiStore } from "../../stores/ui";
 import { createDetailPane, createRootPane } from "../../lib/pane/factories";
@@ -314,3 +314,54 @@ describe("ItemDetail: save state", () => {
   });
 });
 
+describe("ItemDetail due date", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 10, 18, 9, 0));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows the saved date with how far away it is", () => {
+    seed("title", "normal", makeItem({ due_date: "2026-11-20" }));
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    expect(screen.getByText("due")).toBeInTheDocument();
+    expect(screen.getByText("fri 20 nov 2026 · in 2 days")).toBeInTheDocument();
+  });
+
+  it("saves a relative date as YYYY-MM-DD", () => {
+    const item = seed("due_date", "insert");
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    const input = screen.getByPlaceholderText("today, fri, +3, 26/11");
+    fireEvent.change(input, { target: { value: "tomorrow" } });
+    expect(screen.getByText("thu 19 nov 2026 · tomorrow")).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(mockItems.setField).toHaveBeenCalledWith(item.guid, "due_date", "2026-11-19");
+  });
+
+  it("clears the date when emptied", () => {
+    const item = seed("due_date", "insert", makeItem({ due_date: "2026-11-20" }));
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    const input = screen.getByDisplayValue("2026-11-20");
+    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(mockItems.setField).toHaveBeenCalledWith(item.guid, "due_date", "");
+  });
+
+  it("warns about a date it can't read", () => {
+    seed("due_date", "insert");
+    render(<ItemDetail paneId={DETAIL_ID} />);
+
+    fireEvent.change(screen.getByPlaceholderText("today, fri, +3, 26/11"), { target: { value: "soon" } });
+
+    expect(screen.getByText(/unrecognized date/)).toBeInTheDocument();
+  });
+});

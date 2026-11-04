@@ -4,6 +4,7 @@ import { DETAIL_FIELDS } from "../../lib/pane/types";
 import { priorityColorBg, priorityMapper, statusColorBg, statusMapper } from "../../utils/status";
 import { TAG_MODIFIER } from "../../lib/modifiers/delimiters";
 import DetailChoiceField from "./detailChoiceField";
+import DetailDueField from "./detailDueField";
 import DetailTagsField from "./detailTagsField";
 import DetailTextField from "./detailTextField";
 import Breadcrumb from "../breadcrumb/breadcrumb";
@@ -87,6 +88,15 @@ export default function ItemDetail({ paneId }: IItemDetail) {
                 current={item.status}
                 mapper={statusMapper}
                 colors={statusColorBg}
+              />
+            );
+          case "due_date":
+            return (
+              <DetailDueField
+                key={field}
+                paneId={paneId}
+                itemGuid={item.guid}
+                value={item.due_date ?? ""}
               />
             );
           default:

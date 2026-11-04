@@ -5,6 +5,15 @@ import { ROW_IN_RANGE, ROW_MARKED, ROW_SELECTED, useRowState } from "../../hooks
 import { createDetailPane } from "../../lib/pane/factories";
 import type { GetItemResponse } from "../../types/backend";
 import { priorityColor, priorityMapper, statusColor, statusMapper } from "../../utils/status";
+import { daysUntil, formatDue } from "../../lib/dates/due";
+
+const dueClass = (due: string, isDone: boolean) => {
+  if (isDone) return "text-fg-muted";
+  const days = daysUntil(due) ?? 0;
+  if (days < 0) return "text-urgent";
+  if (days === 0) return "text-high";
+  return "text-fg-dim";
+};
 
 const markedBoxState = (
   isMarked: boolean,
@@ -114,6 +123,15 @@ function ItemComponent({ item, paneId }: IItem) {
           </span>
         )}
       </div>
+
+      {item.due_date && (
+        <span
+          title={item.due_date}
+          className={`w-16 shrink-0 text-right text-sm ${dueClass(item.due_date, isDone)}`}
+        >
+          {formatDue(item.due_date)}
+        </span>
+      )}
     </li>
   );
 }

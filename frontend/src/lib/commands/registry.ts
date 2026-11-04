@@ -2,6 +2,7 @@ import { archiveCommand } from "./implementations/archive";
 import { configCommand } from "./implementations/config";
 import { createCommand } from "./implementations/create";
 import { deleteCommand } from "./implementations/delete";
+import { monthCommand, todayCommand, weekCommand } from "./implementations/dueView";
 import { editCommand } from "./implementations/edit";
 import { filterCommand } from "./implementations/filter";
 import { groupCommand } from "./implementations/group";
@@ -27,6 +28,9 @@ export const commands = {
   config: configCommand,
   profile: profileCommand,
   logout: logoutCommand,
+  today: todayCommand,
+  week: weekCommand,
+  month: monthCommand,
 } as const satisfies Record<string, CommandDefinition>;
 
 export type CommandId = keyof typeof commands;

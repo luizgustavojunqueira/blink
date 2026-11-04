@@ -35,6 +35,11 @@ function sanitizeFilter(raw: unknown): GetItemRequest | undefined {
   if (isStringArray(input.status)) out.status = input.status;
   if (isStringArray(input.priority)) out.priority = input.priority;
   if (isStringArray(input.type)) out.type = input.type;
+  if (isStringArray(input.tags)) out.tags = input.tags;
+  if (isStringArray(input.order)) out.order = input.order;
+  if (isString(input.due_from)) out.due_from = input.due_from;
+  if (isString(input.due_to)) out.due_to = input.due_to;
+  if (input.recursive === true) out.recursive = true;
 
   return Object.keys(out).length > 0 ? out : undefined;
 }

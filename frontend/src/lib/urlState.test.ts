@@ -271,6 +271,27 @@ describe("hydrateFromUrl", () => {
     });
   });
 
+  it("restores a due date view with its tags and order", async () => {
+    const view = {
+      due_to: "2026-11-22",
+      recursive: true,
+      status: ["TODO", "IN_PROGRESS"],
+      order: ["due", "priority"],
+      tags: ["work"],
+    };
+    setUrl({ a: 0, p: [{ t: "l", g: null, f: { ...view, due_from: 5, recursive: "yes" } }] });
+
+    await hydrateFromUrl(newClient());
+
+    expect(list(0).filter).toEqual({ ...view, recursive: undefined, parent_id: undefined });
+
+    setUrl({ a: 0, p: [{ t: "l", g: null, f: view }] });
+    resetStore();
+    await hydrateFromUrl(newClient());
+
+    expect(list(0).filter).toEqual({ ...view, parent_id: undefined });
+  });
+
   it("drops a pane and everything after it when its item no longer exists", async () => {
     setUrl({
       a: 2,

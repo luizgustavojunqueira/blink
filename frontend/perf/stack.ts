@@ -14,6 +14,12 @@ const TAGS = [null, "work", "work,urgent", null, "home", "misc"];
 
 export const PASSWORD = "perf-password-123";
 
+function dueDate(i: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + (i % 61) - 30);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 async function run(cmd: string[], cwd: string) {
   const proc = Bun.spawn(cmd, { cwd, stdout: "pipe", stderr: "pipe" });
   const code = await proc.exited;
@@ -73,7 +79,7 @@ export class Stack {
     if (!user) throw new Error(`user ${username} not found`);
 
     const insert = db.prepare(
-      "INSERT INTO items (guid, title, description, type, status, priority, tags, user_id) VALUES (?, ?, ?, 'TASK', ?, ?, ?, ?)",
+      "INSERT INTO items (guid, title, description, type, status, priority, tags, due_date, user_id) VALUES (?, ?, ?, 'TASK', ?, ?, ?, ?, ?)",
     );
     db.transaction(() => {
       for (let i = 0; i < count; i++) {
@@ -84,6 +90,7 @@ export class Stack {
           STATUSES[i % STATUSES.length],
           PRIORITIES[i % PRIORITIES.length],
           TAGS[i % TAGS.length],
+          i % 3 === 1 ? dueDate(i) : null,
           user.id,
         );
       }

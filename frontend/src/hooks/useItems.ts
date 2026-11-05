@@ -20,14 +20,18 @@ function applyMockFilter(items: GetItemResponse[], filter: GetItemRequest) {
 
 export const itemsQuery = (filter: GetItemRequest) => ({
   queryKey: ["items", filter] as const,
-  queryFn: async () => {
+  queryFn: async ({ signal }: { signal: AbortSignal }) => {
     if (USE_MOCK_ITEMS) return applyMockFilter(generateMockItems(), filter);
-    return getItems(filter);
+    return getItems(filter, signal);
   },
 });
 
 export function useItems(filter: GetItemRequest = {}) {
-  return useQuery(itemsQuery(filter));
+  return useQuery({
+    ...itemsQuery(filter),
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1].parent_id === filter.parent_id ? previous : undefined,
+  });
 }
 
 export const groupsQuery = () => ({

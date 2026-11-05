@@ -10,7 +10,7 @@ import type {
 } from "../types/backend";
 import { api } from "./client";
 
-export function getItems(filter: GetItemRequest = {}) {
+export function getItems(filter: GetItemRequest = {}, signal?: AbortSignal) {
   const search = new URLSearchParams();
 
   Object.entries(filter).forEach(([key, value]) => {
@@ -25,7 +25,7 @@ export function getItems(filter: GetItemRequest = {}) {
 
   const query = search.toString();
 
-  return api<GetItemResponse[]>(`/items${query ? `?${query}` : ""}`);
+  return api<GetItemResponse[]>(`/items${query ? `?${query}` : ""}`, { signal });
 }
 
 export function createItem(req: CreateItemRequest) {

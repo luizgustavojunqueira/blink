@@ -1,5 +1,5 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Prompt from "./prompt";
 import { parse } from "../../lib/parser";
 import { execute } from "../../lib/executor";
@@ -7,6 +7,8 @@ import { COMMAND_PREFIX } from "../../lib/commands/registry";
 import { useUiStore } from "../../stores/ui";
 import { createRootPane } from "../../lib/pane/factories";
 import { useKeyMap } from "../../hooks/useKeyMap";
+import { LIVE_FILTER_DELAY_MS } from "../../hooks/useLiveFilter";
+import type { ListPane } from "../../lib/pane/types";
 import type { AppContext } from "../../lib/types";
 
 vi.mock("../../lib/parser", () => ({
@@ -243,5 +245,70 @@ describe("Prompt vs. the global keymap", () => {
     });
 
     expect(useUiStore.getState().mode).toBe("insert");
+  });
+});
+
+describe("Prompt live filter", () => {
+  const filter = () => (useUiStore.getState().panes[0] as ListPane).filter;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    mockHelper.isOpen = false;
+    seedRoot();
+    vi.mocked(execute).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("filters once typing pauses", () => {
+    render(<Prompt paneId={ROOT_ID} />);
+
+    type("mi");
+    act(() => vi.advanceTimersByTime(LIVE_FILTER_DELAY_MS - 1));
+    expect(filter().title).toBeUndefined();
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(filter().title).toBe("mi");
+  });
+
+  it("only applies the last text typed within the delay", () => {
+    const setFilter = vi.spyOn(useUiStore.getState(), "setFilter");
+    useUiStore.setState({ setFilter });
+    render(<Prompt paneId={ROOT_ID} />);
+
+    type("m");
+    act(() => vi.advanceTimersByTime(LIVE_FILTER_DELAY_MS / 2));
+    type("mi");
+    act(() => vi.advanceTimersByTime(LIVE_FILTER_DELAY_MS / 2));
+    type("milk");
+    act(() => vi.advanceTimersByTime(LIVE_FILTER_DELAY_MS));
+
+    expect(setFilter).toHaveBeenCalledOnce();
+    expect(filter().title).toBe("milk");
+  });
+
+  it("leaves the list alone while a command is typed", () => {
+    render(<Prompt paneId={ROOT_ID} />);
+    const before = filter();
+
+    type(`${COMMAND_PREFIX}edit @done`);
+    act(() => vi.advanceTimersByTime(LIVE_FILTER_DELAY_MS));
+
+    expect(filter()).toBe(before);
+  });
+
+  it("drops the pending filter when Enter runs the prompt", async () => {
+    render(<Prompt paneId={ROOT_ID} />);
+
+    type("milk");
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId("prompt"), { key: "Enter" });
+    });
+    act(() => vi.advanceTimersByTime(LIVE_FILTER_DELAY_MS));
+
+    expect(filter().title).toBeUndefined();
   });
 });

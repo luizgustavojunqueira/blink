@@ -8,6 +8,7 @@ import type { ExecuteResult } from "../../lib/commands/types";
 import { getAppContext } from "../../lib/appContext";
 import { paneEditing, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { tokenizePrompt } from "./promptTokenize";
+import { useLiveFilter } from "../../hooks/useLiveFilter";
 
 const selectPrompt: PaneSelector<string> = (pane) => (pane?.type === "list" ? pane.prompt : "");
 
@@ -23,8 +24,11 @@ function PromptComponent({ paneId }: IPrompt) {
   const prompt = usePaneValue(paneId, selectPrompt);
   const editing = usePaneValue(paneId, paneEditing);
 
+  const liveFilter = useLiveFilter(paneId);
+
   const helper = usePromptHelper(inputRef, (newPrompt: string) => {
     app.ui.setPrompt(newPrompt);
+    liveFilter.schedule(newPrompt);
   });
 
   const { update: helperUpdate } = helper;
@@ -53,6 +57,7 @@ function PromptComponent({ paneId }: IPrompt) {
     }
 
     e.preventDefault();
+    liveFilter.cancel();
 
     const command = parse(prompt.replace(/\n/g, " "));
 
@@ -83,6 +88,7 @@ function PromptComponent({ paneId }: IPrompt) {
         onChange={(value) => {
           app.ui.setPrompt(value);
           helper.update();
+          liveFilter.schedule(value, inputRef.current?.selectionStart ?? value.length);
         }}
         editing={editing}
         onRequestEdit={() => {

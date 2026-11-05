@@ -38,7 +38,7 @@ describe("GroupPrefetcher", () => {
     select("g1");
     wait(PREFETCH_DELAY_MS);
 
-    expect(getItems).toHaveBeenCalledExactlyOnceWith({ parent_id: "g1" });
+    expect(getItems).toHaveBeenCalledExactlyOnceWith({ parent_id: "g1" }, expect.anything());
   });
 
   it("uses the same query the group's pane will read", () => {
@@ -54,7 +54,7 @@ describe("GroupPrefetcher", () => {
     select("g2");
     wait(PREFETCH_DELAY_MS);
 
-    expect(getItems).toHaveBeenCalledExactlyOnceWith({ parent_id: "g2" });
+    expect(getItems).toHaveBeenCalledExactlyOnceWith({ parent_id: "g2" }, expect.anything());
   });
 
   it("does nothing for tasks", () => {

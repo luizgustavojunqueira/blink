@@ -264,11 +264,14 @@ describe("hydrateFromUrl", () => {
       status: ["TODO"],
       parent_id: undefined,
     });
-    expect(vi.mocked(getItems)).toHaveBeenCalledWith({
-      title: "milk",
-      status: ["TODO"],
-      parent_id: undefined,
-    });
+    expect(vi.mocked(getItems)).toHaveBeenCalledWith(
+      {
+        title: "milk",
+        status: ["TODO"],
+        parent_id: undefined,
+      },
+      expect.anything(),
+    );
   });
 
   it("restores a due date view with its tags and order", async () => {

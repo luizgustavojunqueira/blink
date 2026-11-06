@@ -8,10 +8,12 @@ import GroupPrefetcher from "./groupPrefetcher";
 import { useEffect, useRef } from "react";
 import { paneIsActive, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useUiStore } from "../../stores/ui";
-import type { GetItemRequest, ItemType } from "../../types/backend";
+import type { GetItemRequest, GetItemResponse, ItemType } from "../../types/backend";
 import Breadcrumb from "../breadcrumb/breadcrumb";
+import { useFilterFlip } from "../../hooks/useFilterFlip";
 
 const EMPTY_FILTER: GetItemRequest = {};
+const EMPTY_ITEMS: GetItemResponse[] = [];
 const CHUNK_ROWS = 100;
 const ROW_REM = 2.25;
 
@@ -27,7 +29,7 @@ export function ItemList({ paneId }: IItemList) {
   const isActive = usePaneValue(paneId, paneIsActive);
   const setRendered = useUiStore((s) => s.setRendered);
 
-  const { data: items = [], isFetching, isError } = useItems(filter);
+  const { data: items = EMPTY_ITEMS, isFetching, isPlaceholderData, isError } = useItems(filter);
 
   const renderedKey = items.map((item) => `${item.guid}:${item.type}`).join(",");
 
@@ -46,6 +48,7 @@ export function ItemList({ paneId }: IItemList) {
   }, [renderedKey, paneId, setRendered]);
 
   const listRef = useRef<HTMLDivElement>(null);
+  useFilterFlip(listRef, items, filter, CHUNK_ROWS);
 
   const chunks = [];
   for (let start = 0; start < items.length; start += CHUNK_ROWS) {
@@ -74,7 +77,7 @@ export function ItemList({ paneId }: IItemList) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {isFetching && <Loading />}
+        {isFetching && !isPlaceholderData && <Loading />}
 
         {isError && <div className="px-4 py-2 text-urgent text-sm">could not load items</div>}
 

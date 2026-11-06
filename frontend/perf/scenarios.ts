@@ -139,6 +139,31 @@ export async function measureInteractions(browser: Browser, count: number): Prom
 
     await p.press("i");
     R.promptTyping = await p.type("number 12 abc");
+
+    const rows = () => document.querySelectorAll("[data-item-guid]").length;
+    const until = async (done, what) => {
+      for (let i = 0; i < 3000 && !done(); i++) await new Promise((r) => requestAnimationFrame(r));
+      if (!done()) throw new Error("live filter: " + what);
+    };
+    const setPrompt = (value) => {
+      const el = p.prompt();
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(el, value);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    setPrompt("");
+    await until(() => rows() === ${count}, "the list never came back");
+    R.liveFilterNarrow = [];
+    R.liveFilterWiden = [];
+    for (let i = 0; i < ${bulkRuns}; i++) {
+      await p.type("task 12");
+      let t = performance.now();
+      await until(() => rows() > 0 && rows() < ${count}, "the list never narrowed");
+      R.liveFilterNarrow.push(performance.now() - t);
+      setPrompt("");
+      t = performance.now();
+      await until(() => rows() === ${count}, "the list never widened");
+      R.liveFilterWiden.push(performance.now() - t);
+    }
     await p.press("Escape", p.prompt());
     await p.press("Escape");
 

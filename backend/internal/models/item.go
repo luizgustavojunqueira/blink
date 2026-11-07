@@ -2,7 +2,7 @@
 package models
 
 import (
-	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"strings"
 	"time"
 )
@@ -122,10 +122,23 @@ type GetTagsResponse struct {
 	Tags []string `json:"tags,omitempty"`
 }
 
+var (
+	ErrInvalidItemTypes  = apperr.New("invalid_item_types", "invalid item types")
+	ErrGUIDRequired      = apperr.New("guid_required", "guid is required")
+	ErrGUIDsRequired     = apperr.New("guids_required", "guids are required")
+	ErrTitleRequired     = apperr.New("title_required", "title is required")
+	ErrParentIDEmpty     = apperr.New("parent_id_empty", "parent id cannot be empty")
+	ErrInvalidItemType   = apperr.New("invalid_item_type", "invalid item type")
+	ErrInvalidDueDate    = apperr.New("invalid_due_date", "due date must be YYYY-MM-DD")
+	ErrInvalidStatus     = apperr.New("invalid_status", "invalid status")
+	ErrInvalidOrderField = apperr.New("invalid_order_field", "invalid field")
+	ErrInvalidPriority   = apperr.New("invalid_priority", "invalid priority")
+)
+
 func (req *GetItemRequest) Validate() error {
 	for _, reqType := range req.Type {
 		if reqType != Task && reqType != Group {
-			return errors.New("invalid item types")
+			return ErrInvalidItemTypes
 		}
 	}
 
@@ -161,7 +174,7 @@ func (req *GetItemRequest) Validate() error {
 
 func (req *BulkUpdateItemRequest) Validate() error {
 	if len(req.GUIDS) == 0 {
-		return errors.New("guid is required")
+		return ErrGUIDRequired
 	}
 
 	if err := validDueDate(req.DueDate, true); err != nil {
@@ -185,7 +198,7 @@ func (req *BulkUpdateItemRequest) Validate() error {
 
 func (req *ItemGuidsRequest) Validate() error {
 	if len(req.GUIDS) == 0 {
-		return errors.New("guids are required")
+		return ErrGUIDsRequired
 	}
 
 	return nil
@@ -193,7 +206,7 @@ func (req *ItemGuidsRequest) Validate() error {
 
 func (req *UpdateItemRequest) Validate() error {
 	if req.GUID == "" {
-		return errors.New("guid is required")
+		return ErrGUIDRequired
 	}
 
 	if err := validDueDate(req.DueDate, true); err != nil {
@@ -216,15 +229,15 @@ func (req *UpdateItemRequest) Validate() error {
 
 func (req *CreateItemRequest) Validate() error {
 	if req.Title == "" {
-		return errors.New("title is required")
+		return ErrTitleRequired
 	}
 
 	if req.ParentGUID != nil && *req.ParentGUID == "" {
-		return errors.New("parent id cannot be empty")
+		return ErrParentIDEmpty
 	}
 
 	if req.Type != Task && req.Type != Group {
-		return errors.New("invalid item type")
+		return ErrInvalidItemType
 	}
 
 	if err := validDueDate(req.DueDate, false); err != nil {
@@ -247,7 +260,7 @@ func validDueDate(date *string, allowEmpty bool) error {
 		return nil
 	}
 	if _, err := time.Parse(time.DateOnly, *date); err != nil {
-		return errors.New("due date must be YYYY-MM-DD")
+		return ErrInvalidDueDate
 	}
 	return nil
 }
@@ -257,7 +270,7 @@ func validStatus(s ItemStatus) error {
 		ToDo: true, InProgress: true, Done: true, Canceled: true, Archived: true,
 	}
 	if !validStatuses[s] {
-		return errors.New("invalid status")
+		return ErrInvalidStatus
 	}
 	return nil
 }
@@ -267,7 +280,7 @@ func validField(field OrderField) error {
 		OrderPriority: true, OrderTitle: true, OrderStatus: true, OrderCreated: true, OrderUpdated: true, OrderDue: true,
 	}
 	if !validFields[field] {
-		return errors.New("invalid field")
+		return ErrInvalidOrderField
 	}
 	return nil
 }
@@ -277,7 +290,7 @@ func validPriority(p ItemPriority) error {
 		Low: true, Normal: true, High: true, Urgent: true,
 	}
 	if !validPriorities[p] {
-		return errors.New("invalid priority")
+		return ErrInvalidPriority
 	}
 	return nil
 }

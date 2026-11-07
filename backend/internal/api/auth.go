@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"net/http"
 	"time"
 
@@ -81,18 +82,18 @@ func (a *AuthAPI) RequireSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(SessionCookie)
 		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			apperr.Write(w, http.StatusUnauthorized, apperr.ErrUnauthorized)
 			return
 		}
 
 		userID, user, err := a.auth.Authenticate(r.Context(), cookie.Value)
 		if errors.Is(err, service.ErrUnauthorized) {
 			a.clearCookie(w, r)
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			apperr.Write(w, http.StatusUnauthorized, apperr.ErrUnauthorized)
 			return
 		}
 		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 			return
 		}
 
@@ -105,20 +106,20 @@ func (a *AuthAPI) RequireSession(next http.Handler) http.Handler {
 func (a *AuthAPI) Signup(w http.ResponseWriter, r *http.Request) {
 	var creds models.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	user, session, err := a.auth.Signup(r.Context(), creds)
 	switch {
 	case errors.Is(err, service.ErrUsernameTaken):
-		http.Error(w, err.Error(), http.StatusConflict)
+		apperr.Write(w, http.StatusConflict, err)
 		return
 	case err != nil && isInputError(err):
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	case err != nil:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 
@@ -129,17 +130,17 @@ func (a *AuthAPI) Signup(w http.ResponseWriter, r *http.Request) {
 func (a *AuthAPI) Login(w http.ResponseWriter, r *http.Request) {
 	var creds models.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	user, session, err := a.auth.Login(r.Context(), creds)
 	switch {
 	case errors.Is(err, models.ErrInvalidCredentials):
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		apperr.Write(w, http.StatusUnauthorized, err)
 		return
 	case err != nil:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 
@@ -159,7 +160,7 @@ func (a *AuthAPI) Logout(w http.ResponseWriter, r *http.Request) {
 func (a *AuthAPI) Me(w http.ResponseWriter, r *http.Request) {
 	user, _ := r.Context().Value(userKey{}).(*models.UserResponse)
 	if user == nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		apperr.Write(w, http.StatusUnauthorized, apperr.ErrUnauthorized)
 		return
 	}
 
@@ -169,26 +170,26 @@ func (a *AuthAPI) Me(w http.ResponseWriter, r *http.Request) {
 func (a *AuthAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID, err := userctx.ID(r.Context())
 	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		apperr.Write(w, http.StatusUnauthorized, apperr.ErrUnauthorized)
 		return
 	}
 
 	var req models.ChangePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	session, err := a.auth.ChangePassword(r.Context(), userID, req)
 	switch {
 	case errors.Is(err, models.ErrWrongPassword):
-		http.Error(w, err.Error(), http.StatusForbidden)
+		apperr.Write(w, http.StatusForbidden, err)
 		return
 	case err != nil && isInputError(err):
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	case err != nil:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 
@@ -199,23 +200,23 @@ func (a *AuthAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 func (a *AuthAPI) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	userID, err := userctx.ID(r.Context())
 	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		apperr.Write(w, http.StatusUnauthorized, apperr.ErrUnauthorized)
 		return
 	}
 
 	var req models.DeleteAccountRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	err = a.auth.DeleteAccount(r.Context(), userID, req)
 	switch {
 	case errors.Is(err, models.ErrWrongPassword):
-		http.Error(w, err.Error(), http.StatusForbidden)
+		apperr.Write(w, http.StatusForbidden, err)
 		return
 	case err != nil:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 

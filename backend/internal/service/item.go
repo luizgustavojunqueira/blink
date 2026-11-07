@@ -3,12 +3,17 @@ package service
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/luizgustavojunqueira/blink/internal/db"
 	"github.com/luizgustavojunqueira/blink/internal/models"
+)
+
+var (
+	ErrParentNotGroup = apperr.New("parent_not_group", "parent is not of type Group")
+	ErrMoveIntoItself = apperr.New("move_into_itself", "cannot move a group into itself")
 )
 
 func (s *Service) UpdateItem(ctx context.Context, req models.UpdateItemRequest) (*models.GetItemResponse, error) {
@@ -71,7 +76,7 @@ func (s *Service) CreateItem(ctx context.Context, req models.CreateItemRequest) 
 		}
 
 		if parentItem.Type != string(models.Group) {
-			return nil, errors.New("parent is not of type Group")
+			return nil, ErrParentNotGroup
 		}
 
 		parentId.Int64 = parentItem.ID
@@ -197,7 +202,7 @@ func (s *Service) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemR
 		}
 
 		if parentItem.Type != string(models.Group) {
-			return nil, errors.New("parent is not of type Group")
+			return nil, ErrParentNotGroup
 		}
 
 		inside, err := s.repo.IsInTree(ctx, req.GUIDS, *req.ParentGUID)
@@ -206,7 +211,7 @@ func (s *Service) BulkUpdateItem(ctx context.Context, req models.BulkUpdateItemR
 		}
 
 		if inside {
-			return nil, errors.New("cannot move a group into itself")
+			return nil, ErrMoveIntoItself
 		}
 
 		parentId = &parentItem.ID

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"strings"
 	"sync"
 	"time"
@@ -23,8 +24,8 @@ const (
 )
 
 var (
-	ErrUsernameTaken = errors.New("username is already taken")
-	ErrUnauthorized  = errors.New("unauthorized")
+	ErrUsernameTaken = apperr.New("username_taken", "username is already taken")
+	ErrUnauthorized  = apperr.ErrUnauthorized
 )
 
 type AuthRepository interface {

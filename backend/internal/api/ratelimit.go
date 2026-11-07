@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"net"
 	"net/http"
 	"strings"
@@ -75,7 +76,7 @@ func (l *ipLimiter) allow(key string) bool {
 func (l *ipLimiter) wrap(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !l.allow(l.clientIP(r)) {
-			http.Error(w, "too many attempts, try again later", http.StatusTooManyRequests)
+			apperr.Write(w, http.StatusTooManyRequests, apperr.ErrRateLimited)
 			return
 		}
 		next(w, r)

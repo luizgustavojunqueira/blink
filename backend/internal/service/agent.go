@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"strings"
 	"time"
 
@@ -18,8 +19,8 @@ import (
 const tokenPrefix = "blk_"
 
 var (
-	ErrAgentNameTaken = errors.New("an agent with this name already exists")
-	ErrAgentNotFound  = errors.New("agent not found")
+	ErrAgentNameTaken = apperr.New("agent_name_taken", "an agent with this name already exists")
+	ErrAgentNotFound  = apperr.New("agent_not_found", "agent not found")
 )
 
 func hashToken(token string) string {

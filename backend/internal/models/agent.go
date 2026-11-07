@@ -1,7 +1,7 @@
 package models
 
 import (
-	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"strings"
 )
 
@@ -23,15 +23,20 @@ type CreateAgentResponse struct {
 	Token string `json:"token"`
 }
 
+var (
+	ErrAgentNameRequired = apperr.New("agent_name_required", "name is required")
+	ErrAgentNameTooLong  = apperr.New("agent_name_too_long", "name is too long")
+)
+
 func (req *CreateAgentRequest) Validate() error {
 	name := strings.TrimSpace(req.Name)
 
 	if name == "" {
-		return errors.New("name is required")
+		return ErrAgentNameRequired
 	}
 
 	if len(name) > AgentNameMax {
-		return errors.New("name is too long")
+		return ErrAgentNameTooLong
 	}
 
 	return nil

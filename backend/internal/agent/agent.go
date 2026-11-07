@@ -4,6 +4,7 @@ package agent
 import (
 	"context"
 	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"net/http"
 	"strconv"
 
@@ -85,12 +86,12 @@ func NewHandler(svc ItemService, tokens TokenVerifier) http.Handler {
 	withUser := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		info := auth.TokenInfoFromContext(r.Context())
 		if info == nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			apperr.Write(w, http.StatusUnauthorized, apperr.ErrUnauthorized)
 			return
 		}
 		userID, err := strconv.ParseInt(info.UserID, 10, 64)
 		if err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			apperr.Write(w, http.StatusUnauthorized, apperr.ErrUnauthorized)
 			return
 		}
 		handler.ServeHTTP(w, r.WithContext(userctx.With(r.Context(), userID)))

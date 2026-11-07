@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"net/http"
 	"strings"
 
@@ -11,13 +12,13 @@ import (
 func (a *API) GetTags(w http.ResponseWriter, r *http.Request) {
 	tagsResponse, err := a.itemService.GetTags(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(tagsResponse); err != nil {
-		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 }
@@ -27,25 +28,25 @@ func (a *API) BulkUpdateItem(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&bulkUpdItemReq)
 	if err != nil {
 
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	if err = bulkUpdItemReq.Validate(); err != nil {
 
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	}
 
 	bulkUpdResponse, err := a.itemService.BulkUpdateItem(r.Context(), bulkUpdItemReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(bulkUpdResponse); err != nil {
-		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 }
@@ -53,17 +54,17 @@ func (a *API) BulkUpdateItem(w http.ResponseWriter, r *http.Request) {
 func (a *API) DeleteItems(w http.ResponseWriter, r *http.Request) {
 	var req models.ItemGuidsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := a.itemService.DeleteItems(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -73,24 +74,24 @@ func (a *API) DeleteItems(w http.ResponseWriter, r *http.Request) {
 func (a *API) RestoreItems(w http.ResponseWriter, r *http.Request) {
 	var req models.ItemGuidsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	}
 
 	restored, err := a.itemService.RestoreItems(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(restored); err != nil {
-		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 }
@@ -99,24 +100,24 @@ func (a *API) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	var updateItemReq models.UpdateItemRequest
 	err := json.NewDecoder(r.Body).Decode(&updateItemReq)
 	if err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	if err = updateItemReq.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	}
 
 	updateResponse, err := a.itemService.UpdateItem(r.Context(), updateItemReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(updateResponse); err != nil {
-		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 }
@@ -125,24 +126,24 @@ func (a *API) CreateItem(w http.ResponseWriter, r *http.Request) {
 	var createItemReq models.CreateItemRequest
 	err := json.NewDecoder(r.Body).Decode(&createItemReq)
 	if err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, apperr.ErrBadRequest)
 		return
 	}
 
 	if err = createItemReq.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	}
 
 	itemResponse, err := a.itemService.CreateItem(r.Context(), createItemReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(itemResponse); err != nil {
-		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 }
@@ -165,19 +166,19 @@ func (a *API) GetItems(w http.ResponseWriter, r *http.Request) {
 	req.DueTo = parseQueryValue[string](r.URL.Query().Get("due_to"))
 
 	if err := req.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr.Write(w, http.StatusBadRequest, err)
 		return
 	}
 
 	itemsResponse, err := a.itemService.GetItems(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(itemsResponse); err != nil {
-		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 }
@@ -213,13 +214,13 @@ func parseQueryValue[T ~string](val string) *T {
 func (a *API) GetItemHistory(w http.ResponseWriter, r *http.Request) {
 	history, err := a.itemService.GetItemHistory(r.Context(), r.PathValue("guid"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(history); err != nil {
-		http.Error(w, "Failed to encode item response", http.StatusInternalServerError)
+		apperr.Write(w, http.StatusInternalServerError, apperr.ErrInternal)
 		return
 	}
 }

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"errors"
+	"github.com/luizgustavojunqueira/blink/internal/apperr"
 	"regexp"
 	"strings"
 )
@@ -79,8 +79,8 @@ func (c *Credentials) ValidateLogin() error {
 }
 
 var (
-	ErrInvalidCredentials = errors.New("invalid username or password")
-	ErrWrongPassword      = errors.New("incorrect password")
+	ErrInvalidCredentials = apperr.New("invalid_credentials", "invalid username or password")
+	ErrWrongPassword      = apperr.New("wrong_password", "incorrect password")
 )
 
 func (r *ChangePasswordRequest) Validate() error {

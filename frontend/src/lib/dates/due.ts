@@ -1,18 +1,51 @@
+import { getLocale, t, type Locale } from "../i18n";
+
 const DAY_MS = 86_400_000;
-const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-const WEEKDAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+type DueWords = {
+  today: string[];
+  tomorrow: string[];
+  yesterday: string[];
+  none: string[];
+  weekdays: string[];
+  weekdayNames: string[];
+  months: string[];
+};
+
+const WORDS: Record<Locale, DueWords> = {
+  en: {
+    today: ["today", "tod"],
+    tomorrow: ["tomorrow", "tom", "tmr"],
+    yesterday: ["yesterday"],
+    none: ["none"],
+    weekdays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+    weekdayNames: ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+    months: ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
+  },
+  pt: {
+    today: ["hoje"],
+    tomorrow: ["amanhã", "amn"],
+    yesterday: ["ontem"],
+    none: ["nenhuma"],
+    weekdays: ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"],
+    weekdayNames: ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"],
+    months: ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"],
+  },
+};
+
+const ALL_WORDS = Object.values(WORDS);
+
+const plain = (word: string) => word.normalize("NFD").replace(/\p{M}/gu, "");
+
+const matches = (word: string, list: string[]) => list.some((w) => plain(w) === word);
 
 export const DUE_NONE = "none";
 
-export const DUE_KEYWORDS = [
-  "today",
-  "tomorrow",
-  "yesterday",
-  ...WEEKDAY_NAMES.slice(1),
-  WEEKDAY_NAMES[0],
-  DUE_NONE,
-] as const;
+export function dueKeywords(locale: Locale = getLocale()): string[] {
+  const w = WORDS[locale];
+  const names = w.weekdayNames.map((name) => name.split("-")[0]);
+  return [w.today[0], w.tomorrow[0], w.yesterday[0], ...names.slice(1), names[0], w.none[0]];
+}
 
 const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
@@ -37,20 +70,22 @@ function realDate(year: number, month: number, day: number): Date | null {
 }
 
 function weekdayIndex(word: string): number {
-  const short = WEEKDAYS.indexOf(word.slice(0, 3));
-  if (short === -1) return -1;
-  const full = WEEKDAY_NAMES[short];
-  return full.startsWith(word) && word.length >= 3 ? short : -1;
+  if (word.length < 3) return -1;
+  for (const w of ALL_WORDS) {
+    const day = w.weekdays.findIndex((short) => plain(short) === word.slice(0, 3));
+    if (day !== -1 && plain(w.weekdayNames[day]).startsWith(word)) return day;
+  }
+  return -1;
 }
 
 export function parseDue(input: string, now: Date = new Date()): string | null {
-  const word = input.trim().toLowerCase();
+  const word = plain(input.trim().toLowerCase());
   const today = startOfDay(now);
 
-  if (word === DUE_NONE) return "";
-  if (word === "today" || word === "tod") return toISODate(today);
-  if (word === "tomorrow" || word === "tom" || word === "tmr") return toISODate(addDays(today, 1));
-  if (word === "yesterday") return toISODate(addDays(today, -1));
+  if (word === DUE_NONE || ALL_WORDS.some((w) => matches(word, w.none))) return "";
+  if (ALL_WORDS.some((w) => matches(word, w.today))) return toISODate(today);
+  if (ALL_WORDS.some((w) => matches(word, w.tomorrow))) return toISODate(addDays(today, 1));
+  if (ALL_WORDS.some((w) => matches(word, w.yesterday))) return toISODate(addDays(today, -1));
 
   const relative = /^\+(\d{1,3})([dw]?)$/.exec(word);
   if (relative) {
@@ -96,12 +131,13 @@ export function formatDue(iso: string, now: Date = new Date()): string {
   const days = daysUntil(iso, now);
   if (!date || days === null) return iso;
 
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  if (days === -1) return "yesterday";
-  if (days > 1 && days < 7) return WEEKDAYS[date.getDay()];
+  const w = WORDS[getLocale()];
+  if (days === 0) return w.today[0];
+  if (days === 1) return w.tomorrow[0];
+  if (days === -1) return w.yesterday[0];
+  if (days > 1 && days < 7) return w.weekdays[date.getDay()];
 
-  const label = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  const label = `${date.getDate()} ${w.months[date.getMonth()]}`;
   return date.getFullYear() === now.getFullYear() ? label : `${label} ${String(date.getFullYear()).slice(2)}`;
 }
 
@@ -110,11 +146,14 @@ export function describeDue(iso: string, now: Date = new Date()): string {
   const days = daysUntil(iso, now);
   if (!date || days === null) return "";
 
-  const full = `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
-  if (days === 0) return `${full} · today`;
-  if (days === 1) return `${full} · tomorrow`;
-  if (days === -1) return `${full} · yesterday`;
-  return days > 0 ? `${full} · in ${days} days` : `${full} · ${-days} days ago`;
+  const w = WORDS[getLocale()];
+  const full = `${w.weekdays[date.getDay()]} ${date.getDate()} ${w.months[date.getMonth()]} ${date.getFullYear()}`;
+  if (days === 0) return `${full} · ${w.today[0]}`;
+  if (days === 1) return `${full} · ${w.tomorrow[0]}`;
+  if (days === -1) return `${full} · ${w.yesterday[0]}`;
+  return days > 0
+    ? `${full} · ${t("in {count} days", { count: days })}`
+    : `${full} · ${t("{count} days ago", { count: -days })}`;
 }
 
 export type DueRange = { due_from?: string; due_to: string };

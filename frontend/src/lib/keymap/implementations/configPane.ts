@@ -3,6 +3,7 @@ import { parseRowId, themeRowId, type RowRef } from "../../config/rowId";
 import { useAgentsStore } from "../../config/agents";
 import { AGENT_NEW_ROW_ID } from "../../config/rowId";
 import { ANIMATION_SETTINGS } from "../../motion";
+import { LANGUAGE_SETTINGS } from "../../i18n";
 import type { AppContext } from "../../types";
 import type { Pane } from "../../pane/types";
 import type { KeyBinding, KeyQueryContext } from "../types";
@@ -98,6 +99,21 @@ export const configPaneBindings: KeyBinding[] = [
       const current = app.config.get().animations;
       const next = ANIMATION_SETTINGS[(ANIMATION_SETTINGS.indexOf(current) + 1) % ANIMATION_SETTINGS.length];
       app.config.setAnimations(next);
+    },
+  },
+  {
+    id: "config:cycleLanguage",
+    keys: ["enter", "space"],
+    modes: ["normal"],
+    scope: "config",
+    description: "Switch language",
+    hint: { group: "item" },
+    fixed: true,
+    when: onRow((row) => row.kind === "language"),
+    run: ({ app }) => {
+      const current = app.config.get().language;
+      const next = LANGUAGE_SETTINGS[(LANGUAGE_SETTINGS.indexOf(current) + 1) % LANGUAGE_SETTINGS.length];
+      app.config.setLanguage(next);
     },
   },
   {

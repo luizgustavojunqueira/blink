@@ -34,6 +34,16 @@ describe("configRows animations", () => {
 
     expect(rows[index]).toEqual({ id: "animations:motion", kind: "animations", value: "off" });
     expect(rows[index - 1].kind).toBe("theme");
+    expect(rows[index + 1].kind).toBe("language");
+  });
+});
+
+describe("configRows language", () => {
+  it("has one language row right before the keys", () => {
+    const rows = configRows({ ...defaultConfig(), language: "pt" });
+    const index = rows.findIndex((r) => r.kind === "language");
+
+    expect(rows[index]).toEqual({ id: "language:ui", kind: "language", value: "pt" });
     expect(rows[index + 1].kind).toBe("key");
   });
 });

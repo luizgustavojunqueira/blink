@@ -13,6 +13,7 @@ import { THEME_TOKENS, type ThemeColors } from "../theme";
 import { applyKeymap, resolve } from "../keymap/registry";
 import { createRootPane } from "../pane/factories";
 import type { KeyQueryContext } from "../keymap/types";
+import { getLocale } from "../i18n";
 
 const store = () => useConfigStore.getState();
 
@@ -258,6 +259,7 @@ describe("config store: persistence", () => {
       themes: store().themes,
       keymap: store().keymap,
       animations: "auto",
+      language: "auto",
     });
   });
 
@@ -288,6 +290,7 @@ describe("config store: persistence", () => {
       keymap: { "list:down": ["n"] },
       themes: { mine: colors() },
       animations: "auto",
+      language: "auto",
     });
   });
 
@@ -313,5 +316,43 @@ describe("config store: persistence", () => {
       document.getElementById("blink-custom-themes")?.textContent,
     ).toContain(".theme-mine{");
     expect(resolve("n", listCtx())?.id).toBe("list:down");
+  });
+});
+
+describe("config store: language", () => {
+  afterEach(() => {
+    store().setLanguage("auto");
+  });
+
+  it("defaults to auto", () => {
+    expect(store().language).toBe("auto");
+  });
+
+  it("accepts auto, en and pt, and saves the choice", () => {
+    for (const value of ["pt", "en", "auto"]) {
+      expect(store().setLanguage(value)).toBeNull();
+      expect(store().language).toBe(value);
+      expect(saved().language).toBe(value);
+    }
+  });
+
+  it("refuses anything else", () => {
+    expect(store().setLanguage("fr")).toMatch(/auto, en, pt/);
+    expect(store().language).toBe("auto");
+  });
+
+  it("switches the interface language", () => {
+    store().setLanguage("pt");
+    expect(getLocale()).toBe("pt");
+    expect(document.documentElement.lang).toBe("pt-BR");
+
+    store().setLanguage("en");
+    expect(getLocale()).toBe("en");
+    expect(document.documentElement.lang).toBe("en");
+  });
+
+  it("falls back to auto when the saved value is invalid", () => {
+    expect(sanitizeConfig({ language: "klingon" }).language).toBe("auto");
+    expect(sanitizeConfig({ language: "pt" }).language).toBe("pt");
   });
 });

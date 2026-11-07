@@ -12,6 +12,7 @@ import type {
   AgentNewRow,
   AgentRow,
   AnimationsRow,
+  LanguageRow,
   ColorRow,
   ConfigRow,
   KeyRow,
@@ -237,6 +238,25 @@ function AnimationsRowView({ paneId, row }: { paneId: string; row: AnimationsRow
   );
 }
 
+const LANGUAGE_NAMES: Record<LanguageRow["value"], string> = {
+  auto: "auto",
+  en: "english",
+  pt: "português",
+};
+
+function LanguageRowView({ paneId, row }: { paneId: string; row: LanguageRow }) {
+  return (
+    <RowShell paneId={paneId} rowId={row.id}>
+      <span className="w-14 shrink-0 text-xs text-fg-muted">ui</span>
+      <span
+        className={`flex-1 truncate text-lg leading-normal ${row.value === "auto" ? "text-fg" : "text-accent"}`}
+      >
+        {LANGUAGE_NAMES[row.value]}
+      </span>
+    </RowShell>
+  );
+}
+
 function AgentNewRowView({ paneId, row }: { paneId: string; row: AgentNewRow }) {
   const selectRow = useUiStore((s) => s.selectRow);
   const [failure, setFailure] = useState<string | null>(null);
@@ -332,6 +352,8 @@ function ConfigRowComponent({
       return <KeyRowView paneId={paneId} row={row} />;
     case "animations":
       return <AnimationsRowView paneId={paneId} row={row} />;
+    case "language":
+      return <LanguageRowView paneId={paneId} row={row} />;
     case "agentNew":
       return <AgentNewRowView paneId={paneId} row={row} />;
     case "agent":

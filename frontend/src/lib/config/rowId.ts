@@ -6,7 +6,8 @@ export type RowRef =
   | { kind: "key"; bindingId: string }
   | { kind: "agent"; guid: string }
   | { kind: "agentNew" }
-  | { kind: "animations" };
+  | { kind: "animations" }
+  | { kind: "language" };
 
 export const themeRowId = (name: string) => `theme:${name}`;
 export const colorRowId = (token: ThemeToken) => `color:${token}`;
@@ -14,6 +15,7 @@ export const keyRowId = (bindingId: string) => `key:${bindingId}`;
 export const agentRowId = (guid: string) => `agent:${guid}`;
 export const AGENT_NEW_ROW_ID = "agent:new";
 export const ANIMATIONS_ROW_ID = "animations:motion";
+export const LANGUAGE_ROW_ID = "language:ui";
 
 export function parseRowId(id: string | null): RowRef | null {
   if (!id) return null;
@@ -27,6 +29,7 @@ export function parseRowId(id: string | null): RowRef | null {
   if (kind === "color") return { kind, token: rest as ThemeToken };
   if (kind === "key") return { kind, bindingId: rest };
   if (kind === "animations") return { kind };
+  if (kind === "language") return { kind };
   if (kind === "agent") return rest === "new" ? { kind: "agentNew" } : { kind, guid: rest };
   return null;
 }

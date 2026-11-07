@@ -138,6 +138,7 @@ describe("keymap registry: resolve", () => {
       configCtx("agent:a1"),
       configCtx("agent:new"),
       configCtx("animations:motion"),
+      configCtx("language:ui"),
       profileCtx("profile:account"),
       profileCtx("profile:password"),
       profileCtx("profile:logout"),

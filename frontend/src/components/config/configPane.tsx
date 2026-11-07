@@ -54,6 +54,13 @@ function header(row: ConfigRow, theme: string) {
           note="enter to switch · auto follows the system's reduced motion setting"
         />
       );
+    case "language":
+      return (
+        <SectionHeader
+          title="language"
+          note="enter to switch · auto follows the browser's language"
+        />
+      );
     case "agent":
     case "agentNew":
       return (
@@ -73,12 +80,13 @@ export default function ConfigPane({ paneId }: IConfigPane) {
   const themes = useConfigStore((s) => s.themes);
   const keymap = useConfigStore((s) => s.keymap);
   const animations = useConfigStore((s) => s.animations);
+  const language = useConfigStore((s) => s.language);
 
   const { data: agents = NO_AGENTS } = useAgents();
 
   const rows = useMemo(
-    () => configRows({ theme, themes, keymap, animations }, agents),
-    [theme, themes, keymap, animations, agents],
+    () => configRows({ theme, themes, keymap, animations, language }, agents),
+    [theme, themes, keymap, animations, language, agents],
   );
 
   return (

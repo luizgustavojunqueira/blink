@@ -219,6 +219,7 @@ function createConfigActions(client: QueryClient): AppContext["config"] {
     },
     setTheme: (name) => store().setTheme(name),
     setAnimations: (value) => store().setAnimations(value),
+    setLanguage: (value) => store().setLanguage(value),
     setKeys: (bindingId, input) => store().setKeys(bindingId, input),
     resetKeys: (bindingId) => store().resetKeys(bindingId),
     duplicateTheme: (from) => store().duplicateTheme(from),

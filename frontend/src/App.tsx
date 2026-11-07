@@ -11,6 +11,7 @@ import Loading from "./components/loading";
 import { bootUrlState, hasUrlState } from "./lib/urlState";
 import { useAuthStore } from "./lib/auth/store";
 import AuthScreen from "./components/auth/authScreen";
+import { useLocale } from "./lib/i18n";
 
 function Main() {
   useKeyMap(getAppContext());
@@ -51,15 +52,16 @@ function Main() {
 
 function Gate() {
   const status = useAuthStore((s) => s.status);
+  const locale = useLocale();
 
   useEffect(() => {
     void useAuthStore.getState().boot();
   }, []);
 
   if (status === "loading") return <Loading />;
-  if (status === "anonymous") return <AuthScreen />;
+  if (status === "anonymous") return <AuthScreen key={locale} />;
 
-  return <Main />;
+  return <Main key={locale} />;
 }
 
 export default function App() {

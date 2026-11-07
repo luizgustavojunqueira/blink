@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, setUnauthorizedHandler } from "./client";
+import { ApiError, api, setUnauthorizedHandler } from "./client";
 
 function respond(body: string, init: ResponseInit) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body || null, init)));
@@ -38,6 +38,20 @@ describe("api()", () => {
     respond(JSON.stringify({ message: "nope" }), { status: 422 });
 
     await expect(api("/items")).rejects.toThrow(/nope/);
+  });
+
+  it("keeps the code and status of a JSON error", async () => {
+    respond(JSON.stringify({ code: "title_required", message: "title is required" }), { status: 400 });
+
+    const err = await api("/items").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err).toMatchObject({ code: "title_required", status: 400, message: "title is required" });
+  });
+
+  it("has no code for a plain-text error", async () => {
+    respond("bad gateway", { status: 502 });
+
+    await expect(api("/items")).rejects.toMatchObject({ code: null, status: 502, message: "bad gateway" });
   });
 
   it("tells the unauthorized handler about a 401", async () => {

@@ -96,7 +96,7 @@ func TestAuthAPI_Signup(t *testing.T) {
 	}{
 		{"bad json", nil, `{`, http.StatusBadRequest},
 		{"taken", service.ErrUsernameTaken, `{}`, http.StatusConflict},
-		{"invalid", models.ValidationError("username is too short"), `{}`, http.StatusBadRequest},
+		{"invalid", models.ErrUsernameTooShort, `{}`, http.StatusBadRequest},
 		{"internal", errors.New("boom"), `{}`, http.StatusInternalServerError},
 	}
 	for _, tc := range cases {

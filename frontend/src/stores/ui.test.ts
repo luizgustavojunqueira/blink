@@ -358,6 +358,53 @@ describe("ui store: escape", () => {
     expect(state().activePaneId).toBe("d1");
   });
 
+  it("closes the group pane on the right when escape clears the selection that opened it", () => {
+    const root = seedRoot(["g1", "t1"], "g1", { g1: Group, t1: Task });
+    const group = createListPane("group", "g1");
+    useUiStore.setState({ mode: "insert", panes: [root, group], activePaneId: root.id });
+
+    state().escape();
+    expect(state().panes).toHaveLength(2);
+
+    state().escape();
+
+    expect(firstPane().selectedGuid).toBeNull();
+    expect(state().panes.map((p) => p.id)).toEqual([root.id]);
+    expect(state().activePaneId).toBe(root.id);
+  });
+
+  it("closes every pane after the one whose selection was cleared", () => {
+    const root = seedRoot(["g1"], "g1", { g1: Group });
+    const group = { ...createListPane("group", "g1"), selectedGuid: "t1", renderedGuids: ["t1"], renderedTypes: { t1: Task } };
+    const detail = createDetailPane("d1", "t1");
+    useUiStore.setState({ panes: [root, group, detail], activePaneId: root.id });
+
+    state().escape();
+
+    expect(state().panes.map((p) => p.id)).toEqual([root.id]);
+  });
+
+  it("closes the detail pane on the right when the selection is cleared", () => {
+    const root = seedRoot(["t1"], "t1");
+    const detail = createDetailPane("d1", "t1");
+    useUiStore.setState({ panes: [root, detail], activePaneId: root.id });
+
+    state().escape();
+
+    expect(state().panes.map((p) => p.id)).toEqual([root.id]);
+  });
+
+  it("keeps the config pane open when the selection is cleared", () => {
+    const root = seedRoot(["t1"], "t1");
+    const config = createConfigPane("c1");
+    useUiStore.setState({ panes: [root, config], activePaneId: root.id });
+
+    state().escape();
+
+    expect(firstPane().selectedGuid).toBeNull();
+    expect(state().panes.map((p) => p.id)).toEqual([root.id, "c1"]);
+  });
+
   it("does nothing when the detail pane is the only pane left", () => {
     const detail = createDetailPane("d1", "item-1");
     useUiStore.setState({

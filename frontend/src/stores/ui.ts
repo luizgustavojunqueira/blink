@@ -131,6 +131,10 @@ const syncChildPanes = (prev: Pane[], next: Pane[]): Pane[] => {
     const moved =
       parent.type === "list" && before?.type === "list" && before.selectedGuid !== parent.selectedGuid;
 
+    if (moved && parent.selectedGuid === null && (next[i].type === "list" || next[i].type === "detail")) {
+      return out;
+    }
+
     const child = moved ? syncChild(parent, next[i]) : next[i];
     if (child !== next[i]) changed = true;
 

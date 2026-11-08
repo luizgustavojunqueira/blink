@@ -13,11 +13,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -47,7 +48,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 

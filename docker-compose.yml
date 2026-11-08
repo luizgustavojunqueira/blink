@@ -1,15 +1,14 @@
 services:
-  prod:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ./data:/app/data
+  blink:
+    build: .
+    image: blink:local
     ports:
-      - "${PORT:-8081}:${PORT:-8081}"
+      - "${BLINK_PORT:-8090}:8081"
     environment:
-      - PORT=${PORT:-8081}
-      - DB_PATH=/app/data/blink.db
       - TRUST_PROXY=${TRUST_PROXY:-false}
-    profiles:
-      - prod
+    volumes:
+      - blink-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  blink-data:

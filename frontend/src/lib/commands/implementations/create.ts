@@ -14,6 +14,7 @@ import { modifierOptions } from "../../modifiers/options";
 import { parseModifiers } from "../../modifiers/parse";
 import type { CommandDefinition } from "../types";
 import { only } from "./utils";
+import { t } from "../../i18n";
 
 const CREATE_MODIFIERS = [
   STATUS_MODIFIER,
@@ -58,16 +59,16 @@ export function parseCreate(raw: string): ParseCreateResult {
   const { text, values, invalid } = parseModifiers(raw);
 
   if (text === "") {
-    return { ok: false, error: "Title is required" };
+    return { ok: false, error: t("Title is required") };
   }
 
-  const status = only(values[STATUS_MODIFIER], invalid[STATUS_MODIFIER], "status");
+  const status = only(values[STATUS_MODIFIER], invalid[STATUS_MODIFIER], t("status"));
   if (!status.ok) return status;
 
-  const priority = only(values[PRIORITY_MODIFIER], invalid[PRIORITY_MODIFIER], "priority");
+  const priority = only(values[PRIORITY_MODIFIER], invalid[PRIORITY_MODIFIER], t("priority"));
   if (!priority.ok) return priority;
 
-  const type = only(values[TYPE_MODIFIER], invalid[TYPE_MODIFIER], "type");
+  const type = only(values[TYPE_MODIFIER], invalid[TYPE_MODIFIER], t("type"));
   if (!type.ok) return type;
 
   const due = singleDue(values[DUE_MODIFIER], invalid[DUE_MODIFIER]);

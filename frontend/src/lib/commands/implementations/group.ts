@@ -11,6 +11,7 @@ import { modifierOptions } from "../../modifiers/options";
 import { queryClient } from "../../queryClient";
 import type { CommandDefinition } from "../types";
 import { parseCreate } from "./create";
+import { t } from "../../i18n";
 
 const GROUP_MODIFIERS = [
   STATUS_MODIFIER,
@@ -33,7 +34,7 @@ export const groupCommand: CommandDefinition = {
     const pane = state.panes.find((p) => p.id === state.activePaneId);
     if (!pane || pane.type !== "list") return;
 
-    if (pane.markedGuids.size === 0) return { message: "Mark at least one item" };
+    if (pane.markedGuids.size === 0) return { message: t("Mark at least one item") };
 
     const result = parseCreate(rawArgs);
 
@@ -49,7 +50,7 @@ export const groupCommand: CommandDefinition = {
 
     const newParent = await app.items.create(request);
     if (!newParent) {
-      return { message: "Failed to group items" };
+      return { message: t("Failed to group items") };
     }
 
     await app.items.bulkSetFields([...pane.markedGuids], { parent_guid: newParent.guid });

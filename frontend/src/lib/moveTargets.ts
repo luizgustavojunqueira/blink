@@ -1,4 +1,5 @@
 import type { GetItemResponse } from "../types/backend";
+import { t } from "./i18n";
 
 export type MoveTarget = { guid: string; path: string };
 
@@ -50,13 +51,13 @@ export function resolveGroup(groups: GetItemResponse[], moving: string[], input:
   const byTitle = paths.filter((t) => t.path.split("/").pop()?.toLowerCase() === wanted);
   const matches = exact.length > 0 ? exact : byTitle;
 
-  if (matches.length === 0) return { ok: false, error: `No group "${input.trim()}"` };
+  if (matches.length === 0) return { ok: false, error: t('No group "{name}"', { name: input.trim() }) };
   if (matches.length > 1) {
-    return { ok: false, error: `"${input.trim()}" is ambiguous, type the full path` };
+    return { ok: false, error: t('"{name}" is ambiguous, type the full path', { name: input.trim() }) };
   }
 
   if (blockedGroups(groups, moving).has(matches[0].guid)) {
-    return { ok: false, error: "Can't move a group into itself" };
+    return { ok: false, error: t("Can't move a group into itself") };
   }
 
   return { ok: true, guid: matches[0].guid };

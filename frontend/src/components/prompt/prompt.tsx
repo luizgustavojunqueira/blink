@@ -9,6 +9,7 @@ import { getAppContext } from "../../lib/appContext";
 import { paneEditing, usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { tokenizePrompt } from "./promptTokenize";
 import { useLiveFilter } from "../../hooks/useLiveFilter";
+import { t } from "../../lib/i18n";
 
 const selectPrompt: PaneSelector<string> = (pane) => (pane?.type === "list" ? pane.prompt : "");
 
@@ -67,7 +68,7 @@ function PromptComponent({ paneId }: IPrompt) {
       result = await execute(command, app);
     } catch (err) {
       result = {
-        message: err instanceof Error ? err.message : "Something went wrong",
+        message: err instanceof Error ? err.message : t("Something went wrong"),
       };
     }
 
@@ -97,7 +98,7 @@ function PromptComponent({ paneId }: IPrompt) {
 
         onKeyDown={handleKeyDown}
         tokenize={tokenizePrompt}
-        placeholder="type to filter (: or ? for options)"
+        placeholder={t("type to filter (: or ? for options)")}
         testId="prompt"
         wrapperClassName="flex-1 min-w-0"
       >

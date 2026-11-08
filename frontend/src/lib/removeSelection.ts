@@ -1,6 +1,7 @@
 import { useUiStore } from "../stores/ui";
 import type { ListPane } from "./pane/types";
 import type { AppContext } from "./types";
+import { t } from "./i18n";
 
 export function targetGuids(pane: ListPane): string[] {
   if (pane.markedGuids.size > 0) return [...pane.markedGuids];
@@ -43,13 +44,13 @@ export function leavePane(app: AppContext, pane: ListPane, guids: string[]) {
 
 export async function removeSelection(app: AppContext, pane: ListPane): Promise<string | undefined> {
   const guids = targetGuids(pane);
-  if (guids.length === 0) return "Select or mark an item";
+  if (guids.length === 0) return t("Select or mark an item");
 
   leavePane(app, pane, guids);
 
   try {
     await app.items.remove(guids);
   } catch (err) {
-    return err instanceof Error ? err.message : "Delete failed";
+    return err instanceof Error ? err.message : t("Delete failed");
   }
 }

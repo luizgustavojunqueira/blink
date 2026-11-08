@@ -1,5 +1,6 @@
 import { useItem } from "../../hooks/useItems";
 import type { PaneType } from "../../lib/pane/types";
+import { t } from "../../lib/i18n";
 
 interface IBreadcrumbItem {
   type: PaneType;
@@ -12,12 +13,12 @@ export default function BreadcrumbItem({ type, guid, isLast }: IBreadcrumbItem) 
 
   const label =
     type === "config"
-      ? "Config"
+      ? t("Config")
       : type === "profile"
-        ? "Profile"
+        ? t("Profile")
         : type === "history"
-          ? "History"
-          : (item?.title ?? (type === "list" && !guid ? "Home" : "..."));
+          ? t("History")
+          : (item?.title ?? (type === "list" && !guid ? t("Home") : "..."));
 
   return (
     <span title={label} className={`truncate max-w-40 ${isLast ? "text-fg font-medium" : ""}`}>

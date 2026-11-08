@@ -5,6 +5,7 @@ import { profileRowId, type ProfileRowKind } from "../../lib/profile/rows";
 import { useUiStore } from "../../stores/ui";
 import Breadcrumb from "../breadcrumb/breadcrumb";
 import TextField from "../textField/textField";
+import { t } from "../../lib/i18n";
 
 interface IProfilePane {
   paneId: string;
@@ -130,7 +131,7 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
   const submit = async () => {
     if (busy) return;
     if (next !== confirm) {
-      setError("the new passwords do not match");
+      setError(t("the new passwords do not match"));
       return;
     }
 
@@ -141,7 +142,7 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
       onDone();
       setMode("normal");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "could not change the password");
+      setError(err instanceof Error ? err.message : t("could not change the password"));
       setBusy(false);
     }
   };
@@ -150,13 +151,13 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="flex flex-col gap-1 pb-1">
-      <Field label="current" value={current} onChange={setCurrent} focused={focus === 0} onKeyDown={onKeyDown(0)} testId="profile-current" />
-      <Field label="new" value={next} onChange={setNext} focused={focus === 1} onKeyDown={onKeyDown(1)} testId="profile-new" />
-      <Field label="confirm" value={confirm} onChange={setConfirm} focused={focus === 2} onKeyDown={onKeyDown(2)} testId="profile-confirm" />
+      <Field label={t("current")} value={current} onChange={setCurrent} focused={focus === 0} onKeyDown={onKeyDown(0)} testId="profile-current" />
+      <Field label={t("new")} value={next} onChange={setNext} focused={focus === 1} onKeyDown={onKeyDown(1)} testId="profile-new" />
+      <Field label={t("confirm")} value={confirm} onChange={setConfirm} focused={focus === 2} onKeyDown={onKeyDown(2)} testId="profile-confirm" />
       {error ? (
         <span className="text-xs text-danger">● {error}</span>
       ) : (
-        <span className="text-xs text-fg-muted">enter moves on and saves on the last field · esc cancels</span>
+        <span className="text-xs text-fg-muted">{t("enter moves on and saves on the last field · esc cancels")}</span>
       )}
     </div>
   );
@@ -177,7 +178,7 @@ function DeleteForm() {
     try {
       await deleteAccount(password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "could not delete the account");
+      setError(err instanceof Error ? err.message : t("could not delete the account"));
       setBusy(false);
     }
   };
@@ -187,13 +188,13 @@ function DeleteForm() {
   return (
     <div className="flex flex-col gap-1 pb-1">
       <span className="text-xs text-danger">
-        this permanently deletes your account, items and agents
+        {t("this permanently deletes your account, items and agents")}
       </span>
-      <Field label="password" value={password} onChange={setPassword} focused={focus === 0} onKeyDown={onKeyDown(0)} testId="profile-delete-password" />
+      <Field label={t("password")} value={password} onChange={setPassword} focused={focus === 0} onKeyDown={onKeyDown(0)} testId="profile-delete-password" />
       {error ? (
         <span className="text-xs text-danger">● {error}</span>
       ) : (
-        <span className="text-xs text-fg-muted">enter deletes the account · esc cancels</span>
+        <span className="text-xs text-fg-muted">{t("enter deletes the account · esc cancels")}</span>
       )}
     </div>
   );
@@ -205,7 +206,7 @@ function AccountRow({ paneId }: { paneId: string }) {
   return (
     <RowShell paneId={paneId} kind="account">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="w-24 shrink-0 text-xs text-fg-muted">username</span>
+        <span className="w-24 shrink-0 text-xs text-fg-muted">{t("username")}</span>
         <span className="flex-1 truncate text-lg leading-normal text-fg">{username}</span>
       </div>
     </RowShell>
@@ -223,8 +224,8 @@ function PasswordRow({ paneId }: { paneId: string }) {
   return (
     <RowShell paneId={paneId} kind="password" footer={editing && <PasswordForm onDone={() => setChanged(true)} />}>
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex-1 truncate text-lg leading-normal text-fg">change password</span>
-        {changed && !editing && <span className="shrink-0 text-xs text-accent">changed</span>}
+        <span className="flex-1 truncate text-lg leading-normal text-fg">{t("change password")}</span>
+        {changed && !editing && <span className="shrink-0 text-xs text-accent">{t("changed")}</span>}
       </div>
     </RowShell>
   );
@@ -234,7 +235,7 @@ function LogoutRow({ paneId }: { paneId: string }) {
   return (
     <RowShell paneId={paneId} kind="logout">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex-1 truncate text-lg leading-normal text-fg">log out</span>
+        <span className="flex-1 truncate text-lg leading-normal text-fg">{t("log out")}</span>
       </div>
     </RowShell>
   );
@@ -246,7 +247,7 @@ function DeleteRow({ paneId }: { paneId: string }) {
   return (
     <RowShell paneId={paneId} kind="delete" footer={editing && <DeleteForm />}>
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex-1 truncate text-lg leading-normal text-danger">delete account</span>
+        <span className="flex-1 truncate text-lg leading-normal text-danger">{t("delete account")}</span>
       </div>
     </RowShell>
   );
@@ -263,7 +264,7 @@ export default function ProfilePane({ paneId }: IProfilePane) {
     >
       <Breadcrumb paneId={paneId} />
       <ul className="flex-1 overflow-y-auto">
-        <SectionHeader title="account" note="enter opens · esc cancels" />
+        <SectionHeader title={t("account")} note={t("enter opens · esc cancels")} />
         <AccountRow paneId={paneId} />
         <PasswordRow paneId={paneId} />
         <LogoutRow paneId={paneId} />

@@ -2,6 +2,7 @@ import { memo, useCallback, type ReactNode } from "react";
 import { usePaneValue, type PaneSelector } from "../../hooks/usePane";
 import { useUiStore } from "../../stores/ui";
 import type { DetailField } from "../../lib/pane/types";
+import { t } from "../../lib/i18n";
 
 interface IDetailFieldRow {
   paneId: string;
@@ -26,12 +27,12 @@ function DetailFieldRowComponent({ paneId, itemGuid, field, label, dirty, childr
   return (
     <div className="flex flex-col p-2">
       <span className="font-medium p-1 text-fg-dim">
-        {label ?? field}
+        {label ?? t(field)}
         {error ? (
-          <span className="ml-2 text-xs text-danger">● failed: {error}</span>
+          <span className="ml-2 text-xs text-danger">● {t("failed: {error}", { error })}</span>
         ) : (
           (dirty || isSaving) && (
-            <span className="ml-2 text-xs text-accent">● {dirty ? "unsaved" : "saving"}</span>
+            <span className="ml-2 text-xs text-accent">● {dirty ? t("unsaved") : t("saving")}</span>
           )
         )}
       </span>

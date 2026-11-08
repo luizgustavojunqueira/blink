@@ -6,6 +6,7 @@ import { toPromptOption } from "../../promptOptions";
 import { queryClient } from "../../queryClient";
 import { leavePane, targetGuids } from "../../removeSelection";
 import type { CommandDefinition } from "../types";
+import { t } from "../../i18n";
 
 type MoveOptions = { groups: GetItemResponse[] };
 
@@ -30,12 +31,12 @@ export const moveCommand: CommandDefinition<MoveOptions> = {
     const blocked = blockedGroups(options.groups, targetGuids(pane));
 
     return groupPaths(options.groups)
-      .filter((t) => !blocked.has(t.guid) && t.path.toLowerCase().includes(filter))
-      .map((t) =>
+      .filter((target) => !blocked.has(target.guid) && target.path.toLowerCase().includes(filter))
+      .map((target) =>
         toPromptOption("COMMAND_ARG", {
-          name: t.path,
-          description: `Move into ${t.path}`,
-          value: t.path,
+          name: target.path,
+          description: t("Move into {path}", { path: target.path }),
+          value: target.path,
         }),
       );
   },
@@ -44,8 +45,8 @@ export const moveCommand: CommandDefinition<MoveOptions> = {
     if (!pane) return;
 
     const guids = targetGuids(pane);
-    if (guids.length === 0) return { message: "Select or mark an item" };
-    if (rawArgs.trim() === "") return { message: "Type the group to move into" };
+    if (guids.length === 0) return { message: t("Select or mark an item") };
+    if (rawArgs.trim() === "") return { message: t("Type the group to move into") };
 
     const groups = await queryClient.fetchQuery(groupsQuery());
     const target = resolveGroup(groups, guids, rawArgs);
@@ -54,7 +55,7 @@ export const moveCommand: CommandDefinition<MoveOptions> = {
     try {
       await app.items.bulkSetFields(guids, { parent_guid: target.guid });
     } catch (err) {
-      return { message: err instanceof Error ? err.message : "Move failed" };
+      return { message: err instanceof Error ? err.message : t("Move failed") };
     }
 
     leavePane(app, pane, guids);

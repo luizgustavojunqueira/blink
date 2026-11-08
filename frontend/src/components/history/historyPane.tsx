@@ -4,6 +4,7 @@ import { useItemHistory } from "../../hooks/useItems";
 import { useUiStore } from "../../stores/ui";
 import type { ItemHistoryEntry } from "../../types/backend";
 import Breadcrumb from "../breadcrumb/breadcrumb";
+import { t } from "../../lib/i18n";
 
 interface IHistoryPane {
   paneId: string;
@@ -27,7 +28,7 @@ const change = (e: ItemHistoryEntry) => {
     case "restored":
       return "";
     default:
-      return `${e.old_value ?? "none"} → ${e.new_value ?? "none"}`;
+      return `${e.old_value ?? t("none")} → ${e.new_value ?? t("none")}`;
   }
 };
 
@@ -60,8 +61,8 @@ const HistoryRow = memo(function HistoryRow({ paneId, index, entry }: IHistoryRo
       className={`flex min-w-0 items-baseline gap-3 px-4 py-0.5 ${isSelected ? "bg-bg-lighter" : "hover:bg-bg-soft"}`}
     >
       <span className="w-32 shrink-0 text-xs text-fg-muted">{formatTime(entry.at)}</span>
-      <span className="w-24 shrink-0 truncate text-xs text-fg-dim">{entry.actor ?? "removed user"}</span>
-      <span className="w-24 shrink-0 text-accent">{entry.field}</span>
+      <span className="w-24 shrink-0 truncate text-xs text-fg-dim">{entry.actor ?? t("removed user")}</span>
+      <span className="w-24 shrink-0 text-accent">{t(entry.field)}</span>
       <span className="flex-1 truncate text-fg">{change(entry)}</span>
     </li>
   );
@@ -79,9 +80,9 @@ export default function HistoryPane({ paneId }: IHistoryPane) {
       }`}
     >
       <Breadcrumb paneId={paneId} />
-      {isLoading && <span className="px-4 pt-4 text-fg-muted">loading</span>}
-      {isError && <span className="px-4 pt-4 text-danger">could not load the history</span>}
-      {data && data.length === 0 && <span className="px-4 pt-4 text-fg-muted">no changes yet</span>}
+      {isLoading && <span className="px-4 pt-4 text-fg-muted">{t("loading")}</span>}
+      {isError && <span className="px-4 pt-4 text-danger">{t("could not load the history")}</span>}
+      {data && data.length === 0 && <span className="px-4 pt-4 text-fg-muted">{t("no changes yet")}</span>}
       {data && data.length > 0 && (
         <ul className="flex-1 overflow-y-auto">
           {data.map((entry, i) => (

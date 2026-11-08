@@ -1,5 +1,6 @@
 import { keyBindings, type Keymap } from "../keymap/registry";
 import type { KeyBinding } from "../keymap/types";
+import { t } from "../i18n";
 
 const MODIFIERS = ["ctrl", "alt", "meta", "shift"] as const;
 
@@ -41,7 +42,7 @@ export type ParsedKeys = { keys: string[] } | { error: string };
 
 function parseToken(raw: string): { key: string } | { error: string } {
   const match = /^((?:[a-z]+\+)*)(.+)$/i.exec(raw);
-  if (!match) return { error: `"${raw}" is not a key` };
+  if (!match) return { error: t('"{key}" is not a key', { key: raw }) };
 
   const mods = match[1]
     .split("+")
@@ -52,20 +53,20 @@ function parseToken(raw: string): { key: string } | { error: string } {
   for (const m of mods) {
     if (!(MODIFIERS as readonly string[]).includes(m)) {
       return {
-        error: `"${m}" is not a modifier, use ctrl, alt, meta or shift`,
+        error: t('"{key}" is not a modifier, use ctrl, alt, meta or shift', { key: m }),
       };
     }
   }
   if (new Set(mods).size !== mods.length)
-    return { error: `"${raw}" repeats a modifier` };
+    return { error: t('"{key}" repeats a modifier', { key: raw }) };
 
   if (key.length > 1) {
     const lower = key.toLowerCase();
     key = ALIASES[lower] ?? lower;
-    if (!NAMED_KEYS.has(key)) return { error: `"${match[2]}" is not a key` };
+    if (!NAMED_KEYS.has(key)) return { error: t('"{key}" is not a key', { key: match[2] }) };
   } else if (mods.includes("shift")) {
     return {
-      error: `write the character itself instead of "${raw}" (e.g. G, not shift+g)`,
+      error: t('write the character itself instead of "{key}" (e.g. G, not shift+g)', { key: raw }),
     };
   }
 
@@ -80,7 +81,7 @@ export function parseKeys(input: string): ParsedKeys {
     const tokens = alternative.trim().split(/\s+/).filter(Boolean);
     if (tokens.length === 0) continue;
     if (tokens.length > MAX_SEQUENCE) {
-      return { error: `a sequence can have at most ${MAX_SEQUENCE} keys` };
+      return { error: t("a sequence can have at most {count} keys", { count: MAX_SEQUENCE }) };
     }
 
     const seq: string[] = [];
@@ -95,7 +96,7 @@ export function parseKeys(input: string): ParsedKeys {
   }
 
   if (keys.length > MAX_ALTERNATIVES) {
-    return { error: `at most ${MAX_ALTERNATIVES} alternatives` };
+    return { error: t("at most {count} alternatives", { count: MAX_ALTERNATIVES }) };
   }
 
   return { keys };

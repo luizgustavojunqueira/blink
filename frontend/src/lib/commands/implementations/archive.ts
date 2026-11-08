@@ -1,6 +1,7 @@
 import { useUiStore } from "../../../stores/ui";
 import { Archived, Done } from "../../../types/backend";
 import type { CommandDefinition } from "../types";
+import { t } from "../../i18n";
 
 export const archiveCommand: CommandDefinition = {
   id: "archive",
@@ -14,12 +15,12 @@ export const archiveCommand: CommandDefinition = {
 
     const scope = pane.markedGuids.size > 0 ? [...pane.markedGuids] : pane.renderedGuids;
     const done = scope.filter((guid) => app.items.findItem(guid)?.status === Done);
-    if (done.length === 0) return { message: "No done items to archive" };
+    if (done.length === 0) return { message: t("No done items to archive") };
 
     try {
       await app.items.bulkSetFields(done, { status: Archived });
     } catch (err) {
-      return { message: err instanceof Error ? err.message : "Archive failed" };
+      return { message: err instanceof Error ? err.message : t("Archive failed") };
     }
 
     return { shouldClearPrompt: true };

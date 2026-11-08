@@ -6,6 +6,7 @@ import { useUiStore, type UiState } from "../../stores/ui";
 import { useCachedSelector } from "../../hooks/usePane";
 import { useResizeAnimation } from "../../hooks/useResizeAnimation";
 import KeySequenceIndicator from "./keySequenceIndicator";
+import { t } from "../../lib/i18n";
 
 const NO_HINTS: AvailableBinding[] = [];
 
@@ -78,7 +79,7 @@ function HintComponent() {
         <KeySequenceIndicator />
         {Object.keys(hintsGrouped).map((g) => (
           <Fragment key={g}>
-            <span className="my-1 text-fg-dim border-b border-accent/10">{g}</span>
+            <span className="my-1 text-fg-dim border-b border-accent/10">{t(g)}</span>
 
             {hintsGrouped[g].map((h) => (
               <span key={h.binding.id} className="flex flex-row justify-between gap-5 text-sm">
@@ -105,7 +106,7 @@ function HintComponent() {
                       );
                     })}
                 </span>
-                <span>{h.binding.description}</span>
+                <span>{t(h.binding.description)}</span>
               </span>
             ))}
           </Fragment>

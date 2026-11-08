@@ -7,6 +7,7 @@ import type { GetAgentResponse } from "../../types/backend";
 import { isBuiltinTheme } from "../../lib/theme";
 import Breadcrumb from "../breadcrumb/breadcrumb";
 import ConfigRowView from "./configRow";
+import { t } from "../../lib/i18n";
 
 interface IConfigPane {
   paneId: string;
@@ -28,45 +29,45 @@ function header(row: ConfigRow, theme: string) {
     case "theme":
       return (
         <SectionHeader
-          title="theme"
+          title={t("theme")}
           note={
             isBuiltinTheme(theme)
-              ? "enter to use · y on a theme makes an editable copy"
-              : "enter to use · y to copy · i to rename · d d to delete"
+              ? t("enter to use · y on a theme makes an editable copy")
+              : t("enter to use · y to copy · i to rename · d d to delete")
           }
         />
       );
     case "color":
       return (
-        <SectionHeader title={`colors · ${theme}`} note="i or enter to edit" />
+        <SectionHeader title={t("colors · {theme}", { theme })} note={t("i or enter to edit")} />
       );
     case "key":
       return (
         <SectionHeader
-          title="keys"
-          note="i or enter to edit · r resets to default"
+          title={t("keys")}
+          note={t("i or enter to edit · r resets to default")}
         />
       );
     case "animations":
       return (
         <SectionHeader
-          title="animations"
-          note="enter to switch · auto follows the system's reduced motion setting"
+          title={t("animations")}
+          note={t("enter to switch · auto follows the system's reduced motion setting")}
         />
       );
     case "language":
       return (
         <SectionHeader
-          title="language"
-          note="enter to switch · auto follows the browser's language"
+          title={t("language")}
+          note={t("enter to switch · auto follows the browser's language")}
         />
       );
     case "agent":
     case "agentNew":
       return (
         <SectionHeader
-          title="agents"
-          note="i adds · d d revokes · a token is shown only once"
+          title={t("agents")}
+          note={t("i adds · d d revokes · a token is shown only once")}
         />
       );
   }

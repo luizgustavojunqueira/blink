@@ -18,6 +18,7 @@ import type {
   KeyRow,
   ThemeRow,
 } from "../../lib/config/rows";
+import { getLocale, t } from "../../lib/i18n";
 
 const KEYS_HELP =
   "comma between alternatives, space for a sequence: j, ctrl+d, g g · empty resets";
@@ -94,7 +95,7 @@ function ThemeRowView({ paneId, row }: { paneId: string; row: ThemeRow }) {
     <RowShell
       paneId={paneId}
       rowId={row.id}
-      help={editing && NAME_HELP}
+      help={editing && t(NAME_HELP)}
       error={edit.error}
       onDoubleClick={() => useConfigStore.getState().setTheme(row.name)}
     >
@@ -146,7 +147,7 @@ function ColorRowView({ paneId, row }: { paneId: string; row: ColorRow }) {
     <RowShell
       paneId={paneId}
       rowId={row.id}
-      help={edit.editing && COLOR_HELP}
+      help={edit.editing && t(COLOR_HELP)}
       error={edit.error}
     >
       <span className="w-28 shrink-0 text-sm text-fg-dim">{row.token}</span>
@@ -188,17 +189,17 @@ function KeyRowView({ paneId, row }: { paneId: string; row: KeyRow }) {
     <RowShell
       paneId={paneId}
       rowId={row.id}
-      help={edit.editing && KEYS_HELP}
+      help={edit.editing && t(KEYS_HELP)}
       error={edit.error}
     >
       <span className="w-14 shrink-0 text-xs text-fg-muted">
-        {row.binding.scope}
+        {t(row.binding.scope)}
       </span>
       <span
         className="w-48 shrink-0 truncate text-sm text-fg-dim"
         title={row.binding.id}
       >
-        {row.binding.description}
+        {t(row.binding.description)}
       </span>
       {edit.editing ? (
         <TextField
@@ -219,7 +220,7 @@ function KeyRowView({ paneId, row }: { paneId: string; row: KeyRow }) {
         </span>
       )}
       <span className="shrink-0 text-xs text-fg-muted">
-        {row.isDefault ? "" : "custom"}
+        {row.isDefault ? "" : t("custom")}
       </span>
     </RowShell>
   );
@@ -228,11 +229,11 @@ function KeyRowView({ paneId, row }: { paneId: string; row: KeyRow }) {
 function AnimationsRowView({ paneId, row }: { paneId: string; row: AnimationsRow }) {
   return (
     <RowShell paneId={paneId} rowId={row.id}>
-      <span className="w-14 shrink-0 text-xs text-fg-muted">motion</span>
+      <span className="w-14 shrink-0 text-xs text-fg-muted">{t("motion")}</span>
       <span
         className={`flex-1 truncate text-lg leading-normal ${row.value === "auto" ? "text-fg" : "text-accent"}`}
       >
-        {row.value}
+        {t(row.value)}
       </span>
     </RowShell>
   );
@@ -247,11 +248,11 @@ const LANGUAGE_NAMES: Record<LanguageRow["value"], string> = {
 function LanguageRowView({ paneId, row }: { paneId: string; row: LanguageRow }) {
   return (
     <RowShell paneId={paneId} rowId={row.id}>
-      <span className="w-14 shrink-0 text-xs text-fg-muted">ui</span>
+      <span className="w-14 shrink-0 text-xs text-fg-muted">{t("interface")}</span>
       <span
         className={`flex-1 truncate text-lg leading-normal ${row.value === "auto" ? "text-fg" : "text-accent"}`}
       >
-        {LANGUAGE_NAMES[row.value]}
+        {row.value === "auto" ? t("auto") : LANGUAGE_NAMES[row.value]}
       </span>
     </RowShell>
   );
@@ -264,15 +265,15 @@ function AgentNewRowView({ paneId, row }: { paneId: string; row: AgentNewRow }) 
   const commit = useCallback(
     (draft: string) => {
       const name = draft.trim();
-      if (!name) return "name is required";
-      if (name.length > AGENT_NAME_MAX) return `at most ${AGENT_NAME_MAX} characters`;
+      if (!name) return t("name is required");
+      if (name.length > AGENT_NAME_MAX) return t("at most {count} characters", { count: AGENT_NAME_MAX });
 
       setFailure(null);
       getAppContext()
         .config.createAgent(name)
         .then(
           (agent) => selectRow(paneId, agentRowId(agent.guid)),
-          (err: unknown) => setFailure(err instanceof Error ? err.message : "could not create"),
+          (err: unknown) => setFailure(err instanceof Error ? err.message : t("could not create")),
         );
 
       return null;
@@ -285,7 +286,7 @@ function AgentNewRowView({ paneId, row }: { paneId: string; row: AgentNewRow }) 
     <RowShell
       paneId={paneId}
       rowId={row.id}
-      help={edit.editing && "a name for the agent, e.g. claude-code"}
+      help={edit.editing && t("a name for the agent, e.g. claude-code")}
       error={edit.error ?? failure}
     >
       <span className="w-4 shrink-0 text-accent">+</span>
@@ -304,7 +305,7 @@ function AgentNewRowView({ paneId, row }: { paneId: string; row: AgentNewRow }) 
           className="flex-1 truncate text-lg leading-normal text-fg-muted"
           onClick={edit.requestEdit}
         >
-          new agent
+          {t("new agent")}
         </span>
       )}
     </RowShell>
@@ -316,15 +317,15 @@ function AgentRowView({ paneId, row }: { paneId: string; row: AgentRow }) {
     s.revealed?.guid === row.agent.guid ? s.revealed.token : null,
   );
   const lastUsed = row.agent.last_used_at
-    ? new Date(row.agent.last_used_at).toLocaleString()
-    : "never used";
+    ? new Date(row.agent.last_used_at).toLocaleString(getLocale() === "pt" ? "pt-BR" : "en")
+    : t("never used");
 
   return (
     <RowShell
       paneId={paneId}
       rowId={row.id}
       help={
-        token ? `${window.location.origin}/mcp · Bearer ${token} · y copies the token` : false
+        token ? `${window.location.origin}/mcp · Bearer ${token} · ${t("y copies the token")}` : false
       }
     >
       <span className="w-4 shrink-0 text-transparent">●</span>

@@ -3,6 +3,7 @@ import { toPromptOption } from "../../promptOptions";
 import { BUILTIN_THEMES } from "../../theme";
 import { themeNames, useConfigStore } from "../../config/store";
 import type { CommandDefinition } from "../types";
+import { t } from "../../i18n";
 
 export const THEMES = BUILTIN_THEMES;
 
@@ -17,12 +18,12 @@ export const themeCommand: CommandDefinition = {
     const filter = currentArgToken(rawArgs).current.toLowerCase();
 
     return allThemes()
-      .filter((t) => t.includes(filter))
-      .map((t) =>
+      .filter((name) => name.includes(filter))
+      .map((name) =>
         toPromptOption("COMMAND_ARG", {
-          name: t,
-          description: `Set theme to ${t}`,
-          value: t,
+          name,
+          description: t("Set theme to {name}", { name }),
+          value: name,
         }),
       );
   },
@@ -30,7 +31,7 @@ export const themeCommand: CommandDefinition = {
     const theme = rawArgs.trim().toLowerCase();
     const themes = allThemes();
     if (!themes.includes(theme)) {
-      return { message: `Invalid theme "${theme}". Try: ${themes.join(", ")}` };
+      return { message: t('Invalid theme "{name}". Try: {themes}', { name: theme, themes: themes.join(", ") }) };
     }
 
     app.setTheme(theme);

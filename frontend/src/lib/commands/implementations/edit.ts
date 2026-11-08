@@ -14,6 +14,7 @@ import { parseModifiers } from "../../modifiers/parse";
 import type { ItemPatch } from "../../types";
 import type { CommandDefinition } from "../types";
 import { only } from "./utils";
+import { t } from "../../i18n";
 
 const EDIT_MODIFIERS = [
   STATUS_MODIFIER,
@@ -44,7 +45,7 @@ export const editCommand: CommandDefinition = {
         : pane.selectedGuid
           ? [pane.selectedGuid]
           : [];
-    if (guids.length === 0) return { message: "Select or mark an item" };
+    if (guids.length === 0) return { message: t("Select or mark an item") };
 
     const result = parseEdit(rawArgs, guids.length);
 
@@ -55,7 +56,7 @@ export const editCommand: CommandDefinition = {
     const updated = await app.items.bulkSetFields(guids, result.patch);
 
     if (updated.length === 0) {
-      return { message: "Nothing changed" };
+      return { message: t("Nothing changed") };
     }
 
     return { shouldClearPrompt: true };
@@ -71,22 +72,22 @@ export function parseEdit(raw: string, numItems: number): ParseEditResult {
 
   if (numItems > 1) {
     if (text !== "") {
-      return { ok: false, error: "Can't edit title of multiple items" };
+      return { ok: false, error: t("Can't edit title of multiple items") };
     }
 
     if (description !== undefined) {
-      return { ok: false, error: "Can't edit description of multiple items" };
+      return { ok: false, error: t("Can't edit description of multiple items") };
     }
   }
 
   if (values[TYPE_MODIFIER].length > 0 || invalid[TYPE_MODIFIER].length > 0) {
-    return { ok: false, error: "Can't edit type" };
+    return { ok: false, error: t("Can't edit type") };
   }
 
-  const status = only(values[STATUS_MODIFIER], invalid[STATUS_MODIFIER], "status");
+  const status = only(values[STATUS_MODIFIER], invalid[STATUS_MODIFIER], t("status"));
   if (!status.ok) return status;
 
-  const priority = only(values[PRIORITY_MODIFIER], invalid[PRIORITY_MODIFIER], "priority");
+  const priority = only(values[PRIORITY_MODIFIER], invalid[PRIORITY_MODIFIER], t("priority"));
   if (!priority.ok) return priority;
 
   const tags = values[TAG_MODIFIER];
@@ -104,7 +105,7 @@ export function parseEdit(raw: string, numItems: number): ParseEditResult {
   };
 
   if (Object.values(patch).every((value) => value === undefined)) {
-    return { ok: false, error: "Nothing to edit" };
+    return { ok: false, error: t("Nothing to edit") };
   }
 
   return { ok: true, patch };

@@ -18,7 +18,7 @@ import {
   onReducedMotionChange,
   type AnimationSetting,
 } from "../motion";
-import { applyLanguage, isLanguageSetting, LANGUAGE_SETTINGS, type LanguageSetting } from "../i18n";
+import { applyLanguage, isLanguageSetting, LANGUAGE_SETTINGS, t, type LanguageSetting } from "../i18n";
 
 export const STORAGE_KEY = "blink-config";
 export const LEGACY_THEME_KEY = "blink-theme";
@@ -172,27 +172,27 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
   setTheme: (name) => {
     if (!themeNames(get().themes).includes(name))
-      return `unknown theme "${name}"`;
+      return t('unknown theme "{name}"', { name });
     if (get().theme !== name) set({ theme: name });
     return null;
   },
 
   setAnimations: (value) => {
-    if (!isAnimationSetting(value)) return `use auto, on or off`;
+    if (!isAnimationSetting(value)) return t("use auto, on or off");
     if (get().animations !== value) set({ animations: value });
     return null;
   },
 
   setLanguage: (value) => {
-    if (!isLanguageSetting(value)) return `use ${LANGUAGE_SETTINGS.join(", ")}`;
+    if (!isLanguageSetting(value)) return t("use {options}", { options: LANGUAGE_SETTINGS.join(", ") });
     if (get().language !== value) set({ language: value });
     return null;
   },
 
   setKeys: (bindingId, input) => {
     const binding = keyBindings.find((b) => b.id === bindingId);
-    if (!binding) return "unknown binding";
-    if (binding.fixed) return "this binding can't be changed";
+    if (!binding) return t("unknown binding");
+    if (binding.fixed) return t("this binding can't be changed");
 
     const parsed = parseKeys(input);
     if ("error" in parsed) return parsed.error;
@@ -205,8 +205,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     const conflict = findConflict(bindingId, parsed.keys, keymap);
     if (conflict) {
       return conflict.binding === binding
-        ? `"${conflict.key}" would hide the longer sequence that starts with it`
-        : `"${conflict.key}" is already used by "${conflict.binding.description}" (${conflict.binding.scope})`;
+        ? t('"{key}" would hide the longer sequence that starts with it', { key: conflict.key })
+        : t('"{key}" is already used by "{binding}" ({scope})', {
+            key: conflict.key,
+            binding: t(conflict.binding.description),
+            scope: t(conflict.binding.scope),
+          });
     }
 
     const current = keymap[bindingId];
@@ -236,13 +240,13 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
   renameTheme: (from, input) => {
     const { themes, theme } = get();
-    if (!themes[from]) return "only custom themes can be renamed";
+    if (!themes[from]) return t("only custom themes can be renamed");
 
     const name = normalizeName(input);
     if (name === from) return null;
     if (!isThemeName(name))
-      return `use a-z, 0-9 and single dashes, up to ${NAME_MAX} chars`;
-    if (themeNames(themes).includes(name)) return `"${name}" already exists`;
+      return t("use a-z, 0-9 and single dashes, up to {count} chars", { count: NAME_MAX });
+    if (themeNames(themes).includes(name)) return t('"{name}" already exists', { name });
 
     const next: Record<string, ThemeColors> = {};
     for (const [key, value] of Object.entries(themes))
@@ -263,12 +267,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   setThemeColor: (name, token, input) => {
     const { themes } = get();
     const colors = themes[name];
-    if (!colors) return "only custom themes can be edited";
-    if (!THEME_TOKENS.includes(token)) return "unknown color";
+    if (!colors) return t("only custom themes can be edited");
+    if (!THEME_TOKENS.includes(token)) return t("unknown color");
 
     const raw = input.trim().toLowerCase();
     const value = raw.startsWith("#") ? raw : `#${raw}`;
-    if (!isColor(value)) return "use a hex color like #282828";
+    if (!isColor(value)) return t("use a hex color like #282828");
     if (colors[token] === value) return null;
 
     set({ themes: { ...themes, [name]: { ...colors, [token]: value } } });

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useResizeAnimation } from "../../hooks/useResizeAnimation";
 import type { PromptHelper } from "../../hooks/promptHelper/usePromptHelper";
+import { t } from "../../lib/i18n";
 
 export default function Helper({
   options,
@@ -26,7 +27,7 @@ export default function Helper({
           onClick={() => onSelect(idx)}
         >
           <span>{opt.name}</span>
-          <span className="text-fg-muted">{opt.description}</span>
+          <span className="text-fg-muted">{t(opt.description)}</span>
         </div>
       ))}
     </div>

@@ -14,6 +14,7 @@ import {
   type GetItemResponse,
   type UpdateItemRequest,
 } from "../types/backend";
+import { t } from "./i18n";
 
 function sameValue(current: unknown, next: unknown): boolean {
   if (next === "" && (current === undefined || current === null || current === "")) return true;
@@ -130,7 +131,7 @@ export function createItemActions(client: QueryClient): AppContext["items"] {
         patchItem(guid, { [key]: flight.original } as Partial<GetItemResponse>);
         useUiStore.getState().setFieldState(stateKey, {
           status: "error",
-          message: err instanceof Error ? err.message : "save failed",
+          message: err instanceof Error ? err.message : t("save failed"),
         });
       },
     );

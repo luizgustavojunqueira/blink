@@ -11,6 +11,7 @@ import { useUiStore } from "../../stores/ui";
 import type { GetItemRequest, GetItemResponse, ItemType } from "../../types/backend";
 import Breadcrumb from "../breadcrumb/breadcrumb";
 import { useFilterFlip } from "../../hooks/useFilterFlip";
+import { t } from "../../lib/i18n";
 
 const EMPTY_FILTER: GetItemRequest = {};
 const EMPTY_ITEMS: GetItemResponse[] = [];
@@ -79,7 +80,7 @@ export function ItemList({ paneId }: IItemList) {
       <div className="flex-1 overflow-y-auto">
         {isFetching && !isPlaceholderData && <Loading />}
 
-        {isError && <div className="px-4 py-2 text-urgent text-sm">could not load items</div>}
+        {isError && <div className="px-4 py-2 text-urgent text-sm">{t("could not load items")}</div>}
 
         <div ref={listRef}>{chunks}</div>
 
@@ -87,7 +88,7 @@ export function ItemList({ paneId }: IItemList) {
         <GroupPrefetcher paneId={paneId} />
 
         {!isFetching && items.length === 0 && (
-          <div className="px-4 py-6 text-fg-muted text-sm">no items</div>
+          <div className="px-4 py-6 text-fg-muted text-sm">{t("no items")}</div>
         )}
       </div>
     </div>

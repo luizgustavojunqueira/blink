@@ -1,0 +1,14 @@
+.git
+.github
+.claude
+.env
+*.md
+data
+bin
+scripts
+**/node_modules
+frontend/dist
+frontend/perf/results
+backend/tmp
+backend/ui/dist/*
+!backend/ui/dist/index.html

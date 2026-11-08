@@ -1,3 +1,5 @@
+import { t } from "../lib/i18n";
+
 const BASE_URL = "/api";
 
 export class ApiError extends Error {
@@ -21,10 +23,18 @@ function parseJson(body: string): Record<string, unknown> | null {
   }
 }
 
+function translated(code: string | null, message: string) {
+  if (!code) return message;
+  const key = `api.${code}`;
+  const text = t(key);
+  return text === key ? message : text;
+}
+
 function toApiError(body: string, status: number) {
   const parsed = parseJson(body);
   if (typeof parsed?.message === "string") {
-    return new ApiError(parsed.message, typeof parsed.code === "string" ? parsed.code : null, status);
+    const code = typeof parsed.code === "string" ? parsed.code : null;
+    return new ApiError(translated(code, parsed.message), code, status);
   }
   return new ApiError(body.trim() || `HTTP ${status}`, null, status);
 }

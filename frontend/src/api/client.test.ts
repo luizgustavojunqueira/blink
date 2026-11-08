@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api, setUnauthorizedHandler } from "./client";
+import { applyLanguage } from "../lib/i18n";
 
 function respond(body: string, init: ResponseInit) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body || null, init)));
@@ -46,6 +47,22 @@ describe("api()", () => {
     const err = await api("/items").catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ApiError);
     expect(err).toMatchObject({ code: "title_required", status: 400, message: "title is required" });
+  });
+
+  it("translates a known code", async () => {
+    applyLanguage("pt");
+    respond(JSON.stringify({ code: "username_taken", message: "username is already taken" }), { status: 409 });
+
+    await expect(api("/auth/signup")).rejects.toMatchObject({ code: "username_taken", message: "Esse usuário já existe" });
+    applyLanguage("en");
+  });
+
+  it("keeps the backend message for a code it does not know", async () => {
+    applyLanguage("pt");
+    respond(JSON.stringify({ code: "internal", message: "database is locked" }), { status: 500 });
+
+    await expect(api("/items")).rejects.toMatchObject({ code: "internal", message: "database is locked" });
+    applyLanguage("en");
   });
 
   it("has no code for a plain-text error", async () => {
